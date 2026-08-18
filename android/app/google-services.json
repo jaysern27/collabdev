@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "331474361715",
+    "project_id": "cultureguide-25wmr10030-22277",
+    "storage_bucket": "cultureguide-25wmr10030-22277.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:331474361715:android:de5a231ee9d477490a3906",
+        "android_client_info": {
+          "package_name": "com.example.collab_dev"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDa50PmFwgNP8G9A7BREh9eTQaN46WE2jc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
