@@ -3,51 +3,82 @@ import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import '../../../data_layer/model/repositories/attraction/attraction_repository.dart';
-import '../../../data_layer/model/services/location_geofencing/location_geofencing_service.dart';
-import '../../../external_data_sources/google_maps/google_maps_data_source.dart';
 
-class CulturalMapViewModel extends ChangeNotifier {
-  final AttractionRepository _attractionRepository;
-  final LocationGeofencingService _locationService;
-  final GoogleMapsDataSource _googleMapsDataSource;
+class CulturalMapViewModel
+    extends ChangeNotifier {
+
+  // =========================================================
+  // MODEL DEPENDENCY
+  // =========================================================
+
+  final AttractionRepository
+  _attractionRepository;
 
   CulturalMapViewModel({
-    AttractionRepository? attractionRepository,
-    LocationGeofencingService? locationService,
-    GoogleMapsDataSource? googleMapsDataSource,
-  })  : _attractionRepository =
-      attractionRepository ?? AttractionRepository(),
-        _locationService =
-            locationService ?? LocationGeofencingService(),
-        _googleMapsDataSource =
-            googleMapsDataSource ?? GoogleMapsDataSource();
+    AttractionRepository?
+    attractionRepository,
+  }) : _attractionRepository =
+      attractionRepository ??
+          AttractionRepository();
 
-  List<Map<String, dynamic>> _allAttractions = [];
+  // =========================================================
+  // DATA
+  // =========================================================
 
-  List<Map<String, dynamic>> _filteredAttractions = [];
+  List<Map<String, dynamic>>
+  _allAttractions = [];
+
+  List<Map<String, dynamic>>
+  _filteredAttractions = [];
 
   Position? _currentPosition;
 
+  // =========================================================
+  // FILTER STATE
+  // =========================================================
+
   String _selectedCategory = 'All';
+
+  String _searchText = '';
+
+  // =========================================================
+  // UI STATE
+  // =========================================================
 
   bool _isLoading = false;
 
   String? _errorMessage;
 
-  List<Map<String, dynamic>> get attractions =>
+  // =========================================================
+  // GETTERS FOR DATA BINDING
+  // =========================================================
+
+  List<Map<String, dynamic>>
+  get attractions =>
       _filteredAttractions;
 
-  Position? get currentPosition => _currentPosition;
+  Position? get currentPosition =>
+      _currentPosition;
 
-  String get selectedCategory => _selectedCategory;
+  String get selectedCategory =>
+      _selectedCategory;
 
-  bool get isLoading => _isLoading;
+  String get searchText =>
+      _searchText;
 
-  String? get errorMessage => _errorMessage;
+  bool get isLoading =>
+      _isLoading;
 
-  bool get hasLocation => _currentPosition != null;
+  String? get errorMessage =>
+      _errorMessage;
 
-  // Load attractions from Firestore
+  bool get hasLocation =>
+      _currentPosition != null;
+
+  // =========================================================
+  // LOAD ATTRACTIONS
+  // =========================================================
+
   Future<void> loadAttractions() async {
     _setLoading(true);
 
@@ -55,9 +86,10 @@ class CulturalMapViewModel extends ChangeNotifier {
       _errorMessage = null;
 
       _allAttractions =
-      await _attractionRepository.getAllAttractions();
+      await _attractionRepository
+          .getAllAttractions();
 
-      _applyCurrentFilter();
+      _applyFilters();
     } catch (e) {
       _errorMessage = e.toString();
     } finally {
@@ -65,13 +97,17 @@ class CulturalMapViewModel extends ChangeNotifier {
     }
   }
 
-  // Get user's current GPS location
+  // =========================================================
+  // LOAD CURRENT LOCATION
+  // =========================================================
+
   Future<void> loadCurrentLocation() async {
     try {
       _errorMessage = null;
 
       _currentPosition =
-      await _locationService.getCurrentLocation();
+      await _attractionRepository
+          .getCurrentLocation();
 
       notifyListeners();
     } catch (e) {
@@ -81,113 +117,103 @@ class CulturalMapViewModel extends ChangeNotifier {
     }
   }
 
-  // Change cultural attraction category
-  void filterByCategory(String category) {
+  // =========================================================
+  // CATEGORY FILTER
+  // =========================================================
+
+  void filterByCategory(
+      String category,
+      ) {
     _selectedCategory = category;
 
-    _applyCurrentFilter();
+    _applyFilters();
 
     notifyListeners();
   }
 
-  void _applyCurrentFilter() {
-    if (_selectedCategory == 'All') {
-      _filteredAttractions =
-      List<Map<String, dynamic>>.from(
-        _allAttractions,
-      );
+  // =========================================================
+  // SEARCH
+  // =========================================================
 
-      return;
-    }
+  void searchAttractions(
+      String searchText,
+      ) {
+    _searchText = searchText;
 
-    _filteredAttractions =
-        _allAttractions.where((attraction) {
-          return attraction['category'] ==
-              _selectedCategory;
-        }).toList();
+    _applyFilters();
+
+    notifyListeners();
   }
 
-  // Search attraction name
-  void searchAttractions(String searchText) {
-    final query = searchText.trim().toLowerCase();
+  // =========================================================
+  // APPLY ALL FILTERS
+  // =========================================================
 
-    if (query.isEmpty) {
-      _applyCurrentFilter();
+  void _applyFilters() {
+    Iterable<Map<String, dynamic>>
+    result = _allAttractions;
 
-      notifyListeners();
-
-      return;
+    // Category
+    if (_selectedCategory != 'All') {
+      result = result.where(
+            (attraction) {
+          return attraction['category']
+              ?.toString() ==
+              _selectedCategory;
+        },
+      );
     }
 
-    final source = _selectedCategory == 'All'
-        ? _allAttractions
-        : _allAttractions.where((attraction) {
-      return attraction['category'] ==
-          _selectedCategory;
-    }).toList();
+    // Search
+    final query =
+    _searchText.trim().toLowerCase();
 
-    _filteredAttractions =
-        source.where((attraction) {
+    if (query.isNotEmpty) {
+      result = result.where(
+            (attraction) {
           final name =
-          (attraction['name'] ?? '')
-              .toString()
-              .toLowerCase();
+              attraction['name']
+                  ?.toString()
+                  .toLowerCase() ??
+                  '';
 
           return name.contains(query);
-        }).toList();
+        },
+      );
+    }
 
-    notifyListeners();
+    _filteredAttractions =
+        result.toList();
   }
 
-  // Convert attractions into Google Maps markers
+  // =========================================================
+  // GOOGLE MAP MARKERS
+  // =========================================================
+
   Set<Marker> getMarkers() {
-    final markers = <Marker>{};
-
-    for (final attraction in _filteredAttractions) {
-      final latitude = attraction['latitude'];
-      final longitude = attraction['longitude'];
-
-      if (latitude is! num || longitude is! num) {
-        continue;
-      }
-
-      markers.add(
-        _googleMapsDataSource.createMarker(
-          id: attraction['id'].toString(),
-          latitude: latitude.toDouble(),
-          longitude: longitude.toDouble(),
-          title: attraction['name']?.toString() ??
-              'Attraction',
-          snippet:
-          attraction['category']?.toString(),
-        ),
-      );
-    }
-
-    return markers;
-  }
-
-  // Initial camera position
-  CameraPosition getInitialCameraPosition() {
-    if (_currentPosition != null) {
-      return _googleMapsDataSource
-          .createCameraPosition(
-        latitude: _currentPosition!.latitude,
-        longitude: _currentPosition!.longitude,
-        zoom: 14,
-      );
-    }
-
-    // Default Malaysia / Kuala Lumpur location
-    return _googleMapsDataSource
-        .createCameraPosition(
-      latitude: 3.1390,
-      longitude: 101.6869,
-      zoom: 11,
+    return _attractionRepository
+        .createAttractionMarkers(
+      _filteredAttractions,
     );
   }
 
-  // Move map back to user's current position
+  // =========================================================
+  // INITIAL MAP POSITION
+  // =========================================================
+
+  CameraPosition
+  getInitialCameraPosition() {
+    return _attractionRepository
+        .getInitialCameraPosition(
+      currentPosition:
+      _currentPosition,
+    );
+  }
+
+  // =========================================================
+  // RECENTER MAP
+  // =========================================================
+
   Future<void> recenterMap(
       GoogleMapController controller,
       ) async {
@@ -195,18 +221,36 @@ class CulturalMapViewModel extends ChangeNotifier {
       await loadCurrentLocation();
     }
 
-    final position = _currentPosition;
+    final position =
+        _currentPosition;
 
     if (position == null) {
       return;
     }
 
-    await _googleMapsDataSource.recenterMap(
+    await _attractionRepository
+        .recenterMap(
       controller: controller,
-      latitude: position.latitude,
-      longitude: position.longitude,
+      position: position,
     );
   }
+
+  // =========================================================
+  // CLEAR FILTERS
+  // =========================================================
+
+  void resetFilters() {
+    _selectedCategory = 'All';
+    _searchText = '';
+
+    _applyFilters();
+
+    notifyListeners();
+  }
+
+  // =========================================================
+  // ERROR
+  // =========================================================
 
   void clearError() {
     _errorMessage = null;
@@ -214,7 +258,13 @@ class CulturalMapViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void _setLoading(bool value) {
+  // =========================================================
+  // LOADING
+  // =========================================================
+
+  void _setLoading(
+      bool value,
+      ) {
     _isLoading = value;
 
     notifyListeners();

@@ -43,6 +43,7 @@ dependencies:
   google_maps_flutter: ^2.18.0
   tflite_flutter: ^0.12.1
   cloud_functions: ^6.3.6
+  provider: ^6.1.5+1
 
 dev_dependencies:
   flutter_test:
