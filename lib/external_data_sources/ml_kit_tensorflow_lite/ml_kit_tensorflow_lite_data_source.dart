@@ -8,9 +8,12 @@ class MlKitTensorflowLiteDataSource {
   Future<void> loadModel({
     required String assetPath,
   }) async {
-    _interpreter = await Interpreter.fromAsset(assetPath);
+    _interpreter = await Interpreter.fromAsset(
+      assetPath,
+    );
   }
 
+  // Generic inference method
   void runInference({
     required Object input,
     required Object output,
@@ -18,30 +21,71 @@ class MlKitTensorflowLiteDataSource {
     final interpreter = _interpreter;
 
     if (interpreter == null) {
-      throw Exception('TensorFlow Lite model has not been loaded.');
+      throw Exception(
+        'TensorFlow Lite model has not been loaded.',
+      );
     }
 
-    interpreter.run(input, output);
+    interpreter.run(
+      input,
+      output,
+    );
+  }
+
+  // Used by sleeve coverage model
+  List<double> runSingleOutputInference({
+    required Object input,
+    required int outputSize,
+  }) {
+    final interpreter = _interpreter;
+
+    if (interpreter == null) {
+      throw Exception(
+        'TensorFlow Lite model has not been loaded.',
+      );
+    }
+
+    final output = [
+      List<double>.filled(
+        outputSize,
+        0.0,
+      ),
+    ];
+
+    interpreter.run(
+      input,
+      output,
+    );
+
+    return output.first;
   }
 
   List<int> getInputShape() {
     final interpreter = _interpreter;
 
     if (interpreter == null) {
-      throw Exception('TensorFlow Lite model has not been loaded.');
+      throw Exception(
+        'TensorFlow Lite model has not been loaded.',
+      );
     }
 
-    return interpreter.getInputTensor(0).shape;
+    return interpreter
+        .getInputTensor(0)
+        .shape;
   }
 
   List<int> getOutputShape() {
     final interpreter = _interpreter;
 
     if (interpreter == null) {
-      throw Exception('TensorFlow Lite model has not been loaded.');
+      throw Exception(
+        'TensorFlow Lite model has not been loaded.',
+      );
     }
 
-    return interpreter.getOutputTensor(0).shape;
+    return interpreter
+        .getOutputTensor(0)
+        .shape;
   }
 
   void close() {
