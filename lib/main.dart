@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import 'external_data_sources/firebase/firebase_data_source.dart';
 import 'data_layer/model/services/notification/notification_service.dart';
-import 'ui_layer/view/outfit_recognition/outfit_recognition.dart';
 import 'ui_layer/view/home/home.dart';
 
 Future<void> main() async {
@@ -24,7 +23,7 @@ class CultureGuideApp extends StatelessWidget {
     return const MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'CultureGuide',
-      home: OutfitRecognitionView(),
+      home: HomeView(),
     );
   }
 }
