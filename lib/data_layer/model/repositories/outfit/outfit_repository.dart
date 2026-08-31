@@ -17,13 +17,18 @@ class OutfitRepository {
       _outfitRecognitionService.isReady;
   bool get isSleeveModelReady =>
       _outfitRecognitionService.isSleeveModelReady;
-
   bool get isLowerBodyModelReady =>
       _outfitRecognitionService.isLowerBodyModelReady;
+  bool get isShoulderModelReady =>
+      _outfitRecognitionService.isShoulderModelReady;
+  bool get isHeadwearModelReady =>
+      _outfitRecognitionService.isHeadwearModelReady;
 
   bool get areOutfitModelsReady =>
       isSleeveModelReady &&
-          isLowerBodyModelReady;
+          isLowerBodyModelReady &&
+          isShoulderModelReady &&
+          isHeadwearModelReady;
   // =========================================================
   // MODEL INITIALIZATION
   // =========================================================
@@ -41,6 +46,24 @@ class OutfitRepository {
   }) async {
     await _outfitRecognitionService
         .initializeLowerBodyModel(
+      modelAssetPath: modelAssetPath,
+    );
+  }
+
+  Future<void> initializeShoulderModel({
+    required String modelAssetPath,
+  }) async {
+    await _outfitRecognitionService
+        .initializeShoulderModel(
+      modelAssetPath: modelAssetPath,
+    );
+  }
+
+  Future<void> initializeHeadwearModel({
+    required String modelAssetPath,
+  }) async {
+    await _outfitRecognitionService
+        .initializeHeadwearModel(
       modelAssetPath: modelAssetPath,
     );
   }
@@ -102,6 +125,24 @@ class OutfitRepository {
     );
   }
 
+  PreparedOutfitInput prepareShoulderImageForModel(
+      OutfitImageData outfitImage,
+      ) {
+    return _outfitRecognitionService
+        .prepareShoulderImageForModel(
+      outfitImage,
+    );
+  }
+
+  PreparedOutfitInput prepareHeadwearImageForModel(
+      OutfitImageData outfitImage,
+      ) {
+    return _outfitRecognitionService
+        .prepareHeadwearImageForModel(
+      outfitImage,
+    );
+  }
+
   // =========================================================
   // REAL SLEEVE COVERAGE PREDICTION
   // =========================================================
@@ -121,6 +162,25 @@ class OutfitRepository {
   }) {
     return _outfitRecognitionService
         .predictLowerBodyCoverage(
+      preparedInput: preparedInput,
+    );
+  }
+
+  ShoulderCoveragePrediction
+  predictShoulderCoverage({
+    required PreparedOutfitInput preparedInput,
+  }) {
+    return _outfitRecognitionService
+        .predictShoulderCoverage(
+      preparedInput: preparedInput,
+    );
+  }
+
+  HeadwearPrediction predictHeadwear({
+    required PreparedOutfitInput preparedInput,
+  }) {
+    return _outfitRecognitionService
+        .predictHeadwear(
       preparedInput: preparedInput,
     );
   }
@@ -186,6 +246,26 @@ class OutfitRepository {
   List<int> getLowerBodyOutputShape() {
     return _outfitRecognitionService
         .getLowerBodyOutputShape();
+  }
+
+  List<int> getShoulderInputShape() {
+    return _outfitRecognitionService
+        .getShoulderInputShape();
+  }
+
+  List<int> getShoulderOutputShape() {
+    return _outfitRecognitionService
+        .getShoulderOutputShape();
+  }
+
+  List<int> getHeadwearInputShape() {
+    return _outfitRecognitionService
+        .getHeadwearInputShape();
+  }
+
+  List<int> getHeadwearOutputShape() {
+    return _outfitRecognitionService
+        .getHeadwearOutputShape();
   }
 
   // =========================================================

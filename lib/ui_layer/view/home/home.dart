@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../view_model/home/home_view_model.dart';
+import '../outfit_recognition/outfit_recognition.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
@@ -10,18 +11,26 @@ class HomeView extends StatefulWidget {
 }
 
 class _HomeViewState extends State<HomeView> {
-  final HomeViewModel _viewModel = HomeViewModel();
+  final HomeViewModel _viewModel =
+  HomeViewModel();
 
   final TextEditingController _searchController =
   TextEditingController();
 
   bool _isSearching = false;
 
+  // =========================================================
+  // INITIALIZATION
+  // =========================================================
+
   @override
   void initState() {
     super.initState();
 
-    _viewModel.addListener(_onViewModelChanged);
+    _viewModel.addListener(
+      _onViewModelChanged,
+    );
+
     _viewModel.loadHomeData();
   }
 
@@ -33,15 +42,23 @@ class _HomeViewState extends State<HomeView> {
 
   @override
   void dispose() {
-    _viewModel.removeListener(_onViewModelChanged);
+    _viewModel.removeListener(
+      _onViewModelChanged,
+    );
+
     _viewModel.dispose();
     _searchController.dispose();
 
     super.dispose();
   }
 
+  // =========================================================
+  // SEARCH DESTINATION
+  // =========================================================
+
   Future<void> _showEtiquette() async {
-    final query = _searchController.text.trim();
+    final query =
+    _searchController.text.trim();
 
     if (query.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -60,7 +77,9 @@ class _HomeViewState extends State<HomeView> {
     });
 
     final results =
-    await _viewModel.searchDestination(query);
+    await _viewModel.searchDestination(
+      query,
+    );
 
     if (!mounted) {
       return;
@@ -82,12 +101,14 @@ class _HomeViewState extends State<HomeView> {
       return;
     }
 
-    final attraction = results.first;
+    final attraction =
+        results.first;
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          'Found: ${attraction['name'] ?? 'Attraction'}',
+          'Found: '
+              '${attraction['name'] ?? 'Attraction'}',
         ),
       ),
     );
@@ -96,16 +117,37 @@ class _HomeViewState extends State<HomeView> {
     // Navigate to attraction etiquette details.
   }
 
+  // =========================================================
+  // NAVIGATION
+  // =========================================================
+
+  void _openOutfitPage() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) =>
+        const OutfitRecognitionView(),
+      ),
+    );
+  }
+
+  // =========================================================
+  // BUILD
+  // =========================================================
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFFF9ED),
+      backgroundColor: const Color(
+        0xFFFFF9ED,
+      ),
 
       body: SafeArea(
         child: ScrollConfiguration(
-          behavior: const _NoScrollbarBehavior(),
+          behavior:
+          const _NoScrollbarBehavior(),
           child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(
+            padding:
+            const EdgeInsets.fromLTRB(
               18,
               12,
               18,
@@ -117,15 +159,11 @@ class _HomeViewState extends State<HomeView> {
               children: [
                 _buildTopSection(),
 
-                const SizedBox(height: 14),
+                const SizedBox(
+                  height: 14,
+                ),
 
                 _buildHeroSection(),
-
-                const SizedBox(height: 12),
-
-                _buildQuickAccess(),
-
-                const SizedBox(height: 10),
               ],
             ),
           ),
@@ -138,7 +176,7 @@ class _HomeViewState extends State<HomeView> {
   }
 
   // =========================================================
-  // TOP HEADER
+  // TOP SECTION
   // =========================================================
 
   Widget _buildTopSection() {
@@ -156,34 +194,47 @@ class _HomeViewState extends State<HomeView> {
                   Icon(
                     Icons.location_on,
                     size: 13,
-                    color: Color(0xFFFF4F73),
+                    color: Color(
+                      0xFFFF4F73,
+                    ),
                   ),
 
-                  SizedBox(width: 3),
+                  SizedBox(
+                    width: 3,
+                  ),
 
                   Text(
                     'Kuala Lumpur, Malaysia',
                     style: TextStyle(
-                      color: Color(0xFF0093A3),
+                      color: Color(
+                        0xFF0093A3,
+                      ),
                       fontSize: 11,
-                      fontWeight: FontWeight.w600,
+                      fontWeight:
+                      FontWeight.w600,
                     ),
                   ),
                 ],
               ),
 
-              const SizedBox(height: 3),
+              const SizedBox(
+                height: 3,
+              ),
 
               RichText(
                 text: const TextSpan(
                   style: TextStyle(
                     fontSize: 17,
-                    color: Color(0xFF14213D),
-                    fontWeight: FontWeight.w800,
+                    color: Color(
+                      0xFF14213D,
+                    ),
+                    fontWeight:
+                    FontWeight.w800,
                   ),
                   children: [
                     TextSpan(
-                      text: 'Good morning, Jay ',
+                      text:
+                      'Good morning, Jay ',
                     ),
                     TextSpan(
                       text: '👋',
@@ -201,8 +252,11 @@ class _HomeViewState extends State<HomeView> {
             Container(
               width: 40,
               height: 40,
-              decoration: const BoxDecoration(
-                color: Color(0xFFFFF0C9),
+              decoration:
+              const BoxDecoration(
+                color: Color(
+                  0xFFFFF0C9,
+                ),
                 shape: BoxShape.circle,
               ),
               child: IconButton(
@@ -212,7 +266,9 @@ class _HomeViewState extends State<HomeView> {
                 },
                 icon: const Icon(
                   Icons.notifications,
-                  color: Color(0xFFFFA800),
+                  color: Color(
+                    0xFFFFA800,
+                  ),
                   size: 22,
                 ),
               ),
@@ -224,9 +280,13 @@ class _HomeViewState extends State<HomeView> {
               child: Container(
                 width: 17,
                 height: 17,
-                alignment: Alignment.center,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFFF4057),
+                alignment:
+                Alignment.center,
+                decoration:
+                const BoxDecoration(
+                  color: Color(
+                    0xFFFF4057,
+                  ),
                   shape: BoxShape.circle,
                 ),
                 child: const Text(
@@ -234,415 +294,434 @@ class _HomeViewState extends State<HomeView> {
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 9,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  // =========================================================
-  // BLUE HERO CARD
-  // =========================================================
-
-  Widget _buildHeroSection() {
-    return Container(
-      width: double.infinity,
-      height: 515,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF08A8AD),
-            Color(0xFF146BD9),
-          ],
-        ),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: Stack(
-          children: [
-            _buildBackgroundDecoration(),
-
-            Positioned(
-              top: 14,
-              left: 55,
-              right: 22,
-              child: _buildSearchCard(),
-            ),
-
-            const Positioned(
-              left: 0,
-              right: 0,
-              bottom: 20,
-              child: _TouristIllustration(),
-            ),
-
-            Positioned(
-              bottom: 14,
-              right: 16,
-              child: Text(
-                'CultureGuide',
-                style: TextStyle(
-                  color:
-                  Colors.white.withValues(
-                    alpha: 0.55,
-                  ),
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // =========================================================
-  // SEARCH CARD
-  // =========================================================
-
-  Widget _buildSearchCard() {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(
-        15,
-        15,
-        15,
-        14,
-      ),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFFDF3),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Column(
-        crossAxisAlignment:
-        CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Where are you thinking of going?',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w800,
-              color: Color(0xFF071B54),
-            ),
-          ),
-
-          const SizedBox(height: 5),
-
-          const Text(
-            "Tell me the destination and I'll give you the\ncultural etiquette.",
-            style: TextStyle(
-              fontSize: 10.5,
-              height: 1.25,
-              color: Color(0xFF667085),
-            ),
-          ),
-
-          const SizedBox(height: 12),
-
-          TextField(
-            controller: _searchController,
-            textInputAction:
-            TextInputAction.search,
-            onSubmitted: (_) {
-              _showEtiquette();
-            },
-            decoration: InputDecoration(
-              hintText:
-              'e.g. Batu Caves, Masjid Jamek',
-              hintStyle: const TextStyle(
-                color: Color(0xFF9A9AB0),
-                fontSize: 11,
-              ),
-              prefixIcon: const Icon(
-                Icons.search,
-                size: 19,
-                color: Color(0xFF1491C4),
-              ),
-              filled: true,
-              fillColor: Colors.white,
-              contentPadding:
-              const EdgeInsets.symmetric(
-                vertical: 11,
-              ),
-              enabledBorder:
-              OutlineInputBorder(
-                borderRadius:
-                BorderRadius.circular(12),
-                borderSide:
-                const BorderSide(
-                  color: Color(0xFFB5E7DD),
-                ),
-              ),
-              focusedBorder:
-              OutlineInputBorder(
-                borderRadius:
-                BorderRadius.circular(12),
-                borderSide:
-                const BorderSide(
-                  color: Color(0xFF00A6A6),
-                  width: 1.5,
-                ),
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 10),
-
-          SizedBox(
-            width: double.infinity,
-            height: 39,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                borderRadius:
-                BorderRadius.circular(12),
-                gradient: const LinearGradient(
-                  colors: [
-                    Color(0xFFFFBBAA),
-                    Color(0xFFFFDB79),
-                  ],
-                ),
-              ),
-              child: ElevatedButton(
-                onPressed:
-                _isSearching
-                    ? null
-                    : _showEtiquette,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor:
-                  Colors.transparent,
-                  shadowColor:
-                  Colors.transparent,
-                  foregroundColor:
-                  Colors.white,
-                  disabledBackgroundColor:
-                  Colors.transparent,
-                  shape: RoundedRectangleBorder(
-                    borderRadius:
-                    BorderRadius.circular(12),
-                  ),
-                ),
-                child: _isSearching
-                    ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child:
-                  CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.white,
-                  ),
-                )
-                    : const Text(
-                  'Show Me the Etiquette →',
-                  style: TextStyle(
-                    fontSize: 12,
                     fontWeight:
                     FontWeight.bold,
                   ),
                 ),
               ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // =========================================================
-  // DECORATIVE BACKGROUND
-  // =========================================================
-
-  Widget _buildBackgroundDecoration() {
-    return Stack(
-      children: [
-        Positioned(
-          left: -36,
-          top: 155,
-          child: Container(
-            width: 105,
-            height: 105,
-            decoration: BoxDecoration(
-              color:
-              Colors.tealAccent.withValues(
-                alpha: 0.13,
-              ),
-              shape: BoxShape.circle,
-            ),
-          ),
-        ),
-
-        Positioned(
-          right: -38,
-          bottom: 17,
-          child: Container(
-            width: 105,
-            height: 105,
-            decoration: BoxDecoration(
-              border: Border.all(
-                color:
-                Colors.white.withValues(
-                  alpha: 0.17,
-                ),
-              ),
-              shape: BoxShape.circle,
-            ),
-          ),
-        ),
-
-        Positioned(
-          right: -4,
-          bottom: -4,
-          child: Container(
-            width: 70,
-            height: 70,
-            decoration: BoxDecoration(
-              border: Border.all(
-                color:
-                Colors.white.withValues(
-                  alpha: 0.10,
-                ),
-              ),
-              shape: BoxShape.circle,
-            ),
-          ),
-        ),
-
-        _bubble(
-          left: 63,
-          top: 184,
-          size: 8,
-        ),
-
-        _bubble(
-          left: 66,
-          top: 198,
-          size: 7,
-        ),
-
-        _bubble(
-          right: 60,
-          top: 179,
-          size: 7,
-        ),
-
-        _bubble(
-          right: 27,
-          top: 229,
-          size: 4,
-        ),
-
-        _bubble(
-          right: 58,
-          top: 332,
-          size: 7,
-        ),
-
-        _bubble(
-          right: 112,
-          top: 314,
-          size: 5,
-        ),
-
-        _bubble(
-          right: 119,
-          top: 322,
-          size: 4,
-        ),
-
-        _bubble(
-          right: 126,
-          top: 331,
-          size: 4,
+          ],
         ),
       ],
     );
   }
 
-  Widget _bubble({
-    double? left,
-    double? right,
-    required double top,
-    required double size,
-  }) {
-    return Positioned(
-      left: left,
-      right: right,
-      top: top,
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(
-            alpha: 0.35,
-          ),
-          shape: BoxShape.circle,
+  // =========================================================
+  // HERO SECTION
+  // =========================================================
+
+  Widget _buildHeroSection() {
+    return Container(
+      height: 710,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        borderRadius:
+        BorderRadius.circular(
+          28,
+        ),
+        gradient:
+        const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Color(
+              0xFF18B7C8,
+            ),
+            Color(
+              0xFF1E78D8,
+            ),
+          ],
+        ),
+      ),
+      child: ClipRRect(
+        borderRadius:
+        BorderRadius.circular(
+          28,
+        ),
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            // Decorative circle
+            Positioned(
+              left: -35,
+              top: 120,
+              child: Container(
+                width: 95,
+                height: 95,
+                decoration:
+                BoxDecoration(
+                  color: Colors.white
+                      .withValues(
+                    alpha: 0.10,
+                  ),
+                  shape:
+                  BoxShape.circle,
+                ),
+              ),
+            ),
+
+            // Decorative circle
+            Positioned(
+              right: 18,
+              bottom: 35,
+              child: Container(
+                width: 90,
+                height: 90,
+                decoration:
+                BoxDecoration(
+                  border: Border.all(
+                    color: Colors.white
+                        .withValues(
+                      alpha: 0.15,
+                    ),
+                    width: 1.2,
+                  ),
+                  shape:
+                  BoxShape.circle,
+                ),
+              ),
+            ),
+
+            // Smaller decorative circle
+            Positioned(
+              right: 35,
+              bottom: 55,
+              child: Container(
+                width: 55,
+                height: 55,
+                decoration:
+                BoxDecoration(
+                  border: Border.all(
+                    color: Colors.white
+                        .withValues(
+                      alpha: 0.12,
+                    ),
+                  ),
+                  shape:
+                  BoxShape.circle,
+                ),
+              ),
+            ),
+
+            // Thinking bubble
+            Positioned(
+              left: 42,
+              right: 42,
+              top: 40,
+              child:
+              _buildThinkingBubbleCard(),
+            ),
+
+            // Avatar
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 30,
+              child:
+              _buildHomeAvatar(),
+            ),
+          ],
         ),
       ),
     );
   }
 
   // =========================================================
-  // QUICK ACCESS BUTTONS
+  // THINKING BUBBLE
   // =========================================================
 
-  Widget _buildQuickAccess() {
+  Widget _buildThinkingBubbleCard() {
     return SizedBox(
-      height: 36,
-      child: Row(
+      height: 430,
+      child: Stack(
+        clipBehavior: Clip.none,
         children: [
-          Expanded(
-            child: _quickAccessButton(
-              icon:
-              Icons.menu_book_outlined,
-              text: 'Etiquette Guide',
-              background:
-              const Color(0xFFDDFDF5),
-              foreground:
-              const Color(0xFF009F8C),
-              onTap: () {
-                // Etiquette page later.
-              },
+          // Main bubble
+          Positioned(
+            left: 0,
+            right: 0,
+            top: 0,
+            child: Container(
+              padding:
+              const EdgeInsets
+                  .fromLTRB(
+                18,
+                18,
+                18,
+                18,
+              ),
+              decoration:
+              BoxDecoration(
+                color: const Color(
+                  0xFFF8F2E9,
+                ),
+                borderRadius:
+                BorderRadius.circular(
+                  26,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black
+                        .withValues(
+                      alpha: 0.08,
+                    ),
+                    blurRadius: 14,
+                    offset:
+                    const Offset(
+                      0,
+                      6,
+                    ),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment:
+                CrossAxisAlignment
+                    .start,
+                children: [
+                  const Text(
+                    'Where are you thinking of going?',
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight:
+                      FontWeight.w800,
+                      color: Color(
+                        0xFF14213D,
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(
+                    height: 6,
+                  ),
+
+                  Text(
+                    "Tell me the destination and I'll give you the\n"
+                        'cultural etiquette.',
+                    style: TextStyle(
+                      fontSize: 12,
+                      height: 1.35,
+                      color: Colors.black
+                          .withValues(
+                        alpha: 0.45,
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(
+                    height: 14,
+                  ),
+
+                  // Search field
+                  Container(
+                    height: 50,
+                    padding:
+                    const EdgeInsets
+                        .symmetric(
+                      horizontal: 14,
+                    ),
+                    decoration:
+                    BoxDecoration(
+                      color:
+                      const Color(
+                        0xFFF4F5F7,
+                      ),
+                      borderRadius:
+                      BorderRadius
+                          .circular(
+                        14,
+                      ),
+                      border: Border.all(
+                        color:
+                        const Color(
+                          0xFF00A8CC,
+                        ),
+                        width: 1.2,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.search,
+                          color: Color(
+                            0xFF00A8CC,
+                          ),
+                          size: 20,
+                        ),
+
+                        const SizedBox(
+                          width: 10,
+                        ),
+
+                        Expanded(
+                          child: TextField(
+                            controller:
+                            _searchController,
+                            textInputAction:
+                            TextInputAction
+                                .search,
+                            onSubmitted:
+                                (_) {
+                              _showEtiquette();
+                            },
+                            decoration:
+                            InputDecoration(
+                              hintText:
+                              'e.g. Batu Caves, Masjid Jamek',
+                              hintStyle:
+                              TextStyle(
+                                color: Colors
+                                    .black
+                                    .withValues(
+                                  alpha:
+                                  0.35,
+                                ),
+                                fontSize:
+                                13,
+                              ),
+                              border:
+                              InputBorder
+                                  .none,
+                              isCollapsed:
+                              true,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(
+                    height: 14,
+                  ),
+
+                  // Search button
+                  SizedBox(
+                    width:
+                    double.infinity,
+                    height: 46,
+                    child:
+                    DecoratedBox(
+                      decoration:
+                      BoxDecoration(
+                        borderRadius:
+                        BorderRadius
+                            .circular(
+                          14,
+                        ),
+                        gradient:
+                        const LinearGradient(
+                          colors: [
+                            Color(
+                              0xFFF6B8A8,
+                            ),
+                            Color(
+                              0xFFF2D26B,
+                            ),
+                          ],
+                        ),
+                      ),
+                      child: TextButton(
+                        onPressed:
+                        _isSearching
+                            ? null
+                            : _showEtiquette,
+                        style: TextButton
+                            .styleFrom(
+                          foregroundColor:
+                          Colors.white,
+                          disabledForegroundColor:
+                          Colors.white,
+                          shape:
+                          RoundedRectangleBorder(
+                            borderRadius:
+                            BorderRadius
+                                .circular(
+                              14,
+                            ),
+                          ),
+                        ),
+                        child:
+                        _isSearching
+                            ? const SizedBox(
+                          width:
+                          18,
+                          height:
+                          18,
+                          child:
+                          CircularProgressIndicator(
+                            strokeWidth:
+                            2,
+                            color:
+                            Colors
+                                .white,
+                          ),
+                        )
+                            : const Text(
+                          'Show Me the Etiquette →',
+                          style:
+                          TextStyle(
+                            color:
+                            Colors
+                                .white,
+                            fontWeight:
+                            FontWeight
+                                .w700,
+                            fontSize:
+                            14,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
 
-          const SizedBox(width: 7),
-
-          Expanded(
-            child: _quickAccessButton(
-              icon:
-              Icons.checkroom_outlined,
-              text: 'Check Outfit',
-              background:
-              const Color(0xFFE9ECFF),
-              foreground:
-              const Color(0xFF315CD6),
-              onTap: () {
-                // Outfit Recognition page later.
-              },
+          // Thought bubble trail
+          Positioned(
+            left: 43,
+            top: 270,
+            child:
+            _buildThoughtBubbleCircle(
+              24,
             ),
           ),
 
-          const SizedBox(width: 7),
+          Positioned(
+            left: 50,
+            top: 310,
+            child:
+            _buildThoughtBubbleCircle(
+              20,
+            ),
+          ),
 
-          Expanded(
-            child: _quickAccessButton(
-              icon:
-              Icons.map_outlined,
-              text: 'Explore Map',
-              background:
-              const Color(0xFFFFF2C7),
-              foreground:
-              const Color(0xFFE69B00),
-              onTap: () {
-                // Cultural Map page later.
-              },
+          Positioned(
+            left: 58,
+            top: 348,
+            child:
+            _buildThoughtBubbleCircle(
+              16,
+            ),
+          ),
+
+          Positioned(
+            left: 70,
+            top: 380,
+            child:
+            _buildThoughtBubbleCircle(
+              12,
+            ),
+          ),
+
+          Positioned(
+            left: 90,
+            top: 410,
+            child:
+            _buildThoughtBubbleCircle(
+              8,
             ),
           ),
         ],
@@ -650,51 +729,49 @@ class _HomeViewState extends State<HomeView> {
     );
   }
 
-  Widget _quickAccessButton({
-    required IconData icon,
-    required String text,
-    required Color background,
-    required Color foreground,
-    required VoidCallback onTap,
-  }) {
-    return Material(
-      color: background,
-      borderRadius: BorderRadius.circular(30),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(30),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 7,
+  Widget _buildThoughtBubbleCircle(
+      double size,
+      ) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: const Color(
+          0xFFF8F2E9,
+        ),
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black
+                .withValues(
+              alpha: 0.05,
+            ),
+            blurRadius: 6,
+            offset:
+            const Offset(
+              0,
+              3,
+            ),
           ),
-          child: Row(
-            mainAxisAlignment:
-            MainAxisAlignment.center,
-            children: [
-              Icon(
-                icon,
-                size: 13,
-                color: foreground,
-              ),
+        ],
+      ),
+    );
+  }
 
-              const SizedBox(width: 4),
+  // =========================================================
+  // HOME AVATAR
+  // =========================================================
 
-              Flexible(
-                child: Text(
-                  text,
-                  maxLines: 1,
-                  overflow:
-                  TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 9.5,
-                    color: foreground,
-                    fontWeight:
-                    FontWeight.w700,
-                  ),
-                ),
-              ),
-            ],
-          ),
+  Widget _buildHomeAvatar() {
+    return Center(
+      child: SizedBox(
+        width: 230,
+        height: 230,
+        child: Image.asset(
+          'lib/assets/images/home_avatar.png',
+          fit: BoxFit.contain,
+          alignment:
+          Alignment.bottomCenter,
         ),
       ),
     );
@@ -706,11 +783,14 @@ class _HomeViewState extends State<HomeView> {
 
   Widget _buildBottomNavigationBar() {
     return Container(
-      decoration: const BoxDecoration(
+      decoration:
+      const BoxDecoration(
         color: Colors.white,
         border: Border(
           top: BorderSide(
-            color: Color(0xFFE9E2D7),
+            color: Color(
+              0xFFE9E2D7,
+            ),
           ),
         ),
       ),
@@ -720,23 +800,30 @@ class _HomeViewState extends State<HomeView> {
           height: 59,
           child: Row(
             mainAxisAlignment:
-            MainAxisAlignment.spaceAround,
+            MainAxisAlignment
+                .spaceAround,
             children: [
               _navItem(
-                icon: Icons.home_rounded,
+                icon:
+                Icons.home_rounded,
                 label: 'Home',
                 selected: true,
               ),
+
               _navItem(
-                icon:
-                Icons.explore_outlined,
+                icon: Icons
+                    .explore_outlined,
                 label: 'Explore',
               ),
+
               _navItem(
-                icon:
-                Icons.checkroom_outlined,
+                icon: Icons
+                    .checkroom_outlined,
                 label: 'Outfit',
+                onTap:
+                _openOutfitPage,
               ),
+
               _navItem(
                 icon:
                 Icons.person_outline,
@@ -753,15 +840,23 @@ class _HomeViewState extends State<HomeView> {
     required IconData icon,
     required String label,
     bool selected = false,
+    VoidCallback? onTap,
   }) {
-    final color = selected
-        ? const Color(0xFF2864DE)
-        : const Color(0xFF1F3157);
+    final color =
+    selected
+        ? const Color(
+      0xFF2864DE,
+    )
+        : const Color(
+      0xFF1F3157,
+    );
 
     return InkWell(
-      onTap: () {
-        // Navigation will be connected later.
-      },
+      onTap: onTap,
+      borderRadius:
+      BorderRadius.circular(
+        12,
+      ),
       child: SizedBox(
         width: 65,
         child: Column(
@@ -773,15 +868,22 @@ class _HomeViewState extends State<HomeView> {
               size: 22,
               color: color,
             ),
-            const SizedBox(height: 2),
+
+            const SizedBox(
+              height: 2,
+            ),
+
             Text(
               label,
               style: TextStyle(
                 color: color,
                 fontSize: 9.5,
-                fontWeight: selected
-                    ? FontWeight.w700
-                    : FontWeight.w500,
+                fontWeight:
+                selected
+                    ? FontWeight
+                    .w700
+                    : FontWeight
+                    .w500,
               ),
             ),
           ],
@@ -792,200 +894,9 @@ class _HomeViewState extends State<HomeView> {
 }
 
 // ===========================================================
-// SIMPLE TOURIST ILLUSTRATION
-// No external image asset required.
+// REMOVE SCROLLBAR
 // ===========================================================
 
-class _TouristIllustration
-    extends StatelessWidget {
-  const _TouristIllustration();
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 205,
-      child: Stack(
-        alignment: Alignment.bottomCenter,
-        children: [
-          Positioned(
-            bottom: 2,
-            child: Container(
-              width: 68,
-              height: 10,
-              decoration: BoxDecoration(
-                color: const Color(
-                  0xFF074AA6,
-                ).withValues(
-                  alpha: 0.6,
-                ),
-                borderRadius:
-                BorderRadius.circular(50),
-              ),
-            ),
-          ),
-
-          Positioned(
-            bottom: 17,
-            child: Row(
-              children: [
-                _leg(),
-                const SizedBox(width: 8),
-                _leg(),
-              ],
-            ),
-          ),
-
-          Positioned(
-            bottom: 73,
-            child: Container(
-              width: 74,
-              height: 68,
-              decoration: BoxDecoration(
-                color:
-                const Color(0xFF02A7A6),
-                borderRadius:
-                BorderRadius.circular(8),
-              ),
-            ),
-          ),
-
-          Positioned(
-            bottom: 130,
-            child: Container(
-              width: 38,
-              height: 38,
-              decoration: const BoxDecoration(
-                color: Color(0xFFFFDA65),
-                shape: BoxShape.circle,
-              ),
-              child: const Center(
-                child: Text(
-                  '😊',
-                  style:
-                  TextStyle(fontSize: 23),
-                ),
-              ),
-            ),
-          ),
-
-          Positioned(
-            bottom: 165,
-            child: Container(
-              width: 42,
-              height: 11,
-              decoration: BoxDecoration(
-                color:
-                const Color(0xFF14213D),
-                borderRadius:
-                BorderRadius.circular(50),
-              ),
-            ),
-          ),
-
-          Positioned(
-            bottom: 168,
-            child: Container(
-              width: 35,
-              height: 9,
-              decoration: BoxDecoration(
-                color:
-                const Color(0xFFF5C85C),
-                borderRadius:
-                BorderRadius.circular(50),
-              ),
-            ),
-          ),
-
-          Positioned(
-            left:
-            MediaQuery.sizeOf(context)
-                .width /
-                2 -
-                58,
-            bottom: 80,
-            child: Container(
-              width: 12,
-              height: 40,
-              decoration: BoxDecoration(
-                color:
-                const Color(0xFF00AFA8),
-                borderRadius:
-                BorderRadius.circular(10),
-              ),
-            ),
-          ),
-
-          Positioned(
-            right:
-            MediaQuery.sizeOf(context)
-                .width /
-                2 -
-                77,
-            bottom: 88,
-            child: Container(
-              width: 24,
-              height: 34,
-              decoration: BoxDecoration(
-                color:
-                const Color(0xFFFFA600),
-                borderRadius:
-                BorderRadius.circular(8),
-              ),
-              child: Center(
-                child: Container(
-                  width: 13,
-                  height: 18,
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color:
-                      const Color(
-                        0xFFFFC94A,
-                      ),
-                      width: 2,
-                    ),
-                    borderRadius:
-                    BorderRadius.circular(
-                      4,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _leg() {
-    return Column(
-      children: [
-        Container(
-          width: 13,
-          height: 58,
-          decoration: BoxDecoration(
-            color:
-            const Color(0xFF165DD1),
-            borderRadius:
-            BorderRadius.circular(5),
-          ),
-        ),
-        Container(
-          width: 27,
-          height: 10,
-          decoration: BoxDecoration(
-            color:
-            const Color(0xFF14213D),
-            borderRadius:
-            BorderRadius.circular(10),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// Completely removes desktop/web scrollbar.
 class _NoScrollbarBehavior
     extends MaterialScrollBehavior {
   const _NoScrollbarBehavior();

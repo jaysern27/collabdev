@@ -18,28 +18,50 @@ class HomeViewModel extends ChangeNotifier {
         _userPreferenceRepository =
             userPreferenceRepository ?? UserPreferenceRepository(),
         _authenticationService =
-            authenticationService ?? FirebaseAuthenticationService();
+            authenticationService ??
+                FirebaseAuthenticationService();
+
+  // =========================================================
+  // STATE
+  // =========================================================
 
   List<Map<String, dynamic>> _attractions = [];
 
   List<Map<String, dynamic>> _recommendedAttractions = [];
 
+  List<Map<String, dynamic>> _searchResults = [];
+
   Map<String, dynamic>? _userPreferences;
 
   bool _isLoading = false;
 
+  bool _isSearching = false;
+
   String? _errorMessage;
 
+  // =========================================================
+  // GETTERS
+  // =========================================================
+
   List<Map<String, dynamic>> get attractions =>
-      _attractions;
+      List.unmodifiable(_attractions);
 
   List<Map<String, dynamic>> get recommendedAttractions =>
-      _recommendedAttractions;
+      List.unmodifiable(
+        _recommendedAttractions,
+      );
+
+  List<Map<String, dynamic>> get searchResults =>
+      List.unmodifiable(
+        _searchResults,
+      );
 
   Map<String, dynamic>? get userPreferences =>
       _userPreferences;
 
   bool get isLoading => _isLoading;
+
+  bool get isSearching => _isSearching;
 
   String? get errorMessage => _errorMessage;
 
@@ -53,7 +75,56 @@ class HomeViewModel extends ChangeNotifier {
       _userPreferences?['language']?.toString() ??
           'English';
 
-  // Load everything needed by the Home screen
+  bool get hasAttractions =>
+      _attractions.isNotEmpty;
+
+  bool get hasRecommendations =>
+      _recommendedAttractions.isNotEmpty;
+
+  bool get hasSearchResults =>
+      _searchResults.isNotEmpty;
+
+  // =========================================================
+  // USER DISPLAY NAME
+  // =========================================================
+
+  String get greetingName {
+    final user =
+        _authenticationService.currentUser;
+
+    final displayName =
+    user?.displayName?.trim();
+
+    if (displayName != null &&
+        displayName.isNotEmpty) {
+      return displayName
+          .split(
+        RegExp(r'\s+'),
+      )
+          .first;
+    }
+
+    final email =
+    user?.email?.trim();
+
+    if (email != null &&
+        email.isNotEmpty &&
+        email.contains('@')) {
+      final name =
+          email.split('@').first;
+
+      if (name.isNotEmpty) {
+        return _capitalise(name);
+      }
+    }
+
+    return 'Traveller';
+  }
+
+  // =========================================================
+  // LOAD HOME DATA
+  // =========================================================
+
   Future<void> loadHomeData() async {
     _setLoading(true);
 
@@ -61,56 +132,109 @@ class HomeViewModel extends ChangeNotifier {
       _errorMessage = null;
 
       _attractions =
-      await _attractionRepository.getAllAttractions();
+      await _attractionRepository
+          .getAllAttractions();
 
-      final userId = currentUserId;
+      final userId =
+          currentUserId;
 
       if (userId != null) {
         _userPreferences =
-        await _userPreferenceRepository.getPreferences(
+        await _userPreferenceRepository
+            .getPreferences(
           userId,
         );
 
         _generateRecommendations();
       } else {
+        _userPreferences = null;
+
         _recommendedAttractions =
         List<Map<String, dynamic>>.from(
           _attractions,
         );
       }
     } catch (e) {
-      _errorMessage = e.toString();
+      _errorMessage =
+      'Unable to load home data: $e';
     } finally {
       _setLoading(false);
     }
   }
 
-  // Search destination from Home page
-  Future<List<Map<String, dynamic>>> searchDestination(
+  // =========================================================
+  // SEARCH DESTINATION
+  // =========================================================
+
+  Future<List<Map<String, dynamic>>>
+  searchDestination(
       String searchText,
       ) async {
-    try {
-      _errorMessage = null;
+    final query =
+    searchText.trim();
 
-      return await _attractionRepository.searchAttractions(
-        searchText,
-      );
-    } catch (e) {
-      _errorMessage = e.toString();
+    if (query.isEmpty) {
+      _searchResults = [];
 
       notifyListeners();
 
       return [];
     }
+
+    _setSearching(true);
+
+    try {
+      _errorMessage = null;
+
+      final results =
+      await _attractionRepository
+          .searchAttractions(
+        query,
+      );
+
+      _searchResults =
+      List<Map<String, dynamic>>.from(
+        results,
+      );
+
+      return _searchResults;
+    } catch (e) {
+      _searchResults = [];
+
+      _errorMessage =
+      'Unable to search destinations: $e';
+
+      return [];
+    } finally {
+      _setSearching(false);
+    }
   }
 
-  // Generate recommendations based on
-  // the user's preferred categories
+  // =========================================================
+  // RECOMMENDATIONS
+  // =========================================================
+
   void _generateRecommendations() {
+    final rawCategories =
+        _userPreferences?[
+        'preferredCategories'] ??
+            [];
+
     final preferredCategories =
-    List<String>.from(
-      _userPreferences?['preferredCategories'] ?? [],
-    );
+    rawCategories is List
+        ? rawCategories
+        .map(
+          (item) => item
+          .toString()
+          .toLowerCase()
+          .trim(),
+    )
+        .where(
+          (item) =>
+      item.isNotEmpty,
+    )
+        .toList()
+        : <String>[];
 
     if (preferredCategories.isEmpty) {
       _recommendedAttractions =
@@ -122,15 +246,118 @@ class HomeViewModel extends ChangeNotifier {
     }
 
     _recommendedAttractions =
-        _attractions.where((attraction) {
-          final category =
-          attraction['category']?.toString();
+        _attractions.where(
+              (attraction) {
+            final category =
+            attraction['category']
+                ?.toString()
+                .toLowerCase()
+                .trim();
 
-          return preferredCategories.contains(category);
-        }).toList();
+            if (category == null ||
+                category.isEmpty) {
+              return false;
+            }
+
+            return preferredCategories
+                .contains(
+              category,
+            );
+          },
+        ).toList();
+
+    // Do not leave Home empty if no category matched.
+    if (_recommendedAttractions.isEmpty) {
+      _recommendedAttractions =
+      List<Map<String, dynamic>>.from(
+        _attractions,
+      );
+    }
   }
 
-  // Refresh home screen
+  // =========================================================
+  // HELPERS
+  // =========================================================
+
+  String attractionName(
+      Map<String, dynamic> attraction,
+      ) {
+    return attraction['name']
+        ?.toString() ??
+        attraction['attractionName']
+            ?.toString() ??
+        'Cultural Attraction';
+  }
+
+  String attractionCategory(
+      Map<String, dynamic> attraction,
+      ) {
+    final category =
+    attraction['category']
+        ?.toString();
+
+    if (category == null ||
+        category.trim().isEmpty) {
+      return 'Cultural Attraction';
+    }
+
+    return category;
+  }
+
+  String attractionLocation(
+      Map<String, dynamic> attraction,
+      ) {
+    final address =
+    attraction['address']
+        ?.toString();
+
+    if (address != null &&
+        address.trim().isNotEmpty) {
+      return address;
+    }
+
+    final location =
+    attraction['locationName']
+        ?.toString();
+
+    if (location != null &&
+        location.trim().isNotEmpty) {
+      return location;
+    }
+
+    final city =
+    attraction['city']
+        ?.toString();
+
+    if (city != null &&
+        city.trim().isNotEmpty) {
+      return city;
+    }
+
+    return 'Malaysia';
+  }
+
+  String? attractionDescription(
+      Map<String, dynamic> attraction,
+      ) {
+    final description =
+    attraction['description']
+        ?.toString();
+
+    if (description == null ||
+        description.trim().isEmpty) {
+      return null;
+    }
+
+    return description;
+  }
+
+  void clearSearchResults() {
+    _searchResults = [];
+
+    notifyListeners();
+  }
+
   Future<void> refresh() async {
     await loadHomeData();
   }
@@ -141,9 +368,30 @@ class HomeViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void _setLoading(bool value) {
+  void _setLoading(
+      bool value,
+      ) {
     _isLoading = value;
 
     notifyListeners();
+  }
+
+  void _setSearching(
+      bool value,
+      ) {
+    _isSearching = value;
+
+    notifyListeners();
+  }
+
+  String _capitalise(
+      String text,
+      ) {
+    if (text.isEmpty) {
+      return text;
+    }
+
+    return '${text[0].toUpperCase()}'
+        '${text.substring(1)}';
   }
 }

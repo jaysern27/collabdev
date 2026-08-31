@@ -25,9 +25,15 @@ class _OutfitRecognitionViewState
   }
 
   Future<void> _initializeModule() async {
-    await _viewModel.initializeModel(
-      modelAssetPath:
+    await _viewModel.initializeOutfitModels(
+      sleeveModelAssetPath:
       'lib/assets/models/sleeve_coverage_model.tflite',
+      lowerBodyModelAssetPath:
+      'lib/assets/models/lower_body_coverage_model.tflite',
+      shoulderModelAssetPath:
+      'lib/assets/models/shoulder_coverage_model.tflite',
+      headwearModelAssetPath:
+      'lib/assets/models/headwear_detection_model.tflite',
     );
 
     await _viewModel.recoverLostPhoto();
@@ -51,7 +57,7 @@ class _OutfitRecognitionViewState
   }
 
   Future<void> _analyseOutfit() async {
-    await _viewModel.analyseSleeveCoverage();
+    await _viewModel.analyseOutfit();
 
     if (!mounted) {
       return;
@@ -70,15 +76,18 @@ class _OutfitRecognitionViewState
 
   @override
   Widget build(BuildContext context) {
-    final prediction =
-        _viewModel.sleevePrediction;
-
     return Scaffold(
-      backgroundColor: const Color(0xFFFFF9F0),
+      backgroundColor: const Color(
+        0xFFFFF9F0,
+      ),
 
       appBar: AppBar(
-        backgroundColor: const Color(0xFFFFF9F0),
-        foregroundColor: const Color(0xFF14213D),
+        backgroundColor: const Color(
+          0xFFFFF9F0,
+        ),
+        foregroundColor: const Color(
+          0xFF14213D,
+        ),
         elevation: 0,
         centerTitle: true,
         title: const Text(
@@ -103,26 +112,38 @@ class _OutfitRecognitionViewState
             children: [
               _buildIntroduction(),
 
-              const SizedBox(height: 20),
+              const SizedBox(
+                height: 20,
+              ),
 
               _buildConsentCard(),
 
-              const SizedBox(height: 20),
+              const SizedBox(
+                height: 20,
+              ),
 
               _buildPhotoSection(),
 
-              const SizedBox(height: 20),
+              const SizedBox(
+                height: 20,
+              ),
 
               if (_viewModel.hasSelectedImage)
                 _buildAnalyseButton(),
 
               if (_viewModel.isAnalysing) ...[
-                const SizedBox(height: 18),
+                const SizedBox(
+                  height: 18,
+                ),
                 const Center(
                   child: Column(
                     children: [
                       CircularProgressIndicator(),
-                      SizedBox(height: 10),
+
+                      SizedBox(
+                        height: 10,
+                      ),
+
                       Text(
                         'Analysing your outfit...',
                       ),
@@ -131,16 +152,20 @@ class _OutfitRecognitionViewState
                 ),
               ],
 
-              if (prediction != null &&
-                  !_viewModel.isAnalysing) ...[
-                const SizedBox(height: 24),
-
+              if (_viewModel.sleevePrediction != null &&
+                  _viewModel.lowerBodyPrediction != null &&
+                  _viewModel.shoulderPrediction != null &&
+                  _viewModel.headwearPrediction != null) ...[
+                const SizedBox(
+                  height: 24,
+                ),
                 _buildResultCard(),
               ],
 
-              if (_viewModel.errorMessage !=
-                  null) ...[
-                const SizedBox(height: 18),
+              if (_viewModel.errorMessage != null) ...[
+                const SizedBox(
+                  height: 18,
+                ),
 
                 _buildErrorCard(),
               ],
@@ -154,15 +179,23 @@ class _OutfitRecognitionViewState
   Widget _buildIntroduction() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(
+        18,
+      ),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [
-            Color(0xFF02AAA8),
-            Color(0xFF2374D8),
+            Color(
+              0xFF02AAA8,
+            ),
+            Color(
+              0xFF2374D8,
+            ),
           ],
         ),
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(
+          22,
+        ),
       ),
       child: const Column(
         crossAxisAlignment:
@@ -174,7 +207,9 @@ class _OutfitRecognitionViewState
             size: 34,
           ),
 
-          SizedBox(height: 12),
+          SizedBox(
+            height: 12,
+          ),
 
           Text(
             'Dress with confidence',
@@ -185,7 +220,9 @@ class _OutfitRecognitionViewState
             ),
           ),
 
-          SizedBox(height: 6),
+          SizedBox(
+            height: 6,
+          ),
 
           Text(
             'Upload or take a photo of your outfit. '
@@ -204,12 +241,18 @@ class _OutfitRecognitionViewState
 
   Widget _buildConsentCard() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(
+        16,
+      ),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(
+          18,
+        ),
         border: Border.all(
-          color: const Color(0xFFE5E5E5),
+          color: const Color(
+            0xFFE5E5E5,
+          ),
         ),
       ),
       child: Row(
@@ -218,8 +261,9 @@ class _OutfitRecognitionViewState
         children: [
           Checkbox(
             value: _viewModel.consentGiven,
-            activeColor:
-            const Color(0xFF00A6A6),
+            activeColor: const Color(
+              0xFF00A6A6,
+            ),
             onChanged: (value) {
               _viewModel.setConsent(
                 value ?? false,
@@ -227,7 +271,9 @@ class _OutfitRecognitionViewState
             },
           ),
 
-          const SizedBox(width: 4),
+          const SizedBox(
+            width: 4,
+          ),
 
           const Expanded(
             child: Column(
@@ -237,12 +283,15 @@ class _OutfitRecognitionViewState
                 Text(
                   'Photo Analysis Consent',
                   style: TextStyle(
-                    fontWeight: FontWeight.bold,
+                    fontWeight:
+                    FontWeight.bold,
                     fontSize: 15,
                   ),
                 ),
 
-                SizedBox(height: 5),
+                SizedBox(
+                  height: 5,
+                ),
 
                 Text(
                   'I consent to local AI analysis of my '
@@ -251,7 +300,9 @@ class _OutfitRecognitionViewState
                   style: TextStyle(
                     fontSize: 12,
                     height: 1.4,
-                    color: Color(0xFF666666),
+                    color: Color(
+                      0xFF666666,
+                    ),
                   ),
                 ),
               ],
@@ -272,18 +323,24 @@ class _OutfitRecognitionViewState
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: Color(0xFF14213D),
+            color: Color(
+              0xFF14213D,
+            ),
           ),
         ),
 
-        const SizedBox(height: 12),
+        const SizedBox(
+          height: 12,
+        ),
 
         if (_viewModel.selectedImage == null)
           _buildEmptyPhotoBox()
         else
           _buildSelectedPhoto(),
 
-        const SizedBox(height: 14),
+        const SizedBox(
+          height: 14,
+        ),
 
         Row(
           children: [
@@ -299,23 +356,35 @@ class _OutfitRecognitionViewState
                 label: const Text(
                   'Take Photo',
                 ),
-                style: OutlinedButton.styleFrom(
+                style:
+                OutlinedButton.styleFrom(
                   minimumSize:
-                  const Size.fromHeight(48),
-                  foregroundColor:
-                  const Color(0xFF008F8C),
-                  side: const BorderSide(
-                    color: Color(0xFF00A6A6),
+                  const Size.fromHeight(
+                    48,
                   ),
-                  shape: RoundedRectangleBorder(
+                  foregroundColor:
+                  const Color(
+                    0xFF008F8C,
+                  ),
+                  side: const BorderSide(
+                    color: Color(
+                      0xFF00A6A6,
+                    ),
+                  ),
+                  shape:
+                  RoundedRectangleBorder(
                     borderRadius:
-                    BorderRadius.circular(14),
+                    BorderRadius.circular(
+                      14,
+                    ),
                   ),
                 ),
               ),
             ),
 
-            const SizedBox(width: 10),
+            const SizedBox(
+              width: 10,
+            ),
 
             Expanded(
               child: ElevatedButton.icon(
@@ -329,17 +398,25 @@ class _OutfitRecognitionViewState
                 label: const Text(
                   'Upload Photo',
                 ),
-                style: ElevatedButton.styleFrom(
+                style:
+                ElevatedButton.styleFrom(
                   minimumSize:
-                  const Size.fromHeight(48),
+                  const Size.fromHeight(
+                    48,
+                  ),
                   backgroundColor:
-                  const Color(0xFF00A6A6),
+                  const Color(
+                    0xFF00A6A6,
+                  ),
                   foregroundColor:
                   Colors.white,
                   elevation: 0,
-                  shape: RoundedRectangleBorder(
+                  shape:
+                  RoundedRectangleBorder(
                     borderRadius:
-                    BorderRadius.circular(14),
+                    BorderRadius.circular(
+                      14,
+                    ),
                   ),
                 ),
               ),
@@ -348,7 +425,10 @@ class _OutfitRecognitionViewState
         ),
 
         if (_viewModel.isLoading) ...[
-          const SizedBox(height: 10),
+          const SizedBox(
+            height: 10,
+          ),
+
           const LinearProgressIndicator(),
         ],
       ],
@@ -361,9 +441,13 @@ class _OutfitRecognitionViewState
       height: 260,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(
+          20,
+        ),
         border: Border.all(
-          color: const Color(0xFFDADADA),
+          color: const Color(
+            0xFFDADADA,
+          ),
         ),
       ),
       child: const Column(
@@ -373,10 +457,14 @@ class _OutfitRecognitionViewState
           Icon(
             Icons.add_a_photo_outlined,
             size: 55,
-            color: Color(0xFF00A6A6),
+            color: Color(
+              0xFF00A6A6,
+            ),
           ),
 
-          SizedBox(height: 12),
+          SizedBox(
+            height: 12,
+          ),
 
           Text(
             'No outfit photo selected',
@@ -385,14 +473,25 @@ class _OutfitRecognitionViewState
             ),
           ),
 
-          SizedBox(height: 5),
+          SizedBox(
+            height: 5,
+          ),
 
-          Text(
-            'Make sure your upper body and sleeves\nare clearly visible.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Color(0xFF777777),
-              fontSize: 12,
+          Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: 20,
+            ),
+            child: Text(
+              'Make sure your full outfit, head, shoulders, '
+                  'arms and legs are clearly visible.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Color(
+                  0xFF777777,
+                ),
+                fontSize: 12,
+                height: 1.4,
+              ),
             ),
           ),
         ],
@@ -405,7 +504,9 @@ class _OutfitRecognitionViewState
       children: [
         ClipRRect(
           borderRadius:
-          BorderRadius.circular(20),
+          BorderRadius.circular(
+            20,
+          ),
           child: Image.memory(
             _viewModel.selectedImage!.bytes,
             width: double.infinity,
@@ -441,7 +542,8 @@ class _OutfitRecognitionViewState
       child: ElevatedButton.icon(
         onPressed:
         _viewModel.isAnalysing ||
-            !_viewModel.isModelReady
+            !_viewModel
+                .isModelReady
             ? null
             : _analyseOutfit,
         icon: const Icon(
@@ -450,17 +552,19 @@ class _OutfitRecognitionViewState
         label: Text(
           _viewModel.isModelReady
               ? 'Analyse Outfit'
-              : 'Loading AI Model...',
+              : 'Loading AI Models...',
         ),
         style: ElevatedButton.styleFrom(
-          backgroundColor:
-          const Color(0xFF2864D7),
-          foregroundColor:
-          Colors.white,
+          backgroundColor: const Color(
+            0xFF2864D7,
+          ),
+          foregroundColor: Colors.white,
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius:
-            BorderRadius.circular(16),
+            BorderRadius.circular(
+              16,
+            ),
           ),
         ),
       ),
@@ -468,111 +572,188 @@ class _OutfitRecognitionViewState
   }
 
   Widget _buildResultCard() {
-    final prediction =
-    _viewModel.sleevePrediction!;
+    final sleeve =
+        _viewModel.sleevePrediction;
 
-    final isAccepted =
-        prediction.confidence >= 0.75;
+    final lowerBody =
+        _viewModel.lowerBodyPrediction;
 
-    final String displayResult;
+    final shoulder =
+        _viewModel.shoulderPrediction;
 
-    final IconData icon;
-
-    if (!isAccepted) {
-      displayResult =
-      'Unable to Determine';
-      icon = Icons.help_outline;
-    } else {
-      displayResult =
-          _formatPrediction(
-            prediction.value,
-          );
-
-      icon = prediction.value ==
-          'covered'
-          ? Icons.check_circle_outline
-          : prediction.value ==
-          'partial'
-          ? Icons.info_outline
-          : Icons.warning_amber_rounded;
-    }
+    final headwear =
+        _viewModel.headwearPrediction;
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(
+        20,
+      ),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(
+          20,
+        ),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x11000000),
+            color: Color(
+              0x11000000,
+            ),
             blurRadius: 12,
-            offset: Offset(0, 4),
+            offset: Offset(
+              0,
+              4,
+            ),
           ),
         ],
       ),
       child: Column(
+        crossAxisAlignment:
+        CrossAxisAlignment.start,
         children: [
-          Icon(
-            icon,
-            size: 50,
-            color:
-            const Color(0xFF00A6A6),
+          const Row(
+            children: [
+              Icon(
+                Icons.auto_awesome,
+                color: Color(
+                  0xFF00A6A6,
+                ),
+                size: 28,
+              ),
+
+              SizedBox(
+                width: 10,
+              ),
+
+              Text(
+                'Outfit Analysis',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight:
+                  FontWeight.bold,
+                  color: Color(
+                    0xFF14213D,
+                  ),
+                ),
+              ),
+            ],
           ),
 
-          const SizedBox(height: 10),
+          const SizedBox(
+            height: 20,
+          ),
 
-          const Text(
-            'Sleeve Coverage',
-            style: TextStyle(
-              color: Color(0xFF666666),
-              fontSize: 13,
+          if (sleeve != null)
+            _buildAttributeResult(
+              title: 'Sleeve Coverage',
+              value:
+              _formatSleevePrediction(
+                sleeve.value,
+              ),
+              confidence:
+              sleeve.confidence,
+              isConfident:
+              sleeve.confidence >=
+                  0.75,
+              icon:
+              Icons.checkroom_outlined,
             ),
-          ),
 
-          const SizedBox(height: 5),
-
-          Text(
-            displayResult,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF14213D),
+          if (sleeve != null &&
+              lowerBody != null)
+            const Divider(
+              height: 35,
             ),
-          ),
 
-          const SizedBox(height: 12),
-
-          Text(
-            'AI Confidence: '
-                '${(prediction.confidence * 100).toStringAsFixed(1)}%',
-            style: const TextStyle(
-              fontWeight: FontWeight.w600,
+          if (lowerBody != null)
+            _buildAttributeResult(
+              title:
+              'Lower-Body Coverage',
+              value:
+              _formatLowerBodyPrediction(
+                lowerBody.value,
+              ),
+              confidence:
+              lowerBody.confidence,
+              isConfident:
+              lowerBody.confidence >=
+                  0.75,
+              icon: Icons
+                  .accessibility_new_outlined,
             ),
-          ),
 
-          const SizedBox(height: 15),
+          if (lowerBody != null &&
+              shoulder != null)
+            const Divider(
+              height: 35,
+            ),
+
+          if (shoulder != null)
+            _buildAttributeResult(
+              title:
+              'Shoulder Coverage',
+              value:
+              _formatShoulderPrediction(
+                shoulder.value,
+              ),
+              confidence:
+              shoulder.confidence,
+              isConfident:
+              shoulder.confidence >=
+                  0.75,
+              icon: Icons
+                  .accessibility_outlined,
+            ),
+
+          if (shoulder != null &&
+              headwear != null)
+            const Divider(
+              height: 35,
+            ),
+
+          if (headwear != null)
+            _buildAttributeResult(
+              title:
+              'Headwear Detection',
+              value:
+              _formatHeadwearPrediction(
+                headwear.value,
+              ),
+              confidence:
+              headwear.confidence,
+              isConfident:
+              headwear.confidence >=
+                  0.75,
+              icon: Icons.person_outline,
+            ),
+
+          const SizedBox(
+            height: 18,
+          ),
 
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color:
-              const Color(0xFFFFF8E8),
-              borderRadius:
-              BorderRadius.circular(14),
+            padding: const EdgeInsets.all(
+              14,
             ),
-            child: Text(
-              isAccepted
-                  ? _getPredictionExplanation(
-                prediction.value,
-              )
-                  : 'The AI confidence is below 75%. '
-                  'Please take another photo with '
-                  'your upper body and sleeves clearly visible.',
+            decoration: BoxDecoration(
+              color: const Color(
+                0xFFFFF8E8,
+              ),
+              borderRadius:
+              BorderRadius.circular(
+                14,
+              ),
+            ),
+            child: const Text(
+              'AI results are advisory. '
+                  'If confidence is below 75%, '
+                  'CultureGuide will mark the attribute '
+                  'as Unable to Determine.\n\n'
+                  'Headwear detection identifies general '
+                  'visible headwear only.',
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 height: 1.4,
               ),
@@ -583,13 +764,116 @@ class _OutfitRecognitionViewState
     );
   }
 
+  Widget _buildAttributeResult({
+    required String title,
+    required String value,
+    required double confidence,
+    required bool isConfident,
+    required IconData icon,
+  }) {
+    final displayValue =
+    isConfident
+        ? value
+        : 'Unable to Determine';
+
+    return Row(
+      crossAxisAlignment:
+      CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: const Color(
+              0xFFE8F8F7,
+            ),
+            borderRadius:
+            BorderRadius.circular(
+              14,
+            ),
+          ),
+          child: Icon(
+            icon,
+            color: const Color(
+              0xFF00A6A6,
+            ),
+          ),
+        ),
+
+        const SizedBox(
+          width: 14,
+        ),
+
+        Expanded(
+          child: Column(
+            crossAxisAlignment:
+            CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: Color(
+                    0xFF777777,
+                  ),
+                ),
+              ),
+
+              const SizedBox(
+                height: 4,
+              ),
+
+              Text(
+                displayValue,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight:
+                  FontWeight.bold,
+                  color: Color(
+                    0xFF14213D,
+                  ),
+                ),
+              ),
+
+              const SizedBox(
+                height: 4,
+              ),
+
+              Text(
+                'Confidence: '
+                    '${(confidence * 100).toStringAsFixed(1)}%',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: isConfident
+                      ? const Color(
+                    0xFF008F8C,
+                  )
+                      : Colors
+                      .orange
+                      .shade800,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildErrorCard() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(15),
+      padding: const EdgeInsets.all(
+        15,
+      ),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFEAEA),
-        borderRadius: BorderRadius.circular(14),
+        color: const Color(
+          0xFFFFEAEA,
+        ),
+        borderRadius:
+        BorderRadius.circular(
+          14,
+        ),
       ),
       child: Row(
         children: [
@@ -598,7 +882,9 @@ class _OutfitRecognitionViewState
             color: Colors.red,
           ),
 
-          const SizedBox(width: 10),
+          const SizedBox(
+            width: 10,
+          ),
 
           Expanded(
             child: Text(
@@ -610,7 +896,7 @@ class _OutfitRecognitionViewState
     );
   }
 
-  String _formatPrediction(
+  String _formatSleevePrediction(
       String value,
       ) {
     switch (value) {
@@ -628,23 +914,51 @@ class _OutfitRecognitionViewState
     }
   }
 
-  String _getPredictionExplanation(
+  String _formatLowerBodyPrediction(
+      String value,
+      ) {
+    switch (value) {
+      case 'short':
+        return 'Short';
+
+      case 'medium':
+        return 'Medium Coverage';
+
+      case 'covered':
+        return 'Covered';
+
+      default:
+        return value;
+    }
+  }
+
+  String _formatShoulderPrediction(
       String value,
       ) {
     switch (value) {
       case 'covered':
-        return 'Your sleeves appear to provide good arm coverage.';
-
-      case 'partial':
-        return 'Your sleeves provide some arm coverage. '
-            'The destination dress code will determine whether adjustment is needed.';
+        return 'Covered';
 
       case 'uncovered':
-        return 'Your arms appear mostly uncovered. '
-            'Some cultural or religious attractions may require additional coverage.';
+        return 'Uncovered';
 
       default:
-        return '';
+        return value;
+    }
+  }
+
+  String _formatHeadwearPrediction(
+      String value,
+      ) {
+    switch (value) {
+      case 'headwear':
+        return 'Headwear Detected';
+
+      case 'no_headwear':
+        return 'No Headwear Detected';
+
+      default:
+        return 'Unable to Determine';
     }
   }
 }

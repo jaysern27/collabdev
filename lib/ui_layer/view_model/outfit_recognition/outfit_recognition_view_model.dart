@@ -32,6 +32,9 @@ class OutfitRecognitionViewModel extends ChangeNotifier {
   PreparedOutfitInput? _preparedInput;
 
   SleeveCoveragePrediction? _sleevePrediction;
+  LowerBodyCoveragePrediction? _lowerBodyPrediction;
+  ShoulderCoveragePrediction? _shoulderPrediction;
+  HeadwearPrediction? _headwearPrediction;
 
   final Map<String, OutfitAttributePrediction>
   _detectedAttributes = {};
@@ -54,6 +57,9 @@ class OutfitRecognitionViewModel extends ChangeNotifier {
 
   bool get isModelReady => _isModelReady;
 
+  bool get areModelsReady =>
+      _outfitRepository.areOutfitModelsReady;
+
   bool get hasSelectedImage => _selectedImage != null;
 
   bool get hasSelectedDestination =>
@@ -73,6 +79,15 @@ class OutfitRecognitionViewModel extends ChangeNotifier {
 
   SleeveCoveragePrediction? get sleevePrediction =>
       _sleevePrediction;
+
+  LowerBodyCoveragePrediction? get lowerBodyPrediction =>
+      _lowerBodyPrediction;
+
+  ShoulderCoveragePrediction? get shoulderPrediction =>
+      _shoulderPrediction;
+
+  HeadwearPrediction? get headwearPrediction =>
+      _headwearPrediction;
 
   Map<String, OutfitAttributePrediction>
   get detectedAttributes =>
@@ -259,6 +274,44 @@ class OutfitRecognitionViewModel extends ChangeNotifier {
     }
   }
 
+  Future<void> initializeOutfitModels({
+    required String sleeveModelAssetPath,
+    required String lowerBodyModelAssetPath,
+    required String shoulderModelAssetPath,
+    required String headwearModelAssetPath,
+  }) async {
+    try {
+      _isLoading = true;
+      _errorMessage = null;
+      notifyListeners();
+
+      await _outfitRepository.initializeModel(
+        modelAssetPath: sleeveModelAssetPath,
+      );
+
+      await _outfitRepository.initializeLowerBodyModel(
+        modelAssetPath: lowerBodyModelAssetPath,
+      );
+
+      await _outfitRepository.initializeShoulderModel(
+        modelAssetPath: shoulderModelAssetPath,
+      );
+
+      await _outfitRepository.initializeHeadwearModel(
+        modelAssetPath: headwearModelAssetPath,
+      );
+
+      _isModelReady =
+          _outfitRepository.areOutfitModelsReady;
+    } catch (e) {
+      _errorMessage =
+      'Failed to initialize outfit models: $e';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   // =========================================================
   // REAL SLEEVE COVERAGE ANALYSIS
   // =========================================================
@@ -320,6 +373,145 @@ class OutfitRecognitionViewModel extends ChangeNotifier {
           prediction.confidence,
         );
       }
+
+      notifyListeners();
+    } catch (e) {
+      _errorMessage = e.toString();
+    } finally {
+      _setAnalysing(false);
+    }
+  }
+
+  Future<void> analyseOutfit() async {
+    final image = _selectedImage;
+
+    if (image == null) {
+      _errorMessage =
+      'Please take or upload an outfit photo first.';
+
+      notifyListeners();
+      return;
+    }
+
+    if (!_outfitRepository.areOutfitModelsReady) {
+      _errorMessage =
+      'Outfit recognition models are not ready.';
+
+      notifyListeners();
+      return;
+    }
+
+    _setAnalysing(true);
+
+    try {
+      _errorMessage = null;
+      _advisoryResult = null;
+
+      // =====================================================
+      // 1. SLEEVE COVERAGE
+      // =====================================================
+
+      final sleeveInput =
+      _outfitRepository.prepareImageForModel(
+        image,
+      );
+
+      final sleevePrediction =
+      _outfitRepository.predictSleeveCoverage(
+        preparedInput: sleeveInput,
+      );
+
+      _sleevePrediction =
+          sleevePrediction;
+
+      // =====================================================
+      // 2. LOWER-BODY COVERAGE
+      // =====================================================
+
+      final lowerBodyInput =
+      _outfitRepository
+          .prepareLowerBodyImageForModel(
+        image,
+      );
+
+      final lowerBodyPrediction =
+      _outfitRepository
+          .predictLowerBodyCoverage(
+        preparedInput: lowerBodyInput,
+      );
+
+      _lowerBodyPrediction =
+          lowerBodyPrediction;
+
+      // =====================================================
+      // 3. SHOULDER COVERAGE
+      // =====================================================
+
+      final shoulderInput =
+      _outfitRepository
+          .prepareShoulderImageForModel(
+        image,
+      );
+
+      final headwearInput =
+      _outfitRepository.prepareHeadwearImageForModel(
+        image,
+      );
+
+      final headwearPrediction =
+      _outfitRepository.predictHeadwear(
+        preparedInput: headwearInput,
+      );
+
+      _headwearPrediction =
+          headwearPrediction;
+
+      final shoulderPrediction =
+      _outfitRepository
+          .predictShoulderCoverage(
+        preparedInput: shoulderInput,
+      );
+
+      _shoulderPrediction =
+          shoulderPrediction;
+
+      // =====================================================
+      // 4. STORE ALL ATTRIBUTES
+      // =====================================================
+
+      _detectedAttributes.clear();
+
+      _detectedAttributes[
+      'sleeveCoverage'
+      ] = OutfitAttributePrediction(
+        attribute: 'sleeveCoverage',
+        value: sleevePrediction.value,
+        confidence: sleevePrediction.confidence,
+      );
+
+      _detectedAttributes[
+      'lowerBodyCoverage'
+      ] = OutfitAttributePrediction(
+        attribute: 'lowerBodyCoverage',
+        value: lowerBodyPrediction.value,
+        confidence: lowerBodyPrediction.confidence,
+      );
+
+      _detectedAttributes[
+      'shoulderCoverage'
+      ] = OutfitAttributePrediction(
+        attribute: 'shoulderCoverage',
+        value: shoulderPrediction.value,
+        confidence: shoulderPrediction.confidence,
+      );
+
+      _detectedAttributes[
+      'headwearPresence'
+      ] = OutfitAttributePrediction(
+        attribute: 'headwearPresence',
+        value: headwearPrediction.value,
+        confidence: headwearPrediction.confidence,
+      );
 
       notifyListeners();
     } catch (e) {
@@ -447,7 +639,11 @@ class OutfitRecognitionViewModel extends ChangeNotifier {
   void clearPhoto() {
     _selectedImage = null;
     _preparedInput = null;
+
     _sleevePrediction = null;
+    _lowerBodyPrediction = null;
+    _shoulderPrediction = null;
+    _headwearPrediction = null;
 
     _detectedAttributes.clear();
 
@@ -459,7 +655,11 @@ class OutfitRecognitionViewModel extends ChangeNotifier {
 
   void resetAnalysis() {
     _preparedInput = null;
+
     _sleevePrediction = null;
+    _lowerBodyPrediction = null;
+    _shoulderPrediction = null;
+    _headwearPrediction = null;
 
     _detectedAttributes.clear();
 
@@ -509,6 +709,9 @@ class OutfitRecognitionViewModel extends ChangeNotifier {
 
     _preparedInput = null;
     _sleevePrediction = null;
+    _lowerBodyPrediction = null;
+    _shoulderPrediction = null;
+    _headwearPrediction = null;
 
     _detectedAttributes.clear();
 

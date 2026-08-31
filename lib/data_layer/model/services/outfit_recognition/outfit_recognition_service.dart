@@ -86,6 +86,31 @@ class LowerBodyCoveragePrediction {
   bool get isConfident => confidence >= 0.75;
 }
 
+class ShoulderCoveragePrediction {
+  final String value;
+  final double confidence;
+
+  const ShoulderCoveragePrediction({
+    required this.value,
+    required this.confidence,
+  });
+
+  bool get isConfident =>
+      confidence >= 0.75;
+}
+
+class HeadwearPrediction {
+  final String value;
+  final double confidence;
+
+  const HeadwearPrediction({
+    required this.value,
+    required this.confidence,
+  });
+
+  bool get isConfident =>
+      confidence >= 0.75;
+}
 
 // ============================================================
 // ADVISORY RESULT
@@ -157,18 +182,28 @@ class OutfitAdvisoryResult {
 class OutfitRecognitionService {
   final MlKitTensorflowLiteDataSource _dataSource;
   final MlKitTensorflowLiteDataSource _lowerBodyDataSource;
+  final MlKitTensorflowLiteDataSource _shoulderDataSource;
+  final MlKitTensorflowLiteDataSource _headwearDataSource;
 
   final ImagePicker _imagePicker;
 
   OutfitRecognitionService({
     MlKitTensorflowLiteDataSource? dataSource,
     MlKitTensorflowLiteDataSource? lowerBodyDataSource,
+    MlKitTensorflowLiteDataSource? shoulderDataSource,
+    MlKitTensorflowLiteDataSource? headwearDataSource,
     ImagePicker? imagePicker,
   })  : _dataSource =
       dataSource ??
           MlKitTensorflowLiteDataSource(),
         _lowerBodyDataSource =
             lowerBodyDataSource ??
+                MlKitTensorflowLiteDataSource(),
+        _shoulderDataSource =
+            shoulderDataSource ??
+                MlKitTensorflowLiteDataSource(),
+        _headwearDataSource =
+            headwearDataSource ??
                 MlKitTensorflowLiteDataSource(),
         _imagePicker =
             imagePicker ??
@@ -178,9 +213,12 @@ class OutfitRecognitionService {
       _dataSource.isModelLoaded;
   bool get isSleeveModelReady =>
       _dataSource.isModelLoaded;
-
   bool get isLowerBodyModelReady =>
       _lowerBodyDataSource.isModelLoaded;
+  bool get isShoulderModelReady =>
+      _shoulderDataSource.isModelLoaded;
+  bool get isHeadwearModelReady =>
+      _headwearDataSource.isModelLoaded;
 
   // ==========================================================
   // MODEL INITIALIZATION
@@ -202,6 +240,21 @@ class OutfitRecognitionService {
     );
   }
 
+  Future<void> initializeShoulderModel({
+    required String modelAssetPath,
+  }) async {
+    await _shoulderDataSource.loadModel(
+      assetPath: modelAssetPath,
+    );
+  }
+
+  Future<void> initializeHeadwearModel({
+    required String modelAssetPath,
+  }) async {
+    await _headwearDataSource.loadModel(
+      assetPath: modelAssetPath,
+    );
+  }
 
   // ==========================================================
   // CAMERA
@@ -495,6 +548,91 @@ class OutfitRecognitionService {
     );
   }
 
+  PreparedOutfitInput prepareHeadwearImageForModel(
+      OutfitImageData outfitImage,
+      ) {
+    if (!_headwearDataSource.isModelLoaded) {
+      throw Exception(
+        'Headwear detection model is not loaded.',
+      );
+    }
+
+    final inputShape =
+    _headwearDataSource.getInputShape();
+
+    if (inputShape.length != 4 ||
+        inputShape[0] != 1 ||
+        inputShape[3] != 3) {
+      throw Exception(
+        'Unexpected headwear model input shape: $inputShape',
+      );
+    }
+
+    final height = inputShape[1];
+    final width = inputShape[2];
+
+    final decodedImage =
+    img.decodeImage(
+      outfitImage.bytes,
+    );
+
+    if (decodedImage == null) {
+      throw Exception(
+        'Unable to decode outfit image.',
+      );
+    }
+
+    // Same strategy used during training:
+    // keep the upper 60% of the image.
+    final cropHeight =
+    (decodedImage.height * 0.60).round();
+
+    final headwearCrop =
+    img.copyCrop(
+      decodedImage,
+      x: 0,
+      y: 0,
+      width: decodedImage.width,
+      height: cropHeight,
+    );
+
+    final resizedImage =
+    img.copyResize(
+      headwearCrop,
+      width: width,
+      height: height,
+    );
+
+    final input = [
+      List.generate(
+        height,
+            (y) {
+          return List.generate(
+            width,
+                (x) {
+              final pixel =
+              resizedImage.getPixel(
+                x,
+                y,
+              );
+
+              return [
+                pixel.r / 255.0,
+                pixel.g / 255.0,
+                pixel.b / 255.0,
+              ];
+            },
+          );
+        },
+      ),
+    ];
+
+    return PreparedOutfitInput(
+      input: input,
+      width: width,
+      height: height,
+    );
+  }
 
   // ==========================================================
   // REAL SLEEVE COVERAGE AI
@@ -569,6 +707,92 @@ class OutfitRecognitionService {
     );
   }
 
+  PreparedOutfitInput prepareShoulderImageForModel(
+      OutfitImageData outfitImage,
+      ) {
+    if (!_shoulderDataSource.isModelLoaded) {
+      throw Exception(
+        'Shoulder recognition model is not loaded.',
+      );
+    }
+
+    final inputShape =
+    _shoulderDataSource.getInputShape();
+
+    if (inputShape.length != 4 ||
+        inputShape[0] != 1 ||
+        inputShape[3] != 3) {
+      throw Exception(
+        'Unexpected shoulder model input shape: $inputShape',
+      );
+    }
+
+    final height = inputShape[1];
+    final width = inputShape[2];
+
+    final decodedImage =
+    img.decodeImage(
+      outfitImage.bytes,
+    );
+
+    if (decodedImage == null) {
+      throw Exception(
+        'Unable to decode outfit image.',
+      );
+    }
+
+    // Shoulder model needs the upper-body region.
+    // Keep roughly the top 60% of the photo.
+    final cropHeight =
+    (decodedImage.height * 0.60).round();
+
+    final shoulderCrop =
+    img.copyCrop(
+      decodedImage,
+      x: 0,
+      y: 0,
+      width: decodedImage.width,
+      height: cropHeight,
+    );
+
+    final resizedImage =
+    img.copyResize(
+      shoulderCrop,
+      width: width,
+      height: height,
+    );
+
+    final input = [
+      List.generate(
+        height,
+            (y) {
+          return List.generate(
+            width,
+                (x) {
+              final pixel =
+              resizedImage.getPixel(
+                x,
+                y,
+              );
+
+              return [
+                pixel.r / 255.0,
+                pixel.g / 255.0,
+                pixel.b / 255.0,
+              ];
+            },
+          );
+        },
+      ),
+    ];
+
+    return PreparedOutfitInput(
+      input: input,
+      width: width,
+      height: height,
+    );
+  }
+
   LowerBodyCoveragePrediction
   predictLowerBodyCoverage({
     required PreparedOutfitInput preparedInput,
@@ -602,6 +826,86 @@ class OutfitRecognitionService {
     );
   }
 
+  ShoulderCoveragePrediction
+  predictShoulderCoverage({
+    required PreparedOutfitInput preparedInput,
+  }) {
+    final output =
+    _shoulderDataSource
+        .runSingleOutputInference(
+      input: preparedInput.input,
+      outputSize: 2,
+    );
+
+    if (output.length != 2) {
+      throw Exception(
+        'Unexpected shoulder model output: $output',
+      );
+    }
+
+    // Must match Colab:
+    // 0 -> covered
+    // 1 -> uncovered
+    const labels = [
+      'covered',
+      'uncovered',
+    ];
+
+    int bestIndex = 0;
+    double bestConfidence = output[0];
+
+    for (int i = 1; i < output.length; i++) {
+      if (output[i] > bestConfidence) {
+        bestConfidence = output[i];
+        bestIndex = i;
+      }
+    }
+
+    return ShoulderCoveragePrediction(
+      value: labels[bestIndex],
+      confidence: bestConfidence,
+    );
+  }
+
+  HeadwearPrediction predictHeadwear({
+    required PreparedOutfitInput preparedInput,
+  }) {
+    final output =
+    _headwearDataSource
+        .runSingleOutputInference(
+      input: preparedInput.input,
+      outputSize: 2,
+    );
+
+    if (output.length != 2) {
+      throw Exception(
+        'Unexpected headwear model output: $output',
+      );
+    }
+
+    // Must match Colab:
+    // 0 -> headwear
+    // 1 -> no_headwear
+    const labels = [
+      'headwear',
+      'no_headwear',
+    ];
+
+    int bestIndex = 0;
+    double bestConfidence = output[0];
+
+    for (int i = 1; i < output.length; i++) {
+      if (output[i] > bestConfidence) {
+        bestConfidence = output[i];
+        bestIndex = i;
+      }
+    }
+
+    return HeadwearPrediction(
+      value: labels[bestIndex],
+      confidence: bestConfidence,
+    );
+  }
 
   // ==========================================================
   // GENERIC INFERENCE
@@ -912,6 +1216,25 @@ class OutfitRecognitionService {
         .getOutputShape();
   }
 
+  List<int> getShoulderInputShape() {
+    return _shoulderDataSource
+        .getInputShape();
+  }
+
+  List<int> getShoulderOutputShape() {
+    return _shoulderDataSource
+        .getOutputShape();
+  }
+
+  List<int> getHeadwearInputShape() {
+    return _headwearDataSource
+        .getInputShape();
+  }
+
+  List<int> getHeadwearOutputShape() {
+    return _headwearDataSource
+        .getOutputShape();
+  }
 
   // ==========================================================
   // DISPOSE
@@ -920,5 +1243,7 @@ class OutfitRecognitionService {
   void dispose() {
     _dataSource.close();
     _lowerBodyDataSource.close();
+    _shoulderDataSource.close();
+    _headwearDataSource.close();
   }
 }
