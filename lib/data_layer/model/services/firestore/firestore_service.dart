@@ -24,6 +24,21 @@ class FirestoreService {
         .set(data);
   }
 
+  /// Partial write that creates the document if it doesn't exist yet and
+  /// merges fields if it does -- unlike updateDocument(), which throws
+  /// NOT_FOUND on a document that was never created, and unlike
+  /// setDocument(), which would silently wipe any fields not passed in.
+  Future<void> setDocumentMerge({
+    required String collection,
+    required String documentId,
+    required Map<String, dynamic> data,
+  }) async {
+    await _firestore
+        .collection(collection)
+        .doc(documentId)
+        .set(data, SetOptions(merge: true));
+  }
+
   Future<void> updateDocument({
     required String collection,
     required String documentId,

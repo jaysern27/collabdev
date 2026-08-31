@@ -57,6 +57,28 @@ class UserPreferenceRepository {
     };
   }
 
+  // General etiquette-notification settings (UC02 FR-GEA4): whether the
+  // Tourist receives etiquette alerts at all, and whether they play sound
+  // / vibrate. Safe to call even if the Tourist has no preferences
+  // document yet (merges instead of requiring an existing doc).
+  Future<void> updateNotificationSettings({
+    required String userId,
+    required bool notificationsEnabled,
+    required bool soundEnabled,
+    required bool vibrationEnabled,
+  }) async {
+    await _firestoreService.setDocumentMerge(
+      collection: _collection,
+      documentId: userId,
+      data: {
+        'notificationsEnabled': notificationsEnabled,
+        'soundEnabled': soundEnabled,
+        'vibrationEnabled': vibrationEnabled,
+        'updatedAt': DateTime.now().toIso8601String(),
+      },
+    );
+  }
+
   // Update selected preferences
   Future<void> updatePreferences({
     required String userId,

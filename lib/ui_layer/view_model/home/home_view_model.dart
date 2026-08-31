@@ -1,22 +1,29 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 
 import '../../../data_layer/model/repositories/attraction/attraction_repository.dart';
+import '../../../data_layer/model/repositories/notification/notification_repository.dart';
 import '../../../data_layer/model/repositories/user_preference/user_preference_repository.dart';
 import '../../../data_layer/model/services/firebase_authentication/firebase_authentication_service.dart';
 
 class HomeViewModel extends ChangeNotifier {
   final AttractionRepository _attractionRepository;
   final UserPreferenceRepository _userPreferenceRepository;
+  final NotificationRepository _notificationRepository;
   final FirebaseAuthenticationService _authenticationService;
 
   HomeViewModel({
     AttractionRepository? attractionRepository,
     UserPreferenceRepository? userPreferenceRepository,
+    NotificationRepository? notificationRepository,
     FirebaseAuthenticationService? authenticationService,
   })  : _attractionRepository =
       attractionRepository ?? AttractionRepository(),
         _userPreferenceRepository =
             userPreferenceRepository ?? UserPreferenceRepository(),
+        _notificationRepository =
+            notificationRepository ?? NotificationRepository(),
         _authenticationService =
             authenticationService ?? FirebaseAuthenticationService();
 
@@ -25,6 +32,11 @@ class HomeViewModel extends ChangeNotifier {
   List<Map<String, dynamic>> _recommendedAttractions = [];
 
   Map<String, dynamic>? _userPreferences;
+
+  StreamSubscription<List<Map<String, dynamic>>>?
+  _notificationSubscription;
+
+  int _unreadNotificationCount = 0;
 
   bool _isLoading = false;
 
@@ -38,6 +50,8 @@ class HomeViewModel extends ChangeNotifier {
 
   Map<String, dynamic>? get userPreferences =>
       _userPreferences;
+
+  int get unreadNotificationCount => _unreadNotificationCount;
 
   bool get isLoading => _isLoading;
 
@@ -78,11 +92,30 @@ class HomeViewModel extends ChangeNotifier {
           _attractions,
         );
       }
+
+      // Home's notification bell badge (UC02 alert history, categorised
+      // by read/unread) always tracks the signed-in user, or 'guest' when
+      // sign-in has not been wired up yet.
+      _watchUnreadNotifications(userId ?? 'guest');
     } catch (e) {
       _errorMessage = e.toString();
     } finally {
       _setLoading(false);
     }
+  }
+
+  void _watchUnreadNotifications(String userId) {
+    _notificationSubscription?.cancel();
+
+    _notificationSubscription = _notificationRepository
+        .watchHistoryForUser(userId)
+        .listen((notifications) {
+      _unreadNotificationCount = notifications
+          .where((notification) => notification['isRead'] != true)
+          .length;
+
+      notifyListeners();
+    });
   }
 
   // Search destination from Home page
@@ -145,5 +178,12 @@ class HomeViewModel extends ChangeNotifier {
     _isLoading = value;
 
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _notificationSubscription?.cancel();
+
+    super.dispose();
   }
 }

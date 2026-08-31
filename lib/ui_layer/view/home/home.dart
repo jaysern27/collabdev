@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../view_model/home/home_view_model.dart';
+import '../admin_home/admin_home.dart';
+import '../etiquette_alert/etiquette_alert.dart';
+import '../notification_inbox/notification_inbox.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
@@ -195,6 +198,32 @@ class _HomeViewState extends State<HomeView> {
           ),
         ),
 
+        // Temporary Admin entry point (UC03) until a real role-based
+        // navigation exists -- long-press opens Environment Parameters.
+        GestureDetector(
+          onLongPress: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const AdminHomeView(),
+              ),
+            );
+          },
+          child: Container(
+            width: 34,
+            height: 34,
+            margin: const EdgeInsets.only(right: 8),
+            decoration: const BoxDecoration(
+              color: Color(0xFFEFEFF4),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.settings_outlined,
+              color: Color(0xFF667085),
+              size: 18,
+            ),
+          ),
+        ),
+
         Stack(
           clipBehavior: Clip.none,
           children: [
@@ -208,7 +237,11 @@ class _HomeViewState extends State<HomeView> {
               child: IconButton(
                 padding: EdgeInsets.zero,
                 onPressed: () {
-                  // Notification page later.
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const NotificationInboxView(),
+                    ),
+                  );
                 },
                 icon: const Icon(
                   Icons.notifications,
@@ -218,27 +251,30 @@ class _HomeViewState extends State<HomeView> {
               ),
             ),
 
-            Positioned(
-              right: -1,
-              top: -3,
-              child: Container(
-                width: 17,
-                height: 17,
-                alignment: Alignment.center,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFFF4057),
-                  shape: BoxShape.circle,
-                ),
-                child: const Text(
-                  '2',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 9,
-                    fontWeight: FontWeight.bold,
+            if (_viewModel.unreadNotificationCount > 0)
+              Positioned(
+                right: -1,
+                top: -3,
+                child: Container(
+                  width: 17,
+                  height: 17,
+                  alignment: Alignment.center,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFFF4057),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Text(
+                    _viewModel.unreadNotificationCount > 9
+                        ? '9+'
+                        : '${_viewModel.unreadNotificationCount}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),
-            ),
           ],
         ),
       ],
@@ -607,7 +643,11 @@ class _HomeViewState extends State<HomeView> {
               foreground:
               const Color(0xFF009F8C),
               onTap: () {
-                // Etiquette page later.
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const EtiquetteAlertView(),
+                  ),
+                );
               },
             ),
           ),

@@ -102,6 +102,27 @@ class RankingReportRepository {
     );
   }
 
+  // Write a computed ranking record (Module 4's Priority Score output).
+  // Exposed here so Module 2 (UC02) can display/seed priority data before
+  // the real weighted-scoring Cloud Function exists.
+  Future<String> addRanking({
+    required String attractionId,
+    required String ruleId,
+    required double priorityScore,
+  }) async {
+    final document = await _firestoreService.addDocument(
+      collection: _rankingCollection,
+      data: {
+        'attractionId': attractionId,
+        'ruleId': ruleId,
+        'priorityScore': priorityScore,
+        'updatedAt': DateTime.now().toIso8601String(),
+      },
+    );
+
+    return document.id;
+  }
+
   // Get stored ranking data for one attraction
   Future<List<Map<String, dynamic>>> getRankingByAttraction(
       String attractionId,

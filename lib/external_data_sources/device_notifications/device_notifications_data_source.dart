@@ -46,19 +46,25 @@ class DeviceNotificationsDataSource {
     required String title,
     required String body,
     String? payload,
+    bool playSound = true,
+    bool enableVibration = true,
   }) async {
-    const androidDetails = AndroidNotificationDetails(
+    final androidDetails = AndroidNotificationDetails(
       'etiquette_alerts',
       'Etiquette Alerts',
       channelDescription:
       'GPS-based cultural etiquette alerts',
       importance: Importance.high,
       priority: Priority.high,
+      playSound: playSound,
+      enableVibration: enableVibration,
     );
 
-    const iosDetails = DarwinNotificationDetails();
+    final iosDetails = DarwinNotificationDetails(
+      presentSound: playSound,
+    );
 
-    const details = NotificationDetails(
+    final details = NotificationDetails(
       android: androidDetails,
       iOS: iosDetails,
     );

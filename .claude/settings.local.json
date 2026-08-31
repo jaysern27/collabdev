@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl * firestore.googleapis.com/*)"
+    ]
+  },
+  "autoMode": {
+    "allow": [
+      "$defaults",
+      "curl commands (GET, POST, PATCH, DELETE) targeting https://firestore.googleapis.com/v1/projects/cultureguide-25wmr10030-22277/* are allowed, including writes, for this project's own Firebase data."
+    ]
+  }
+}

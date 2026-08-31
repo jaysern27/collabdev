@@ -17,12 +17,16 @@ class NotificationService {
     required int id,
     required String attractionName,
     required String message,
+    bool playSound = true,
+    bool enableVibration = true,
   }) async {
     await _dataSource.showNotification(
       id: id,
       title: 'Etiquette Reminder: $attractionName',
       body: message,
       payload: attractionName,
+      playSound: playSound,
+      enableVibration: enableVibration,
     );
   }
 

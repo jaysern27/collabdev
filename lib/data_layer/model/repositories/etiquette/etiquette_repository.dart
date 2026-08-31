@@ -10,6 +10,16 @@ class EtiquetteRepository {
   }) : _firestoreService =
       firestoreService ?? FirestoreService();
 
+  // Add a new etiquette rule (used by admin tooling / data seeding)
+  Future<String> addRule(Map<String, dynamic> ruleData) async {
+    final document = await _firestoreService.addDocument(
+      collection: _collection,
+      data: ruleData,
+    );
+
+    return document.id;
+  }
+
   // Get all etiquette rules
   Future<List<Map<String, dynamic>>> getAllEtiquetteRules() async {
     final snapshot = await _firestoreService.getCollection(

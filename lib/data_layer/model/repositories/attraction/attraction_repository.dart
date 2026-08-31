@@ -46,6 +46,27 @@ class AttractionRepository {
         .toList();
   }
 
+  /// Admin-only: returns every attraction regardless of isSupported, so
+  /// UC03's Manage Attractions screen can still find (and re-enable) a
+  /// disabled attraction. getAllAttractions() intentionally hides
+  /// disabled attractions for the Tourist-facing map (UC01).
+  Future<List<Map<String, dynamic>>>
+  getAllAttractionsForAdmin() async {
+    final snapshot =
+    await _firestoreService.getCollection(
+      collection: _collection,
+    );
+
+    return snapshot.docs
+        .map(
+          (doc) => {
+        'id': doc.id,
+        ...doc.data(),
+      },
+    )
+        .toList();
+  }
+
   Future<Map<String, dynamic>?>
   getAttractionById(
       String attractionId,
@@ -131,6 +152,106 @@ class AttractionRepository {
             true,
       )
           .toList(),
+    );
+  }
+
+  // =========================================================
+  // ADMIN: ATTRACTION MANAGEMENT (UC03 A1 / FR-CMF7)
+  // =========================================================
+
+  /// Creates a new attraction record. Coordinates and category must be
+  /// present before the record can be enabled on the map (UC03 C1).
+  Future<String> createAttraction(
+      Map<String, dynamic> attractionData,
+      ) async {
+    _validateAttractionData(attractionData);
+
+    final document = await _firestoreService.addDocument(
+      collection: _collection,
+      data: {
+        ...attractionData,
+        'isSupported': attractionData['isSupported'] ?? false,
+        'createdAt': DateTime.now().toIso8601String(),
+        'updatedAt': DateTime.now().toIso8601String(),
+      },
+    );
+
+    return document.id;
+  }
+
+  Future<void> updateAttraction({
+    required String attractionId,
+    required Map<String, dynamic> attractionData,
+  }) async {
+    _validateAttractionData(attractionData);
+
+    await _firestoreService.updateDocument(
+      collection: _collection,
+      documentId: attractionId,
+      data: {
+        ...attractionData,
+        'updatedAt': DateTime.now().toIso8601String(),
+      },
+    );
+  }
+
+  /// Enables/disables an attraction on the Tourist-facing map (UC03 M1).
+  Future<void> setAttractionEnabled({
+    required String attractionId,
+    required bool isSupported,
+  }) async {
+    await _firestoreService.updateDocument(
+      collection: _collection,
+      documentId: attractionId,
+      data: {
+        'isSupported': isSupported,
+        'updatedAt': DateTime.now().toIso8601String(),
+      },
+    );
+  }
+
+  /// UC03 C1: an attraction needs validated coordinates and a confirmed
+  /// category before it may be enabled.
+  void _validateAttractionData(Map<String, dynamic> data) {
+    final latitude = data['latitude'];
+    final longitude = data['longitude'];
+    final category = data['category']?.toString();
+
+    final hasValidCoordinates =
+        latitude is num && longitude is num;
+
+    final hasCategory = category != null && category.isNotEmpty;
+
+    if (!hasValidCoordinates || !hasCategory) {
+      throw Exception(
+        'Invalid or duplicate attraction data. Please correct the '
+            'highlighted fields.',
+      );
+    }
+  }
+
+  // =========================================================
+  // ADMIN: GEOFENCE CONFIGURATION (UC03 A2 / FR-GEA9)
+  // =========================================================
+
+  /// Saves the per-attraction geofence used by UC02's entry check (C2).
+  /// [radiusMeters] must already have been validated by the caller against
+  /// EnvironmentSettingsRepository's allowable range (UC03 E2).
+  Future<void> updateGeofence({
+    required String attractionId,
+    required double radiusMeters,
+    required bool isActive,
+  }) async {
+    await _firestoreService.updateDocument(
+      collection: _collection,
+      documentId: attractionId,
+      data: {
+        'geofence': {
+          'radiusMeters': radiusMeters,
+          'isActive': isActive,
+        },
+        'updatedAt': DateTime.now().toIso8601String(),
+      },
     );
   }
 
