@@ -1,7 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 
 import '../../../data_layer/model/services/firebase_authentication/firebase_authentication_service.dart';
-
 import '../../../data_layer/model/repositories/ranking_report/ranking_report_repository.dart';
 
 
@@ -33,12 +34,17 @@ class _AdminDashboardPageState
   RankingReportRepository();
 
 
+
   final authService =
   FirebaseAuthenticationService();
 
 
 
-  List<Map<String,dynamic>> reports=[];
+  List<Map<String,dynamic>> reports = [];
+
+
+
+  bool isLoading = true;
 
 
 
@@ -54,16 +60,51 @@ class _AdminDashboardPageState
 
 
 
-  Future<void> loadReports() async{
 
 
-    final result =
-    await repository.getPendingReports();
+  Future<void> loadReports() async {
 
 
     setState(() {
 
-      reports=result;
+      isLoading = true;
+
+    });
+
+
+
+    try{
+
+
+      final result =
+
+      await repository.getPendingReports();
+
+
+
+      setState(() {
+
+        reports = result;
+
+      });
+
+
+
+    }catch(e){
+
+
+      print(
+          "Load report error: $e"
+      );
+
+
+    }
+
+
+
+    setState(() {
+
+      isLoading = false;
 
     });
 
@@ -74,7 +115,11 @@ class _AdminDashboardPageState
 
 
 
-  Future<void> approve(String id) async{
+
+
+  Future<void> approve(
+      String id
+      ) async{
 
 
     await repository.approveReport(id);
@@ -89,7 +134,11 @@ class _AdminDashboardPageState
 
 
 
-  Future<void> reject(String id) async{
+
+
+  Future<void> reject(
+      String id
+      ) async{
 
 
     await repository.rejectReport(id);
@@ -104,6 +153,98 @@ class _AdminDashboardPageState
 
 
 
+
+
+
+  Widget buildEvidenceImage(
+      String? base64Image
+      ){
+
+
+    if(base64Image == null ||
+        base64Image.isEmpty){
+
+
+      return const Text(
+        "No evidence photo",
+        style:
+        TextStyle(
+          color: Colors.grey,
+        ),
+      );
+
+
+    }
+
+
+
+    try{
+
+
+      return ClipRRect(
+
+
+        borderRadius:
+        BorderRadius.circular(10),
+
+
+
+        child:
+
+
+        Image.memory(
+
+
+          base64Decode(
+              base64Image
+          ),
+
+
+
+          height:200,
+
+
+          width:
+          double.infinity,
+
+
+
+          fit:
+          BoxFit.cover,
+
+
+        ),
+
+
+
+      );
+
+
+
+    }catch(e){
+
+
+
+      return const Text(
+        "Invalid image",
+        style:
+        TextStyle(
+          color: Colors.red,
+        ),
+      );
+
+
+    }
+
+
+  }
+
+
+
+
+
+
+
   @override
   Widget build(BuildContext context){
 
@@ -111,10 +252,13 @@ class _AdminDashboardPageState
     return Scaffold(
 
 
-      appBar: AppBar(
+      appBar:
+
+      AppBar(
 
 
         title:
+
         const Text(
             "Admin Report Dashboard"
         ),
@@ -124,29 +268,39 @@ class _AdminDashboardPageState
         actions:[
 
 
+
           IconButton(
 
+
             icon:
+
             const Icon(
                 Icons.logout
             ),
 
 
+
             onPressed:() async{
+
 
 
               await authService.logout();
 
 
+
               Navigator.pop(context);
+
 
 
             },
 
+
           )
 
 
+
         ],
+
 
 
       ),
@@ -154,34 +308,63 @@ class _AdminDashboardPageState
 
 
 
+
+
       body:
+
+      isLoading
+
+
+          ?
+
+
+      const Center(
+
+        child:
+        CircularProgressIndicator(),
+
+      )
+
+
+
+          :
 
 
       reports.isEmpty
 
 
+
           ?
+
 
       const Center(
 
         child:
+
         Text(
             "No pending reports"
         ),
 
+
       )
+
+
 
           :
 
 
+
       ListView.builder(
+
 
 
         itemCount:
         reports.length,
 
 
+
         itemBuilder:(context,index){
+
 
 
           final report =
@@ -189,96 +372,338 @@ class _AdminDashboardPageState
 
 
 
+
+
           return Card(
 
 
+
             margin:
-            const EdgeInsets.all(10),
+
+            const EdgeInsets.all(12),
+
+
 
 
             child:
 
 
-            ListTile(
-
-
-              title:
-              Text(
-
-                report["category"]
-                    ??
-                    "Unknown",
-
-              ),
+            Padding(
 
 
 
-              subtitle:
+              padding:
 
-              Text(
-
-                """
-Attraction:
-${report["attractionId"]}
-
-
-Description:
-${report["description"]}
-
-
-User:
-${report["userId"]}
-""",
-
-              ),
+              const EdgeInsets.all(15),
 
 
 
-              trailing:
+
+              child:
 
               Column(
+
+
+
+                crossAxisAlignment:
+
+                CrossAxisAlignment.start,
+
+
+
 
                 children:[
 
 
-                  IconButton(
 
-                    icon:
-                    const Icon(
-                        Icons.check
+
+
+                  Text(
+
+
+                    report["category"]
+                        ??
+                        "Unknown",
+
+
+
+                    style:
+
+                    const TextStyle(
+
+
+                      fontSize:18,
+
+
+                      fontWeight:
+                      FontWeight.bold,
+
+
                     ),
 
-                    onPressed:(){
-
-                      approve(
-                          report["id"]
-                      );
-
-                    },
 
                   ),
 
 
 
-                  IconButton(
 
-                    icon:
-                    const Icon(
-                        Icons.close
+
+
+                  const SizedBox(
+                    height:10,
+                  ),
+
+
+
+
+
+                  Text(
+
+                    "Attraction: ${report["attractionId"]}",
+
+
+                  ),
+
+
+
+
+
+
+                  Text(
+
+                    "User: ${report["userId"]}",
+
+
+                  ),
+
+
+
+
+
+                  const SizedBox(
+                    height:10,
+                  ),
+
+
+
+
+
+
+                  const Text(
+
+                    "Description:",
+
+                    style:
+
+                    TextStyle(
+
+                      fontWeight:
+                      FontWeight.bold,
+
                     ),
 
-                    onPressed:(){
+                  ),
 
-                      reject(
-                          report["id"]
-                      );
 
-                    },
+
+
+
+
+                  Text(
+
+                    report["description"]
+                        ??
+                        "",
+
+
+                  ),
+
+
+
+
+
+
+                  const SizedBox(
+                    height:15,
+                  ),
+
+
+
+
+
+
+
+                  const Text(
+
+                    "Evidence Photo:",
+
+
+                    style:
+
+                    TextStyle(
+
+                      fontWeight:
+                      FontWeight.bold,
+
+                    ),
+
+
+                  ),
+
+
+
+
+
+                  const SizedBox(
+                    height:10,
+                  ),
+
+
+
+
+
+
+                  buildEvidenceImage(
+
+                    report["evidenceImageUrl"],
+
+                  ),
+
+
+
+
+
+
+
+                  const SizedBox(
+                    height:15,
+                  ),
+
+
+
+
+
+
+
+                  Row(
+
+
+                    mainAxisAlignment:
+
+                    MainAxisAlignment.end,
+
+
+
+                    children:[
+
+
+
+
+
+                      ElevatedButton.icon(
+
+
+
+                        icon:
+
+                        const Icon(
+                            Icons.check
+                        ),
+
+
+
+                        label:
+
+                        const Text(
+                            "Approve"
+                        ),
+
+
+
+
+                        onPressed:(){
+
+
+
+                          approve(
+
+                            report["id"],
+
+                          );
+
+
+
+                        },
+
+
+                      ),
+
+
+
+
+
+                      const SizedBox(
+                        width:10,
+                      ),
+
+
+
+
+
+                      ElevatedButton.icon(
+
+
+
+                        icon:
+
+                        const Icon(
+                            Icons.close
+                        ),
+
+
+
+
+                        label:
+
+                        const Text(
+                            "Reject"
+                        ),
+
+
+
+
+                        onPressed:(){
+
+
+
+                          reject(
+
+                            report["id"],
+
+                          );
+
+
+
+                        },
+
+
+                      ),
+
+
+
+                    ],
+
+
 
                   )
 
 
+
+
+
                 ],
+
+
 
               ),
 
@@ -291,7 +716,9 @@ ${report["userId"]}
           );
 
 
+
         },
+
 
 
       ),

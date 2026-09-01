@@ -1,9 +1,12 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:provider/provider.dart';
 
 import 'evidence_photo_page.dart';
+
 import '../../view_model/violation_dashboard_report/violation_dashboard_report_view_model.dart';
 
 
@@ -25,6 +28,7 @@ class UserEtiquetteReportPage extends StatefulWidget {
 
 class _UserEtiquetteReportPageState
     extends State<UserEtiquetteReportPage> {
+
 
 
   final TextEditingController descriptionController =
@@ -74,6 +78,58 @@ class _UserEtiquetteReportPageState
 
 
 
+  // Convert image into Base64 string
+
+  Future<String?> convertImageToBase64() async {
+
+
+    if(evidenceImage == null){
+
+      return null;
+
+    }
+
+
+
+    final compressedImage =
+
+    await FlutterImageCompress.compressWithFile(
+
+
+      evidenceImage!.absolute.path,
+
+
+      minWidth: 800,
+
+
+      minHeight: 800,
+
+
+      quality: 60,
+
+
+    );
+
+
+
+    if(compressedImage == null){
+
+      return null;
+
+    }
+
+
+
+    return base64Encode(compressedImage);
+
+
+  }
+
+
+
+
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -92,15 +148,16 @@ class _UserEtiquetteReportPageState
       Consumer<ViolationDashboardReportViewModel>(
 
 
-
         builder:
-            (context, viewModel, child) {
+            (context, viewModel, child){
 
 
           return Scaffold(
 
 
-            appBar: AppBar(
+            appBar:
+
+            AppBar(
 
               title:
 
@@ -130,11 +187,12 @@ class _UserEtiquetteReportPageState
 
 
                 crossAxisAlignment:
+
                 CrossAxisAlignment.start,
 
 
 
-                children: [
+                children:[
 
 
 
@@ -165,11 +223,11 @@ class _UserEtiquetteReportPageState
 
 
 
+
                   DropdownButtonFormField<String>(
 
 
-                    value:
-                    selectedAttraction,
+                    value:selectedAttraction,
 
 
                     decoration:
@@ -190,19 +248,18 @@ class _UserEtiquetteReportPageState
 
                     attractions.map(
 
-                          (item)
+                            (item)=>
 
-                      => DropdownMenuItem(
+                            DropdownMenuItem(
 
-                        value:item,
+                              value:item,
 
-                        child:
-                        Text(item),
+                              child:
+                              Text(item),
 
-                      ),
+                            )
 
                     ).toList(),
-
 
 
 
@@ -211,10 +268,8 @@ class _UserEtiquetteReportPageState
 
                       setState(() {
 
-
                         selectedAttraction =
                         value!;
-
 
                       });
 
@@ -223,6 +278,7 @@ class _UserEtiquetteReportPageState
 
 
                   ),
+
 
 
 
@@ -240,8 +296,7 @@ class _UserEtiquetteReportPageState
                   DropdownButtonFormField<String>(
 
 
-                    value:
-                    selectedCategory,
+                    value:selectedCategory,
 
 
                     decoration:
@@ -262,19 +317,18 @@ class _UserEtiquetteReportPageState
 
                     categories.map(
 
-                          (item)
+                            (item)=>
 
-                      => DropdownMenuItem(
+                            DropdownMenuItem(
 
-                        value:item,
+                              value:item,
 
-                        child:
-                        Text(item),
+                              child:
+                              Text(item),
 
-                      ),
+                            )
 
                     ).toList(),
-
 
 
 
@@ -283,10 +337,8 @@ class _UserEtiquetteReportPageState
 
                       setState(() {
 
-
                         selectedCategory =
                         value!;
-
 
                       });
 
@@ -300,12 +352,9 @@ class _UserEtiquetteReportPageState
 
 
 
-
-
                   const SizedBox(
                     height:15,
                   ),
-
 
 
 
@@ -342,7 +391,6 @@ class _UserEtiquetteReportPageState
 
 
                   ),
-
 
 
 
@@ -408,6 +456,7 @@ class _UserEtiquetteReportPageState
 
                     child:
 
+
                     Container(
 
 
@@ -443,13 +492,12 @@ class _UserEtiquetteReportPageState
 
 
 
-
                       child:
 
                       Row(
 
 
-                        children: [
+                        children:[
 
 
 
@@ -497,6 +545,7 @@ class _UserEtiquetteReportPageState
                     ),
 
 
+
                   ),
 
 
@@ -521,14 +570,19 @@ class _UserEtiquetteReportPageState
 
                       evidenceImage!,
 
+
                       height:200,
 
-                      width:double.infinity,
 
-                      fit:BoxFit.cover,
+                      width:
+                      double.infinity,
+
+
+                      fit:
+                      BoxFit.cover,
+
 
                     ),
-
 
 
 
@@ -544,13 +598,10 @@ class _UserEtiquetteReportPageState
 
 
 
-
-
                   SizedBox(
 
 
                     width:
-
                     double.infinity,
 
 
@@ -558,7 +609,6 @@ class _UserEtiquetteReportPageState
                     child:
 
                     ElevatedButton(
-
 
 
                       onPressed:
@@ -576,29 +626,49 @@ class _UserEtiquetteReportPageState
 
 
 
+                        // Convert image to Base64
+
+                        final imageBase64 =
+
+                        await convertImageToBase64();
+
+
+
+
+
+
                         final success =
 
                         await viewModel.submitReport(
 
 
+
                           attractionId:
+
                           selectedAttraction,
 
 
+
                           category:
+
                           selectedCategory,
 
 
+
                           description:
+
                           descriptionController.text,
+
 
 
                           evidenceImageUrl:
 
-                          evidenceImage?.path,
+                          imageBase64,
+
 
 
                         );
+
 
 
 
@@ -628,7 +698,9 @@ class _UserEtiquetteReportPageState
 
 
 
+
                           descriptionController.clear();
+
 
 
                           setState(() {
@@ -649,7 +721,6 @@ class _UserEtiquetteReportPageState
 
 
 
-
                       child:
 
                       const Text(
@@ -664,7 +735,6 @@ class _UserEtiquetteReportPageState
 
 
                   ),
-
 
 
 
@@ -692,6 +762,7 @@ class _UserEtiquetteReportPageState
 
 
   }
+
 
 
 }
