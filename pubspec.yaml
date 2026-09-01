@@ -33,7 +33,7 @@ dependencies:
 
   image: ^4.0.0
   image_picker: ^1.0.0
-
+  url_launcher: ^6.3.2
   cupertino_icons: ^1.0.8
   firebase_core: ^4.13.0
   firebase_auth: ^6.5.7

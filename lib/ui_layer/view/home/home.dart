@@ -1,3 +1,4 @@
+import 'package:collab_dev/ui_layer/view/cultural_map/cultural_map.dart';
 import 'package:flutter/material.dart';
 
 import '../../view_model/home/home_view_model.dart';
@@ -126,6 +127,15 @@ class _HomeViewState extends State<HomeView> {
       MaterialPageRoute(
         builder: (context) =>
         const OutfitRecognitionView(),
+      ),
+    );
+  }
+
+  void _openExplorePage() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) =>
+        const CulturalMapView(),
       ),
     );
   }
@@ -814,6 +824,8 @@ class _HomeViewState extends State<HomeView> {
                 icon: Icons
                     .explore_outlined,
                 label: 'Explore',
+                onTap:
+                _openExplorePage,
               ),
 
               _navItem(

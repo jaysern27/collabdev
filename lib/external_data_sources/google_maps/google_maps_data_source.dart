@@ -1,11 +1,15 @@
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class GoogleMapsDataSource {
   LatLng createLatLng({
     required double latitude,
     required double longitude,
   }) {
-    return LatLng(latitude, longitude);
+    return LatLng(
+      latitude,
+      longitude,
+    );
   }
 
   CameraPosition createCameraPosition({
@@ -14,7 +18,10 @@ class GoogleMapsDataSource {
     double zoom = 15.0,
   }) {
     return CameraPosition(
-      target: LatLng(latitude, longitude),
+      target: LatLng(
+        latitude,
+        longitude,
+      ),
       zoom: zoom,
     );
   }
@@ -64,12 +71,39 @@ class GoogleMapsDataSource {
     required double longitude,
   }) async {
     await controller.animateCamera(
-      CameraUpdate.newLatLng(
+      CameraUpdate.newLatLngZoom(
         LatLng(
           latitude,
           longitude,
         ),
+        14.0,
       ),
     );
+  }
+
+  Future<void> openDirections({
+    required double latitude,
+    required double longitude,
+  }) async {
+    final uri = Uri.https(
+      'www.google.com',
+      '/maps/dir/',
+      {
+        'api': '1',
+        'destination': '$latitude,$longitude',
+        'travelmode': 'driving',
+      },
+    );
+
+    final opened = await launchUrl(
+      uri,
+      mode: LaunchMode.externalApplication,
+    );
+
+    if (!opened) {
+      throw Exception(
+        'Unable to open directions.',
+      );
+    }
   }
 }
