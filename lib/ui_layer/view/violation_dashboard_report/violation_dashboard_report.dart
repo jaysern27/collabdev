@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import 'user_etiquette_report_page.dart';
 import '../../view_model/violation_dashboard_report/violation_dashboard_report_view_model.dart';
 
 class ViolationDashboardReportView extends StatefulWidget {
@@ -84,20 +85,83 @@ class _ViolationDashboardReportViewState
           ],
         ),
         actions: [
+
+          IconButton(
+
+            tooltip: 'Submit etiquette report',
+
+
+            icon:
+
+            const Icon(
+              Icons.add_a_photo_outlined,
+            ),
+
+
+
+            onPressed: () {
+
+
+              Navigator.push(
+
+
+                context,
+
+
+                MaterialPageRoute(
+
+
+                  builder: (context) =>
+
+                  const UserEtiquetteReportPage(),
+
+
+                ),
+
+
+              );
+
+
+            },
+
+
+          ),
+
+
+
           IconButton(
             tooltip: 'Refresh ranking',
+
             onPressed: _viewModel.isRefreshingRanking
                 ? null
                 : _viewModel.refreshRanking,
+
+
             icon: _viewModel.isRefreshingRanking
+
                 ? const SizedBox(
+
               width: 19,
+
               height: 19,
-              child: CircularProgressIndicator(strokeWidth: 2),
+
+              child: CircularProgressIndicator(
+                  strokeWidth: 2
+              ),
+
             )
-                : const Icon(Icons.refresh_rounded),
+
+                :
+
+            const Icon(
+                Icons.refresh_rounded
+            ),
+
           ),
+
+
           const SizedBox(width: 8),
+
         ],
       ),
       body: RefreshIndicator(

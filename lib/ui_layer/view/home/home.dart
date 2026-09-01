@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../view_model/home/home_view_model.dart';
 import '../outfit_recognition/outfit_recognition.dart';
+import 'profile.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
@@ -837,9 +838,28 @@ class _HomeViewState extends State<HomeView> {
               ),
 
               _navItem(
-                icon:
-                Icons.person_outline,
+
+                icon: Icons.person_outline,
+
                 label: 'Profile',
+
+                onTap: (){
+
+                  Navigator.push(
+
+                    context,
+
+                    MaterialPageRoute(
+
+                      builder: (context)=>
+                      const ProfileView(),
+
+                    ),
+
+                  );
+
+                },
+
               ),
             ],
           ),
