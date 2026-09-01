@@ -228,6 +228,12 @@ class RankingReportRepository {
     });
   }
 
+  Future<List<Map<String, dynamic>>> getAllReports() async {
+
+    return await _getAllReports();
+
+  }
+
   Future<List<Map<String, dynamic>>> _getAllReports() async {
     final snapshot =
     await _firestoreService.getCollection(collection: _reportCollection);
