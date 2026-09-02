@@ -2,6 +2,9 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import 'user_etiquette_report_page.dart';
+import 'all_reports_page.dart';
+import 'approved_reports_page.dart';
 import '../../view_model/violation_dashboard_report/violation_dashboard_report_view_model.dart';
 
 class ViolationDashboardReportView extends StatefulWidget {
@@ -84,20 +87,83 @@ class _ViolationDashboardReportViewState
           ],
         ),
         actions: [
+
+          IconButton(
+
+            tooltip: 'Submit etiquette report',
+
+
+            icon:
+
+            const Icon(
+              Icons.add_a_photo_outlined,
+            ),
+
+
+
+            onPressed: () {
+
+
+              Navigator.push(
+
+
+                context,
+
+
+                MaterialPageRoute(
+
+
+                  builder: (context) =>
+
+                  const UserEtiquetteReportPage(),
+
+
+                ),
+
+
+              );
+
+
+            },
+
+
+          ),
+
+
+
           IconButton(
             tooltip: 'Refresh ranking',
+
             onPressed: _viewModel.isRefreshingRanking
                 ? null
                 : _viewModel.refreshRanking,
+
+
             icon: _viewModel.isRefreshingRanking
+
                 ? const SizedBox(
+
               width: 19,
+
               height: 19,
-              child: CircularProgressIndicator(strokeWidth: 2),
+
+              child: CircularProgressIndicator(
+                  strokeWidth: 2
+              ),
+
             )
-                : const Icon(Icons.refresh_rounded),
+
+                :
+
+            const Icon(
+                Icons.refresh_rounded
+            ),
+
           ),
+
+
           const SizedBox(width: 8),
+
         ],
       ),
       body: RefreshIndicator(
@@ -241,6 +307,24 @@ class _ViolationDashboardReportViewState
               label: 'All reports',
               value: _viewModel.totalReports.toString(),
               subtitle: '${_viewModel.pendingReports} pending',
+
+              onTap: () {
+
+                Navigator.push(
+
+                  context,
+
+                  MaterialPageRoute(
+
+                    builder: (context) =>
+                    const AllReportsPage(),
+
+                  ),
+
+                );
+
+              },
+
             ),
             _metric(
               width: width,
@@ -250,6 +334,24 @@ class _ViolationDashboardReportViewState
               subtitle:
               '${_viewModel.rejectedReports} rejected • '
                   '${_viewModel.verificationRate.toStringAsFixed(0)}% verification rate',
+
+              onTap: () {
+
+                Navigator.push(
+
+                  context,
+
+                  MaterialPageRoute(
+
+                    builder: (context) =>
+                    const ApprovedReportsPage(),
+
+                  ),
+
+                );
+
+              },
+
             ),
             _metric(
               width: width,
@@ -560,10 +662,15 @@ class _ViolationDashboardReportViewState
     required String label,
     required String value,
     required String subtitle,
+    VoidCallback? onTap,
   }) {
     return SizedBox(
-      width: width,
-      child: _card(
+        width: width,
+        child: GestureDetector(
+
+          onTap: onTap,
+
+          child: _card(
         padding: const EdgeInsets.all(13),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -600,7 +707,8 @@ class _ViolationDashboardReportViewState
             ),
           ],
         ),
-      ),
+          ),
+        ),
     );
   }
 
