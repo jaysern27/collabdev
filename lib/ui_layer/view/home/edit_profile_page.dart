@@ -45,10 +45,10 @@ class _EditProfilePageState
   XFile? _selectedPhoto;
 
   static const Color _primary =
-  Color(0xFF6C4DB5);
+  Color(0xFF2F6FED);
 
   static const Color _background =
-  Color(0xFFFCF8FF);
+  Color(0xFFFFFFFF);
 
   @override
   void initState() {
@@ -457,7 +457,7 @@ class _EditProfilePageState
               BoxDecoration(
                 color:
                 const Color(
-                  0xFFE8DBFF,
+                  0xFFDCE9FD,
                 ),
                 shape:
                 BoxShape.circle,
@@ -581,7 +581,7 @@ class _EditProfilePageState
         Border.all(
           color:
           const Color(
-            0xFFE9E0F2,
+            0xFFE3EDFC,
           ),
         ),
       ),
@@ -600,7 +600,7 @@ class _EditProfilePageState
               FontWeight.w800,
               color:
               Color(
-                0xFF241A35,
+                0xFF14213D,
               ),
             ),
           ),
@@ -678,7 +678,7 @@ class _EditProfilePageState
       BoxDecoration(
         color:
         const Color(
-          0xFFF1ECF8,
+          0xFFF3F8FE,
         ),
         borderRadius:
         BorderRadius.circular(
@@ -710,7 +710,7 @@ class _EditProfilePageState
               TextStyle(
                 color:
                 Color(
-                  0xFF655C6D,
+                  0xFF64748B,
                 ),
                 height:
                 1.4,
@@ -737,7 +737,7 @@ class _EditProfilePageState
       true,
       fillColor:
       const Color(
-        0xFFFAF7FD,
+        0xFFF3F8FE,
       ),
       enabledBorder:
       OutlineInputBorder(
@@ -749,7 +749,7 @@ class _EditProfilePageState
         const BorderSide(
           color:
           Color(
-            0xFFE5DCEB,
+            0xFFDCE9FD,
           ),
         ),
       ),
@@ -763,7 +763,7 @@ class _EditProfilePageState
         const BorderSide(
           color:
           Color(
-            0xFFE9E3ED,
+            0xFFE3EDFC,
           ),
         ),
       ),

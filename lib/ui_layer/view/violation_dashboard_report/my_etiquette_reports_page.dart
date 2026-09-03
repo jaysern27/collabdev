@@ -24,8 +24,8 @@ class _MyEtiquetteReportsPageState
 
   List<Map<String, dynamic>> reports = [];
 
-  static const Color _primary = Color(0xFF6C4DB5);
-  static const Color _background = Color(0xFFFCF8FF);
+  static const Color _primary = Color(0xFF2F6FED);
+  static const Color _background = Color(0xFFFFFFFF);
 
   @override
   void initState() {
@@ -185,7 +185,7 @@ class _MyEtiquetteReportsPageState
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [
-            Color(0xFFF0E5FF),
+            Color(0xFFDCE9FD),
             Color(0xFFE5F6F1),
           ],
         ),
@@ -199,7 +199,7 @@ class _MyEtiquetteReportsPageState
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w800,
-              color: Color(0xFF241A35),
+              color: Color(0xFF14213D),
             ),
           ),
           const SizedBox(height: 14),
@@ -253,7 +253,7 @@ class _MyEtiquetteReportsPageState
             label,
             style: const TextStyle(
               fontSize: 11,
-              color: Color(0xFF746B7E),
+              color: Color(0xFF64748B),
             ),
           ),
         ],
@@ -329,7 +329,7 @@ class _MyEtiquetteReportsPageState
         color: Colors.white,
         borderRadius: BorderRadius.circular(19),
         border: Border.all(
-          color: const Color(0xFFE9E0F2),
+          color: const Color(0xFFE3EDFC),
         ),
       ),
       child: Column(
@@ -342,7 +342,7 @@ class _MyEtiquetteReportsPageState
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF1EAFE),
+                  color: const Color(0xFFF3F8FE),
                   borderRadius: BorderRadius.circular(13),
                 ),
                 child: const Icon(
@@ -360,14 +360,14 @@ class _MyEtiquetteReportsPageState
                       style: const TextStyle(
                         fontWeight: FontWeight.w800,
                         fontSize: 15.5,
-                        color: Color(0xFF241A35),
+                        color: Color(0xFF14213D),
                       ),
                     ),
                     const SizedBox(height: 3),
                     Text(
                       attraction,
                       style: const TextStyle(
-                        color: Color(0xFF746B7E),
+                        color: Color(0xFF64748B),
                         fontSize: 12.5,
                       ),
                     ),
@@ -401,7 +401,7 @@ class _MyEtiquetteReportsPageState
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               height: 1.42,
-              color: Color(0xFF4F4856),
+              color: Color(0xFF64748B),
             ),
           ),
           const SizedBox(height: 13),
@@ -410,14 +410,14 @@ class _MyEtiquetteReportsPageState
               const Icon(
                 Icons.calendar_today_outlined,
                 size: 15,
-                color: Color(0xFF857C8D),
+                color: Color(0xFF64748B),
               ),
               const SizedBox(width: 6),
               Text(
                 _dateText(report['createdAt']),
                 style: const TextStyle(
                   fontSize: 11.5,
-                  color: Color(0xFF857C8D),
+                  color: Color(0xFF64748B),
                 ),
               ),
             ],
@@ -464,7 +464,7 @@ class _MyEtiquetteReportsPageState
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: const Color(0xFFE9E0F2),
+          color: const Color(0xFFE3EDFC),
         ),
       ),
       child: Column(
@@ -487,7 +487,7 @@ class _MyEtiquetteReportsPageState
             message,
             textAlign: TextAlign.center,
             style: const TextStyle(
-              color: Color(0xFF746B7E),
+              color: Color(0xFF64748B),
               height: 1.4,
             ),
           ),

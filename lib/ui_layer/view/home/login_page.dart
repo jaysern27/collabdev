@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../data_layer/model/services/firebase_authentication/firebase_authentication_service.dart';
 import '../../../data_layer/model/services/firebase_authentication/user_role_service.dart';
+import '../../../data_layer/model/services/geofence_alert_monitor/geofence_alert_monitor_service.dart';
 
 import 'admin_login_page.dart';
 import 'home.dart';
@@ -26,9 +27,9 @@ class _LoginPageState extends State<LoginPage> {
   bool loading = false;
   bool obscurePassword = true;
 
-  static const Color _primary = Color(0xFF6C4DB5);
-  static const Color _deepPurple = Color(0xFF4F378B);
-  static const Color _background = Color(0xFFFCF8FF);
+  static const Color _primary = Color(0xFF2F6FED);
+  static const Color _deepPurple = Color(0xFF163E85);
+  static const Color _background = Color(0xFFFFFFFF);
 
   @override
   void dispose() {
@@ -73,6 +74,10 @@ class _LoginPageState extends State<LoginPage> {
           'This is an administrator account. Please use Admin Login.',
         );
       }
+
+      // UC02: start background geofence monitoring for the
+      // logged-in tourist so etiquette alerts fire from any screen.
+      GeofenceAlertMonitorService.instance.start(userId: uid);
 
       if (!mounted) return;
 
@@ -179,8 +184,8 @@ class _LoginPageState extends State<LoginPage> {
           decoration: BoxDecoration(
             gradient: const LinearGradient(
               colors: [
-                Color(0xFF7B5BC7),
-                Color(0xFF4F378B),
+                Color(0xFF5B8DEF),
+                Color(0xFF163E85),
               ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -209,7 +214,7 @@ class _LoginPageState extends State<LoginPage> {
             fontSize: 30,
             fontWeight: FontWeight.w800,
             letterSpacing: -0.7,
-            color: Color(0xFF241A35),
+            color: Color(0xFF14213D),
           ),
         ),
 
@@ -220,7 +225,7 @@ class _LoginPageState extends State<LoginPage> {
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 14,
-            color: Color(0xFF746B7E),
+            color: Color(0xFF64748B),
             height: 1.4,
           ),
         ),
@@ -235,7 +240,7 @@ class _LoginPageState extends State<LoginPage> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: const Color(0xFFE9E0F2),
+          color: const Color(0xFFE3EDFC),
         ),
         boxShadow: const [
           BoxShadow(
@@ -253,7 +258,7 @@ class _LoginPageState extends State<LoginPage> {
             style: TextStyle(
               fontSize: 23,
               fontWeight: FontWeight.w800,
-              color: Color(0xFF241A35),
+              color: Color(0xFF14213D),
             ),
           ),
 
@@ -262,7 +267,7 @@ class _LoginPageState extends State<LoginPage> {
           const Text(
             'Sign in to access your etiquette tools, reports and saved cultural guidance.',
             style: TextStyle(
-              color: Color(0xFF746B7E),
+              color: Color(0xFF64748B),
               height: 1.45,
             ),
           ),
@@ -361,7 +366,7 @@ class _LoginPageState extends State<LoginPage> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    color: Color(0xFF746B7E),
+                    color: Color(0xFF64748B),
                   ),
                 ),
               ),
@@ -407,7 +412,7 @@ class _LoginPageState extends State<LoginPage> {
 
   Widget _buildAdminEntry() {
     return Material(
-      color: const Color(0xFFF2ECFA),
+      color: const Color(0xFFF3F8FE),
       borderRadius: BorderRadius.circular(18),
       child: InkWell(
         borderRadius: BorderRadius.circular(18),
@@ -448,7 +453,7 @@ class _LoginPageState extends State<LoginPage> {
                       'Administrator Login',
                       style: TextStyle(
                         fontWeight: FontWeight.w800,
-                        color: Color(0xFF241A35),
+                        color: Color(0xFF14213D),
                       ),
                     ),
 
@@ -458,7 +463,7 @@ class _LoginPageState extends State<LoginPage> {
                       'Review etiquette reports and ranking data',
                       style: TextStyle(
                         fontSize: 12.5,
-                        color: Color(0xFF746B7E),
+                        color: Color(0xFF64748B),
                       ),
                     ),
                   ],
@@ -487,7 +492,7 @@ class _LoginPageState extends State<LoginPage> {
       prefixIcon: Icon(icon),
       suffixIcon: suffix,
       filled: true,
-      fillColor: const Color(0xFFFAF7FD),
+      fillColor: const Color(0xFFF3F8FE),
       contentPadding: const EdgeInsets.symmetric(
         horizontal: 16,
         vertical: 17,
@@ -495,7 +500,7 @@ class _LoginPageState extends State<LoginPage> {
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
         borderSide: const BorderSide(
-          color: Color(0xFFE5DCEB),
+          color: Color(0xFFDCE9FD),
         ),
       ),
       focusedBorder: OutlineInputBorder(

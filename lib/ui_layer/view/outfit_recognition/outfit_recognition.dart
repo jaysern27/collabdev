@@ -78,12 +78,12 @@ class _OutfitRecognitionViewState
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(
-        0xFFFFF9F0,
+        0xFFFFFFFF,
       ),
 
       appBar: AppBar(
         backgroundColor: const Color(
-          0xFFFFF9F0,
+          0xFFFFFFFF,
         ),
         foregroundColor: const Color(
           0xFF14213D,
@@ -738,7 +738,7 @@ class _OutfitRecognitionViewState
             ),
             decoration: BoxDecoration(
               color: const Color(
-                0xFFFFF8E8,
+                0xFFFFFFFF,
               ),
               borderRadius:
               BorderRadius.circular(

@@ -8,8 +8,12 @@ class NotificationService {
   }) : _dataSource =
       dataSource ?? DeviceNotificationsDataSource();
 
-  Future<void> initialize() async {
-    await _dataSource.initialize();
+  Future<void> initialize({
+    void Function(String? payload)? onNotificationTap,
+  }) async {
+    await _dataSource.initialize(
+      onNotificationTap: onNotificationTap,
+    );
     await _dataSource.requestPermission();
   }
 
@@ -17,12 +21,13 @@ class NotificationService {
     required int id,
     required String attractionName,
     required String message,
+    String? payload,
   }) async {
     await _dataSource.showNotification(
       id: id,
       title: 'Etiquette Reminder: $attractionName',
       body: message,
-      payload: attractionName,
+      payload: payload ?? attractionName,
     );
   }
 

@@ -1,7 +1,10 @@
 import 'package:collab_dev/ui_layer/view/cultural_map/cultural_map.dart';
 import 'package:flutter/material.dart';
 
+import '../../../data_layer/model/repositories/notification/etiquette_notification_repository.dart';
+import '../../../data_layer/model/services/firebase_authentication/firebase_authentication_service.dart';
 import '../../view_model/home/home_view_model.dart';
+import '../notification_inbox/notification_inbox.dart';
 import '../outfit_recognition/outfit_recognition.dart';
 import 'profile.dart';
 
@@ -15,6 +18,13 @@ class HomeView extends StatefulWidget {
 class _HomeViewState extends State<HomeView> {
   final HomeViewModel _viewModel =
   HomeViewModel();
+
+  final EtiquetteNotificationRepository
+  _etiquetteNotificationRepository =
+  EtiquetteNotificationRepository();
+
+  final FirebaseAuthenticationService _authService =
+  FirebaseAuthenticationService();
 
   final TextEditingController _searchController =
   TextEditingController();
@@ -149,7 +159,7 @@ class _HomeViewState extends State<HomeView> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(
-        0xFFFFF9ED,
+        0xFFFFFFFF,
       ),
 
       body: SafeArea(
@@ -257,62 +267,86 @@ class _HomeViewState extends State<HomeView> {
           ),
         ),
 
-        Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration:
-              const BoxDecoration(
-                color: Color(
-                  0xFFFFF0C9,
-                ),
-                shape: BoxShape.circle,
-              ),
-              child: IconButton(
-                padding: EdgeInsets.zero,
-                onPressed: () {
-                  // Notification page later.
-                },
-                icon: const Icon(
-                  Icons.notifications,
-                  color: Color(
-                    0xFFFFA800,
-                  ),
-                  size: 22,
-                ),
-              ),
-            ),
+        _buildNotificationButton(),
+      ],
+    );
+  }
 
-            Positioned(
-              right: -1,
-              top: -3,
-              child: Container(
-                width: 17,
-                height: 17,
-                alignment:
-                Alignment.center,
-                decoration:
-                const BoxDecoration(
-                  color: Color(
-                    0xFFFF4057,
-                  ),
-                  shape: BoxShape.circle,
-                ),
-                child: const Text(
-                  '2',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 9,
-                    fontWeight:
-                    FontWeight.bold,
-                  ),
-                ),
-              ),
+  Widget _buildNotificationButton() {
+    final userId = _authService.currentUser?.uid;
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          width: 40,
+          height: 40,
+          decoration:
+          const BoxDecoration(
+            color: Color(
+              0xFFFFF0C9,
             ),
-          ],
+            shape: BoxShape.circle,
+          ),
+          child: IconButton(
+            padding: EdgeInsets.zero,
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const NotificationInboxView(),
+                ),
+              );
+            },
+            icon: const Icon(
+              Icons.notifications,
+              color: Color(
+                0xFFFFA800,
+              ),
+              size: 22,
+            ),
+          ),
         ),
+
+        if (userId != null)
+          StreamBuilder<int>(
+            stream: _etiquetteNotificationRepository
+                .watchUnreadCount(userId),
+            builder: (context, snapshot) {
+              final unreadCount = snapshot.data ?? 0;
+
+              if (unreadCount == 0) {
+                return const SizedBox.shrink();
+              }
+
+              return Positioned(
+                right: -1,
+                top: -3,
+                child: Container(
+                  width: 17,
+                  height: 17,
+                  alignment:
+                  Alignment.center,
+                  decoration:
+                  const BoxDecoration(
+                    color: Color(
+                      0xFFFF4057,
+                    ),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Text(
+                    unreadCount > 9 ? '9+' : '$unreadCount',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 9,
+                      fontWeight:
+                      FontWeight.bold,
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
       ],
     );
   }
@@ -464,7 +498,7 @@ class _HomeViewState extends State<HomeView> {
               decoration:
               BoxDecoration(
                 color: const Color(
-                  0xFFF8F2E9,
+                  0xFFFFFFFF,
                 ),
                 borderRadius:
                 BorderRadius.circular(
@@ -748,7 +782,7 @@ class _HomeViewState extends State<HomeView> {
       height: size,
       decoration: BoxDecoration(
         color: const Color(
-          0xFFF8F2E9,
+          0xFFFFFFFF,
         ),
         shape: BoxShape.circle,
         boxShadow: [

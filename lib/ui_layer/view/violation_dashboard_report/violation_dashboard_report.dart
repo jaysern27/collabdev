@@ -59,9 +59,9 @@ class _ViolationDashboardReportViewState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFFF9ED),
+      backgroundColor: const Color(0xFFFFFFFF),
       appBar: AppBar(
-        backgroundColor: const Color(0xFFFFF9ED),
+        backgroundColor: const Color(0xFFFFFFFF),
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         titleSpacing: 4,
@@ -808,7 +808,7 @@ class _ViolationDashboardReportViewState
       labelText: label,
       prefixIcon: Icon(icon, size: 19),
       filled: true,
-      fillColor: const Color(0xFFFFFCF5),
+      fillColor: const Color(0xFFFFFFFF),
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),

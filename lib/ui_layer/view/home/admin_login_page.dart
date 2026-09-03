@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../../../data_layer/model/services/firebase_authentication/firebase_authentication_service.dart';
 import '../../../data_layer/model/services/firebase_authentication/user_role_service.dart';
+import '../shared/app_theme.dart';
 
-import 'admin_dashboard_page.dart';
+import 'admin_home_page.dart';
 
 class AdminLoginPage extends StatefulWidget {
   const AdminLoginPage({super.key});
@@ -22,10 +23,6 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
 
   bool loading = false;
   bool obscurePassword = true;
-
-  static const Color _deepPurple = Color(0xFF3F2A69);
-  static const Color _purple = Color(0xFF6C4DB5);
-  static const Color _background = Color(0xFFF8F4FC);
 
   @override
   void dispose() {
@@ -70,7 +67,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(
-          builder: (_) => const AdminDashboardPage(),
+          builder: (_) => const AdminHomePage(),
         ),
             (route) => false,
       );
@@ -101,7 +98,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _background,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
@@ -123,7 +120,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                   Icon(
                     Icons.lock_outline_rounded,
                     size: 16,
-                    color: Color(0xFF746B7E),
+                    color: AppColors.muted,
                   ),
                   SizedBox(width: 7),
                   Flexible(
@@ -132,7 +129,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 12.5,
-                        color: Color(0xFF746B7E),
+                        color: AppColors.muted,
                       ),
                     ),
                   ),
@@ -151,18 +148,18 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [
-            Color(0xFF4A3377),
-            Color(0xFF6C4DB5),
+            AppColors.primaryDark,
+            AppColors.primary,
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(26),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
-            color: Color(0x244F378B),
+            color: AppColors.primary.withValues(alpha: 0.28),
             blurRadius: 24,
-            offset: Offset(0, 10),
+            offset: const Offset(0, 10),
           ),
         ],
       ),
@@ -191,7 +188,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
           Text(
             'Review submitted etiquette violations, verify reports and monitor priority etiquette issues.',
             style: TextStyle(
-              color: Color(0xFFEDE5FF),
+              color: Color(0xFFE3EDFC),
               height: 1.45,
             ),
           ),
@@ -207,7 +204,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: const Color(0xFFE7DDF0),
+          color: AppColors.cardBorder,
         ),
       ),
       child: Column(
@@ -218,7 +215,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
             style: TextStyle(
               fontSize: 21,
               fontWeight: FontWeight.w800,
-              color: Color(0xFF241A35),
+              color: AppColors.heading,
             ),
           ),
           const SizedBox(height: 18),
@@ -262,7 +259,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
             child: FilledButton.icon(
               onPressed: loading ? null : loginAdmin,
               style: FilledButton.styleFrom(
-                backgroundColor: _deepPurple,
+                backgroundColor: AppColors.primaryDark,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
@@ -313,17 +310,17 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
       prefixIcon: Icon(icon),
       suffixIcon: suffix,
       filled: true,
-      fillColor: const Color(0xFFFAF7FD),
+      fillColor: AppColors.tintFaint,
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
         borderSide: const BorderSide(
-          color: Color(0xFFE5DCEB),
+          color: AppColors.cardBorder,
         ),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
         borderSide: const BorderSide(
-          color: _purple,
+          color: AppColors.primary,
           width: 1.7,
         ),
       ),

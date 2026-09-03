@@ -28,8 +28,8 @@ class _RegisterPageState extends State<RegisterPage> {
   bool obscureConfirmPassword = true;
   bool acceptedGuidelines = false;
 
-  static const Color _primary = Color(0xFF6C4DB5);
-  static const Color _background = Color(0xFFFCF8FF);
+  static const Color _primary = Color(0xFF2F6FED);
+  static const Color _background = Color(0xFFFFFFFF);
 
   @override
   void dispose() {
@@ -159,7 +159,7 @@ class _RegisterPageState extends State<RegisterPage> {
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [
-            Color(0xFFF0E5FF),
+            Color(0xFFDCE9FD),
             Color(0xFFE6F7F4),
           ],
           begin: Alignment.topLeft,
@@ -188,14 +188,14 @@ class _RegisterPageState extends State<RegisterPage> {
                   style: TextStyle(
                     fontWeight: FontWeight.w800,
                     fontSize: 20,
-                    color: Color(0xFF241A35),
+                    color: Color(0xFF14213D),
                   ),
                 ),
                 SizedBox(height: 5),
                 Text(
                   'Create your CultureGuide account to save etiquette guidance, check appropriate outfits and submit etiquette reports.',
                   style: TextStyle(
-                    color: Color(0xFF655C6D),
+                    color: Color(0xFF64748B),
                     height: 1.45,
                   ),
                 ),
@@ -214,7 +214,7 @@ class _RegisterPageState extends State<RegisterPage> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: const Color(0xFFE9E0F2),
+          color: const Color(0xFFE3EDFC),
         ),
         boxShadow: const [
           BoxShadow(
@@ -349,7 +349,7 @@ class _RegisterPageState extends State<RegisterPage> {
             'Administrator accounts cannot be registered here.',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: Color(0xFF746B7E),
+              color: Color(0xFF64748B),
               fontSize: 12.5,
             ),
           ),
@@ -368,11 +368,11 @@ class _RegisterPageState extends State<RegisterPage> {
       prefixIcon: Icon(icon),
       suffixIcon: suffix,
       filled: true,
-      fillColor: const Color(0xFFFAF7FD),
+      fillColor: const Color(0xFFF3F8FE),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
         borderSide: const BorderSide(
-          color: Color(0xFFE5DCEB),
+          color: Color(0xFFDCE9FD),
         ),
       ),
       focusedBorder: OutlineInputBorder(

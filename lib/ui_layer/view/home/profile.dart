@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../../data_layer/model/repositories/ranking_report/ranking_report_repository.dart';
 import '../../../data_layer/model/services/firebase_authentication/firebase_authentication_service.dart';
+import '../../../data_layer/model/services/geofence_alert_monitor/geofence_alert_monitor_service.dart';
 
 import '../cultural_map/cultural_map.dart';
 import '../outfit_recognition/outfit_recognition.dart';
@@ -45,10 +46,10 @@ class _ProfileViewState
   String profilePhotoUrl = '';
 
   static const Color _primary =
-  Color(0xFF6C4DB5);
+  Color(0xFF2F6FED);
 
   static const Color _background =
-  Color(0xFFFCF8FF);
+  Color(0xFFFFFFFF);
 
   @override
   void initState() {
@@ -211,6 +212,8 @@ class _ProfileViewState
   }
 
   Future<void> _logout() async {
+    GeofenceAlertMonitorService.instance.stop();
+
     await authService.logout();
 
     if (!mounted) {
@@ -464,7 +467,7 @@ class _ProfileViewState
         const LinearGradient(
           colors: [
             Color(
-              0xFFEEE2FF,
+              0xFFDCE9FD,
             ),
             Color(
               0xFFE4F7F2,
@@ -574,7 +577,7 @@ class _ProfileViewState
                         FontWeight.w800,
                         color:
                         Color(
-                          0xFF241A35,
+                          0xFF14213D,
                         ),
                       ),
                     ),
@@ -591,7 +594,7 @@ class _ProfileViewState
                       const TextStyle(
                         color:
                         Color(
-                          0xFF655C6D,
+                          0xFF64748B,
                         ),
                       ),
                     ),
@@ -605,7 +608,7 @@ class _ProfileViewState
                         const TextStyle(
                           color:
                           Color(
-                            0xFF655C6D,
+                            0xFF64748B,
                           ),
                           fontSize:
                           12.5,
@@ -755,7 +758,7 @@ class _ProfileViewState
           'Track report status',
           color:
           const Color(
-            0xFFF0E9FF,
+            0xFFF3F8FE,
           ),
           iconColor:
           _primary,
@@ -907,7 +910,7 @@ class _ProfileViewState
                   1.16,
                   color:
                   Color(
-                    0xFF241A35,
+                    0xFF14213D,
                   ),
                 ),
               ),
@@ -922,7 +925,7 @@ class _ProfileViewState
                   11.5,
                   color:
                   Color(
-                    0xFF6F6677,
+                    0xFF64748B,
                   ),
                 ),
               ),
@@ -1076,7 +1079,7 @@ class _ProfileViewState
               FontWeight.w800,
               color:
               Color(
-                0xFF241A35,
+                0xFF14213D,
               ),
             ),
           ),
@@ -1088,7 +1091,7 @@ class _ProfileViewState
               11.5,
               color:
               Color(
-                0xFF746B7E,
+                0xFF64748B,
               ),
             ),
           ),
@@ -1105,7 +1108,7 @@ class _ProfileViewState
       46,
       color:
       const Color(
-        0xFFE8E0ED,
+        0xFFE3EDFC,
       ),
     );
   }
@@ -1122,7 +1125,7 @@ class _ProfileViewState
         const LinearGradient(
           colors: [
             Color(
-              0xFF6C4DB5,
+              0xFF2F6FED,
             ),
             Color(
               0xFF3E7D79,
@@ -1176,7 +1179,7 @@ class _ProfileViewState
                   TextStyle(
                     color:
                     Color(
-                      0xFFF4EEFF,
+                      0xFFF3F8FE,
                     ),
                     height:
                     1.4,
@@ -1355,7 +1358,7 @@ class _ProfileViewState
             FontWeight.w800,
             color:
             Color(
-              0xFF241A35,
+              0xFF14213D,
             ),
           ),
         ),
@@ -1368,7 +1371,7 @@ class _ProfileViewState
           const TextStyle(
             color:
             Color(
-              0xFF746B7E,
+              0xFF64748B,
             ),
             fontSize:
             12.5,
@@ -1390,7 +1393,7 @@ class _ProfileViewState
       Border.all(
         color:
         const Color(
-          0xFFE9E0F2,
+          0xFFE3EDFC,
         ),
       ),
       boxShadow:

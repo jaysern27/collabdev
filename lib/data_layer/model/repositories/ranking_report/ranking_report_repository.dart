@@ -10,6 +10,7 @@ class RankingReportRepository {
   static const String _reportCollection = 'etiquette_reports';
   static const String _rankingCollection = 'etiquette_rankings';
   static const String _attractionCollection = 'attractions';
+  static const String _ruleCollection = 'etiquette_rules';
 
   RankingReportRepository({
     FirestoreService? firestoreService,
@@ -266,10 +267,49 @@ class RankingReportRepository {
           .where((ranking) =>
       attractionId == null || ranking['attractionId'] == attractionId)
           .toList();
+
+      // The server-generated ranking documents only carry a
+      // `ruleId` reference (no embedded name), unlike the
+      // client-side preview rows below. Resolve it here so every
+      // caller sees a readable `ruleName`/`category`.
+      await _resolveRuleNames(rankings);
+
       rankings.sort((a, b) => _score(b).compareTo(_score(a)));
       return rankings;
     } catch (_) {
       return [];
+    }
+  }
+
+  Future<void> _resolveRuleNames(
+      List<Map<String, dynamic>> rankings,
+      ) async {
+    for (final ranking in rankings) {
+      if (ranking['ruleName'] != null || ranking['category'] != null) {
+        continue;
+      }
+
+      final ruleId = ranking['ruleId']?.toString();
+      if (ruleId == null || ruleId.isEmpty) {
+        continue;
+      }
+
+      try {
+        final ruleDoc = await _firestoreService.getDocument(
+          collection: _ruleCollection,
+          documentId: ruleId,
+        );
+
+        if (!ruleDoc.exists) continue;
+
+        final ruleData = ruleDoc.data();
+        ranking['ruleName'] =
+            ruleData?['title'] ?? ruleData?['description'];
+        ranking['category'] = ruleData?['ruleCategory'];
+      } catch (_) {
+        // Leave the row with its raw ruleId; the UI already falls
+        // back to a generic "Etiquette issue" label.
+      }
     }
   }
 
