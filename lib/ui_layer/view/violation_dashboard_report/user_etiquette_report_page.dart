@@ -11,35 +11,24 @@ import 'evidence_photo_page.dart';
 
 import '../../view_model/violation_dashboard_report/violation_dashboard_report_view_model.dart';
 
-
-
 class UserEtiquetteReportPage extends StatefulWidget {
-
   const UserEtiquetteReportPage({
     super.key,
   });
 
-
   @override
   State<UserEtiquetteReportPage> createState() =>
       _UserEtiquetteReportPageState();
-
 }
-
-
 
 class _UserEtiquetteReportPageState
     extends State<UserEtiquetteReportPage> {
-
-
   // =========================================================
-  // CONTROLLERS
+  // CONTROLLER
   // =========================================================
 
   final TextEditingController descriptionController =
   TextEditingController();
-
-
 
   // =========================================================
   // REPOSITORY
@@ -48,60 +37,39 @@ class _UserEtiquetteReportPageState
   final AttractionRepository attractionRepository =
   AttractionRepository();
 
-
-
   // =========================================================
-  // STATE
+  // PHOTO
   // =========================================================
 
   File? evidenceImage;
 
-
+  // =========================================================
+  // ATTRACTIONS
+  // =========================================================
 
   List<Map<String, dynamic>> attractions = [];
 
-
-
   String? selectedAttractionId;
-
-
-
-  String selectedCategory =
-      "Dress Code";
-
-
 
   bool isLoadingAttractions = true;
 
-
-
   bool isFindingLocation = false;
-
-
 
   String? locationMessage;
 
-
-
   // =========================================================
-  // VIOLATION CATEGORIES
+  // VIOLATION CATEGORY
   // =========================================================
+
+  String selectedCategory = "Dress Code";
 
   final List<String> categories = [
-
     "Dress Code",
-
     "Photography Restriction",
-
     "Noise Issue",
-
     "Waste Disposal",
-
     "Other",
-
   ];
-
-
 
   // =========================================================
   // INIT
@@ -109,14 +77,10 @@ class _UserEtiquetteReportPageState
 
   @override
   void initState() {
-
     super.initState();
 
     loadAttractions();
-
   }
-
-
 
   // =========================================================
   // DISPOSE
@@ -124,278 +88,179 @@ class _UserEtiquetteReportPageState
 
   @override
   void dispose() {
-
     descriptionController.dispose();
 
     super.dispose();
-
   }
 
-
-
   // =========================================================
-  // LOAD SUPPORTED ATTRACTIONS
+  // LOAD ATTRACTIONS FROM FIRESTORE
   // =========================================================
 
   Future<void> loadAttractions() async {
-
     try {
-
       final result =
       await attractionRepository.getAllAttractions();
-
-
 
       if (!mounted) {
         return;
       }
 
-
-
       setState(() {
-
         attractions = result;
 
         isLoadingAttractions = false;
 
-
-
+        // Select the first attraction by default
         if (attractions.isNotEmpty) {
-
           selectedAttractionId =
               attractions.first['id']?.toString();
-
         }
-
       });
-
-
     } catch (e) {
-
-
       if (!mounted) {
         return;
       }
 
-
-
       setState(() {
-
         isLoadingAttractions = false;
-
       });
 
-
-
       ScaffoldMessenger.of(context).showSnackBar(
-
         SnackBar(
-
           content: Text(
             "Unable to load attractions: $e",
           ),
-
         ),
-
       );
-
     }
-
   }
 
-
-
   // =========================================================
-  // GET ATTRACTION NAME
+  // GET SELECTED ATTRACTION NAME
   // =========================================================
 
   String get selectedAttractionName {
-
     if (selectedAttractionId == null) {
-
       return "No attraction selected";
-
     }
 
-
-
     final attraction = attractions.firstWhere(
-
           (item) =>
       item['id']?.toString() ==
           selectedAttractionId,
-
-      orElse: () => {},
-
+      orElse: () => <String, dynamic>{},
     );
 
-
-
-    return attraction['name']?.toString()
-        ??
+    return attraction['name']?.toString() ??
         "Unknown attraction";
-
   }
-
-
 
   // =========================================================
   // USE CURRENT GPS LOCATION
   // =========================================================
 
   Future<void> selectNearestAttraction() async {
-
     if (isFindingLocation) {
       return;
     }
 
-
-
     if (attractions.isEmpty) {
-
       ScaffoldMessenger.of(context).showSnackBar(
-
         const SnackBar(
-
           content: Text(
             "No supported attractions are available.",
           ),
-
         ),
-
       );
 
       return;
-
     }
 
-
-
     setState(() {
-
       isFindingLocation = true;
 
       locationMessage =
       "Getting your current location...";
-
     });
 
-
-
     try {
-
-
-      // Get current GPS position
+      // -------------------------------------------------------
+      // GET CURRENT GPS LOCATION
+      // -------------------------------------------------------
 
       final currentPosition =
       await attractionRepository.getCurrentLocation();
 
-
-
       Map<String, dynamic>? nearestAttraction;
-
-
 
       double? nearestDistance;
 
-
-
-      // Compare user's location with every
-      // supported attraction
+      // -------------------------------------------------------
+      // CHECK DISTANCE TO EACH SUPPORTED ATTRACTION
+      // -------------------------------------------------------
 
       for (final attraction in attractions) {
+        final latitude = attraction['latitude'];
 
+        final longitude = attraction['longitude'];
 
-        final latitude =
-        attraction['latitude'];
-
-
-
-        final longitude =
-        attraction['longitude'];
-
-
-
-        // Skip attractions without valid coordinates
-
+        // Skip attraction if GPS coordinates are missing
         if (latitude is! num ||
             longitude is! num) {
-
           continue;
-
         }
-
-
 
         final distance =
-        attractionRepository.getDistanceFromAttraction(
-
+        attractionRepository
+            .getDistanceFromAttraction(
           currentPosition: currentPosition,
-
           attractionLatitude:
           latitude.toDouble(),
-
           attractionLongitude:
           longitude.toDouble(),
-
         );
 
-
-
+        // Find the closest attraction
         if (nearestDistance == null ||
             distance < nearestDistance) {
-
           nearestDistance = distance;
 
-          nearestAttraction =
-              attraction;
-
+          nearestAttraction = attraction;
         }
-
       }
-
-
 
       if (!mounted) {
         return;
       }
 
-
+      // -------------------------------------------------------
+      // NO VALID ATTRACTION FOUND
+      // -------------------------------------------------------
 
       if (nearestAttraction == null) {
-
         setState(() {
-
           isFindingLocation = false;
 
           locationMessage = null;
-
         });
 
-
-
         ScaffoldMessenger.of(context).showSnackBar(
-
           const SnackBar(
-
             content: Text(
               "No attraction with valid GPS coordinates was found.",
             ),
-
           ),
-
         );
 
         return;
-
       }
 
-
-
-      // Select nearest attraction
+      // -------------------------------------------------------
+      // SELECT NEAREST ATTRACTION
+      // -------------------------------------------------------
 
       setState(() {
-
         selectedAttractionId =
             nearestAttraction!['id']?.toString();
 
@@ -403,96 +268,59 @@ class _UserEtiquetteReportPageState
 
         locationMessage =
         "Nearest attraction selected.";
-
       });
 
+      // -------------------------------------------------------
+      // SHOW DISTANCE
+      // -------------------------------------------------------
 
+      final distance = nearestDistance!;
 
-      final distanceText =
-      nearestDistance! < 1000
-
-          ?
-
-      "${nearestDistance.round()} m away"
-
-          :
-
-      "${(nearestDistance / 1000).toStringAsFixed(1)} km away";
-
-
+      final distanceText = distance < 1000
+          ? "${distance.round()} m away"
+          : "${(distance / 1000).toStringAsFixed(1)} km away";
 
       ScaffoldMessenger.of(context).showSnackBar(
-
         SnackBar(
-
           content: Text(
-
             "Nearest attraction: "
                 "${nearestAttraction['name'] ?? 'Unknown'} "
                 "($distanceText)",
-
           ),
-
         ),
-
       );
-
-
     } catch (e) {
-
-
       if (!mounted) {
         return;
       }
 
-
-
       setState(() {
-
         isFindingLocation = false;
 
         locationMessage = null;
-
       });
 
-
-
       ScaffoldMessenger.of(context).showSnackBar(
-
         SnackBar(
-
           content: Text(
             "Unable to get your location: $e",
           ),
-
         ),
-
       );
-
     }
-
   }
-
-
 
   // =========================================================
   // CONVERT IMAGE TO BASE64
   // =========================================================
 
   Future<String?> convertImageToBase64() async {
-
     if (evidenceImage == null) {
-
       return null;
-
     }
 
-
-
     final compressedImage =
-
     await FlutterImageCompress.compressWithFile(
-
       evidenceImage!.absolute.path,
 
       minWidth: 800,
@@ -500,24 +328,14 @@ class _UserEtiquetteReportPageState
       minHeight: 800,
 
       quality: 60,
-
     );
 
-
-
     if (compressedImage == null) {
-
       return null;
-
     }
 
-
-
     return base64Encode(compressedImage);
-
   }
-
-
 
   // =========================================================
   // BUILD
@@ -525,1003 +343,561 @@ class _UserEtiquetteReportPageState
 
   @override
   Widget build(BuildContext context) {
-
-
     return ChangeNotifierProvider(
-
-
       create: (_) =>
           ViolationDashboardReportViewModel(),
 
-
-
       child:
-
-
       Consumer<ViolationDashboardReportViewModel>(
-
-
-        builder:
-            (context, viewModel, child) {
-
-
+        builder: (
+            context,
+            viewModel,
+            child,
+            ) {
           return Scaffold(
-
-
-            appBar:
-
-            AppBar(
-
-              title:
-
-              const Text(
+            appBar: AppBar(
+              title: const Text(
                 "User Etiquette Report",
               ),
-
             ),
 
+            body: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
 
-
-            body:
-
-
-            SingleChildScrollView(
-
-
-              padding:
-
-              const EdgeInsets.all(20),
-
-
-
-              child:
-
-
-              Column(
-
-
+              child: Column(
                 crossAxisAlignment:
-
                 CrossAxisAlignment.start,
 
-
-
-                children:[
-
-
-
+                children: [
                   // =====================================================
                   // TITLE
                   // =====================================================
 
                   const Text(
-
                     "Submit Etiquette Violation",
-
-                    style:
-
-                    TextStyle(
-
-                      fontSize:20,
-
-                      fontWeight:
-                      FontWeight.bold,
-
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
                     ),
-
                   ),
-
-
 
                   const SizedBox(
-                    height:20,
+                    height: 20,
                   ),
-
-
 
                   // =====================================================
                   // ATTRACTION
                   // =====================================================
 
-                  const Text(
-
-                    "Attraction",
-
-                    style:
-
-                    TextStyle(
-
-                      fontSize:16,
-
-                      fontWeight:
-                      FontWeight.bold,
-
-                    ),
-
-                  ),
-
-
-
-                  const SizedBox(
-                    height:8,
-                  ),
-
-
-
                   if (isLoadingAttractions)
-
                     const Center(
-
                       child:
                       CircularProgressIndicator(),
-
                     )
-
-
-
                   else if (attractions.isEmpty)
-
                     Container(
-
-                      width:
-                      double.infinity,
+                      width: double.infinity,
 
                       padding:
                       const EdgeInsets.all(15),
 
-                      decoration:
-
-                      BoxDecoration(
-
-                        border:
-                        Border.all(
+                      decoration: BoxDecoration(
+                        border: Border.all(
                           color: Colors.red,
                         ),
 
                         borderRadius:
                         BorderRadius.circular(10),
-
                       ),
 
-                      child:
-
-                      const Text(
-
+                      child: const Text(
                         "No supported attractions found.",
 
-                        style:
-
-                        TextStyle(
+                        style: TextStyle(
                           color: Colors.red,
                         ),
-
                       ),
-
                     )
-
-
-
                   else
-
                     DropdownButtonFormField<String>(
+                      value: selectedAttractionId,
 
-
-                      value:
-                      selectedAttractionId,
-
+                      // Prevent overflow
+                      isExpanded: true,
 
                       decoration:
-
                       const InputDecoration(
-
-                        labelText:
-                        "Select Attraction",
+                        labelText: "Attraction",
 
                         border:
                         OutlineInputBorder(),
-
                       ),
 
-
-
-                      items:
-
-                      attractions.map(
-
+                      items: attractions.map(
                             (attraction) {
-
-
                           final id =
                           attraction['id']
                               ?.toString();
 
-
-
                           final name =
                               attraction['name']
-                                  ?.toString()
-                                  ??
+                                  ?.toString() ??
                                   "Unknown Attraction";
 
+                          return DropdownMenuItem<
+                              String>(
+                            value: id,
 
+                            child: Text(
+                              name,
 
-                          return DropdownMenuItem<String>(
+                              maxLines: 1,
 
-                            value:
-                            id,
-
-                            child:
-                            Text(name),
-
+                              overflow:
+                              TextOverflow
+                                  .ellipsis,
+                            ),
                           );
-
                         },
-
                       ).where(
                             (item) =>
                         item.value != null,
                       ).toList(),
 
-
-
                       onChanged:
                       isFindingLocation
-
-                          ?
-
-                      null
-
-                          :
-
-                          (value) {
-
+                          ? null
+                          : (value) {
+                        if (value ==
+                            null) {
+                          return;
+                        }
 
                         setState(() {
-
                           selectedAttractionId =
                               value;
 
                           locationMessage =
                           null;
-
                         });
-
-
                       },
-
-
                     ),
 
-
-
                   const SizedBox(
-                    height:10,
+                    height: 10,
                   ),
-
-
 
                   // =====================================================
                   // GPS BUTTON
                   // =====================================================
 
                   SizedBox(
-
-
-                    width:
-                    double.infinity,
-
-
+                    width: double.infinity,
 
                     child:
-
                     OutlinedButton.icon(
-
-
                       onPressed:
-
                       isFindingLocation
+                          ? null
+                          : selectNearestAttraction,
 
-                          ?
-
-                      null
-
-                          :
-
-                      selectNearestAttraction,
-
-
-                      icon:
-
-                      isFindingLocation
-
-                          ?
-
-                      const SizedBox(
-
-                        width:18,
-
-                        height:18,
+                      icon: isFindingLocation
+                          ? const SizedBox(
+                        width: 18,
+                        height: 18,
 
                         child:
-
                         CircularProgressIndicator(
-
-                          strokeWidth:2,
-
+                          strokeWidth: 2,
                         ),
-
                       )
-
-                          :
-
-                      const Icon(
+                          : const Icon(
                         Icons.my_location,
                       ),
 
-
-
-                      label:
-
-                      Text(
-
+                      label: Text(
                         isFindingLocation
+                            ? "Finding nearest attraction..."
+                            : "Use Current Location",
 
-                            ?
+                        maxLines: 1,
 
-                        "Finding nearest attraction..."
-
-                            :
-
-                        "Use Current Location",
-
+                        overflow:
+                        TextOverflow.ellipsis,
                       ),
-
-
                     ),
-
-
                   ),
 
-
+                  // =====================================================
+                  // SELECTED ATTRACTION
+                  // =====================================================
 
                   if (selectedAttractionId != null)
-
                     Padding(
-
                       padding:
                       const EdgeInsets.only(
-                        top:8,
+                        top: 8,
                       ),
 
-                      child:
-
-                      Text(
-
+                      child: Text(
                         "Selected: "
                             "$selectedAttractionName",
 
-                        style:
-
-                        const TextStyle(
-
+                        style: const TextStyle(
                           fontWeight:
                           FontWeight.w500,
-
                         ),
-
                       ),
-
                     ),
-
-
-
-                  if (locationMessage != null)
-
-                    Padding(
-
-                      padding:
-                      const EdgeInsets.only(
-                        top:5,
-                      ),
-
-                      child:
-
-                      Text(
-
-                        locationMessage!,
-
-                        style:
-
-                        const TextStyle(
-
-                          color:
-                          Colors.green,
-
-                        ),
-
-                      ),
-
-                    ),
-
-
-
-                  const SizedBox(
-                    height:15,
-                  ),
-
-
 
                   // =====================================================
-                  // CATEGORY
+                  // GPS MESSAGE
+                  // =====================================================
+
+                  if (locationMessage != null)
+                    Padding(
+                      padding:
+                      const EdgeInsets.only(
+                        top: 5,
+                      ),
+
+                      child: Text(
+                        locationMessage!,
+
+                        style: const TextStyle(
+                          color: Colors.green,
+                        ),
+                      ),
+                    ),
+
+                  const SizedBox(
+                    height: 15,
+                  ),
+
+                  // =====================================================
+                  // VIOLATION CATEGORY
                   // =====================================================
 
                   DropdownButtonFormField<String>(
+                    value: selectedCategory,
 
-
-                    value:
-                    selectedCategory,
-
+                    isExpanded: true,
 
                     decoration:
-
                     const InputDecoration(
-
                       labelText:
                       "Violation Category",
 
                       border:
                       OutlineInputBorder(),
-
                     ),
 
+                    items: categories.map(
+                          (item) {
+                        return DropdownMenuItem<
+                            String>(
+                          value: item,
 
-
-                    items:
-
-                    categories.map(
-
-                          (item) =>
-
-                          DropdownMenuItem<String>(
-
-                            value:
+                          child: Text(
                             item,
 
-                            child:
-                            Text(item),
+                            maxLines: 1,
 
+                            overflow:
+                            TextOverflow
+                                .ellipsis,
                           ),
-
+                        );
+                      },
                     ).toList(),
 
-
-
-                    onChanged:
-                        (value) {
-
-
+                    onChanged: (value) {
                       if (value == null) {
                         return;
                       }
 
-
-
                       setState(() {
-
                         selectedCategory =
                             value;
-
                       });
-
-
                     },
-
-
                   ),
-
-
 
                   const SizedBox(
-                    height:15,
+                    height: 15,
                   ),
-
-
 
                   // =====================================================
                   // DESCRIPTION
                   // =====================================================
 
                   TextField(
-
-
                     controller:
                     descriptionController,
 
-
-                    maxLines:5,
-
-
+                    maxLines: 5,
 
                     decoration:
-
                     const InputDecoration(
-
-                      labelText:
-                      "Description",
+                      labelText: "Description",
 
                       hintText:
                       "Describe the etiquette issue",
 
                       border:
                       OutlineInputBorder(),
-
                     ),
-
-
-
                   ),
-
-
 
                   const SizedBox(
-                    height:15,
+                    height: 15,
                   ),
-
-
 
                   // =====================================================
                   // EVIDENCE PHOTO
                   // =====================================================
 
                   GestureDetector(
-
-
-                    onTap:
-                        () async {
-
-
+                    onTap: () async {
                       final File? image =
-
                       await Navigator.push(
-
                         context,
 
                         MaterialPageRoute(
-
-                          builder:
-                              (context) =>
-
+                          builder: (context) =>
                           const EvidencePhotoPage(),
-
                         ),
-
                       );
 
-
-
                       if (image != null) {
-
-
                         setState(() {
-
-                          evidenceImage =
-                              image;
-
+                          evidenceImage = image;
                         });
-
-
                       }
-
-
                     },
 
-
-
-                    child:
-
-                    Container(
-
+                    child: Container(
+                      width: double.infinity,
 
                       padding:
                       const EdgeInsets.all(15),
 
-
-
                       decoration:
-
                       BoxDecoration(
-
-                        border:
-
-                        Border.all(
-
-                          color:
-                          Colors.grey,
-
+                        border: Border.all(
+                          color: Colors.grey,
                         ),
 
-
-
                         borderRadius:
-
                         BorderRadius.circular(10),
-
                       ),
 
-
-
-                      child:
-
-                      Row(
-
-
-                        children:[
-
-
-
+                      child: Row(
+                        children: [
                           const Icon(
-
                             Icons.camera_alt,
-
                           ),
-
-
 
                           const SizedBox(
-                            width:10,
+                            width: 10,
                           ),
-
-
 
                           Expanded(
-
-                            child:
-
-                            Text(
-
+                            child: Text(
                               evidenceImage == null
-
-                                  ?
-
-                              "Add Evidence Photo"
-
-                                  :
-
-                              "Photo Added",
-
+                                  ? "Add Evidence Photo"
+                                  : "Photo Added",
                             ),
-
                           ),
-
-
-
                         ],
-
-
                       ),
-
-
                     ),
-
-
                   ),
-
-
 
                   const SizedBox(
-                    height:20,
+                    height: 20,
                   ),
-
-
 
                   // =====================================================
                   // PHOTO PREVIEW
                   // =====================================================
 
                   if (evidenceImage != null)
-
-
                     ClipRRect(
-
-
                       borderRadius:
-
                       BorderRadius.circular(10),
 
-
-
-                      child:
-
-                      Image.file(
-
+                      child: Image.file(
                         evidenceImage!,
 
-                        height:200,
+                        height: 200,
 
-                        width:
-                        double.infinity,
+                        width: double.infinity,
 
-                        fit:
-                        BoxFit.cover,
-
+                        fit: BoxFit.cover,
                       ),
-
-
                     ),
 
-
-
                   const SizedBox(
-                    height:20,
+                    height: 20,
                   ),
-
-
 
                   // =====================================================
                   // SUBMIT BUTTON
                   // =====================================================
 
                   SizedBox(
+                    width: double.infinity,
 
-
-                    width:
-                    double.infinity,
-
-
-
-                    child:
-
-                    ElevatedButton(
-
-
+                    child: ElevatedButton(
                       onPressed:
-
                       viewModel.isSubmitting
-
-                          ?
-
-                      null
-
-                          :
-
-                          () async {
-
-
-                        // =================================================
-                        // VALIDATION
-                        // =================================================
+                          ? null
+                          : () async {
+                        // -----------------------------------
+                        // CHECK ATTRACTION
+                        // -----------------------------------
 
                         if (selectedAttractionId ==
                             null ||
                             selectedAttractionId!
                                 .isEmpty) {
-
-
-                          ScaffoldMessenger.of(context)
-                              .showSnackBar(
-
+                          ScaffoldMessenger
+                              .of(
+                            context,
+                          ).showSnackBar(
                             const SnackBar(
-
-                              content:
-
-                              Text(
-
+                              content: Text(
                                 "Please select an attraction.",
-
                               ),
-
                             ),
-
                           );
 
-
                           return;
-
                         }
 
+                        // -----------------------------------
+                        // CHECK DESCRIPTION
+                        // -----------------------------------
 
-
-                        if (descriptionController.text
+                        if (descriptionController
+                            .text
                             .trim()
                             .isEmpty) {
-
-
-                          ScaffoldMessenger.of(context)
-                              .showSnackBar(
-
+                          ScaffoldMessenger
+                              .of(
+                            context,
+                          ).showSnackBar(
                             const SnackBar(
-
-                              content:
-
-                              Text(
-
+                              content: Text(
                                 "Please enter a description.",
-
                               ),
-
                             ),
-
                           );
 
-
                           return;
-
                         }
 
-
-
-                        // =================================================
+                        // -----------------------------------
                         // CONVERT PHOTO
-                        // =================================================
+                        // -----------------------------------
 
                         final imageBase64 =
-
                         await convertImageToBase64();
 
-
-
-                        // =================================================
-                        // SUBMIT
-                        // =================================================
+                        // -----------------------------------
+                        // SUBMIT REPORT
+                        // -----------------------------------
 
                         final success =
-
-                        await viewModel.submitReport(
-
+                        await viewModel
+                            .submitReport(
                           attractionId:
-
                           selectedAttractionId!,
 
                           category:
-
                           selectedCategory,
 
                           description:
-
-                          descriptionController.text
+                          descriptionController
+                              .text
                               .trim(),
 
                           evidenceImageUrl:
-
                           imageBase64,
-
                         );
-
-
 
                         if (!mounted) {
                           return;
                         }
 
-
+                        // -----------------------------------
+                        // SUCCESS
+                        // -----------------------------------
 
                         if (success) {
-
-
-                          ScaffoldMessenger.of(context)
-                              .showSnackBar(
-
+                          ScaffoldMessenger
+                              .of(
+                            context,
+                          ).showSnackBar(
                             const SnackBar(
-
-                              content:
-
-                              Text(
-
-                                "Report submitted successfully.",
-
+                              content: Text(
+                                "Report submitted successfully",
                               ),
-
                             ),
-
                           );
 
-
-
-                          descriptionController.clear();
-
-
+                          descriptionController
+                              .clear();
 
                           setState(() {
-
                             evidenceImage =
                             null;
-
                           });
-
-
                         }
 
+                        // -----------------------------------
+                        // ERROR
+                        // -----------------------------------
 
                         else {
-
-
-                          ScaffoldMessenger.of(context)
-                              .showSnackBar(
-
+                          ScaffoldMessenger
+                              .of(
+                            context,
+                          ).showSnackBar(
                             SnackBar(
-
-                              content:
-
-                              Text(
-
-                                viewModel.errorMessage
-                                    ??
+                              content: Text(
+                                viewModel
+                                    .errorMessage ??
                                     "Failed to submit report.",
-
                               ),
-
                             ),
-
                           );
-
-
                         }
-
-
                       },
 
-
-
                       child:
-
                       viewModel.isSubmitting
-
-                          ?
-
-                      const SizedBox(
-
-                        width:20,
-
-                        height:20,
+                          ? const SizedBox(
+                        width: 20,
+                        height: 20,
 
                         child:
-
                         CircularProgressIndicator(
-
-                          strokeWidth:2,
-
+                          strokeWidth: 2,
                         ),
-
                       )
-
-                          :
-
-                      const Text(
-
+                          : const Text(
                         "Submit Report",
-
                       ),
-
-
                     ),
-
-
                   ),
-
-
-
                 ],
-
-
               ),
-
-
             ),
-
-
           );
-
-
         },
-
-
       ),
-
-
     );
-
-
   }
-
-
 }

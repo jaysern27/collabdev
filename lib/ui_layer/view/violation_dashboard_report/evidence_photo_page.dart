@@ -160,14 +160,6 @@ class _EvidencePhotoPageState
 
             ElevatedButton(
 
-              child:
-
-              const Text(
-                "Use Photo",
-              ),
-
-
-
               onPressed:
 
               selectedImage == null
@@ -192,6 +184,14 @@ class _EvidencePhotoPageState
 
 
               },
+
+
+
+              child:
+
+              const Text(
+                "Use Photo",
+              ),
 
 
             )

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../../data_layer/model/services/firebase_authentication/firebase_authentication_service.dart';
 import '../../../data_layer/model/repositories/ranking_report/ranking_report_repository.dart';
+import 'login_page.dart';
 
 
 
@@ -93,9 +94,7 @@ class _AdminDashboardPageState
     }catch(e){
 
 
-      print(
-          "Load report error: $e"
-      );
+      debugPrint("Load report error: $e");
 
 
     }
@@ -280,18 +279,20 @@ class _AdminDashboardPageState
 
 
 
-            onPressed:() async{
-
-
-
+            onPressed: () async {
               await authService.logout();
 
+              if (!context.mounted) {
+                return;
+              }
 
-
-              Navigator.pop(context);
-
-
-
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const LoginPage(),
+                ),
+                    (route) => false,
+              );
             },
 
 
