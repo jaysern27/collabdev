@@ -116,6 +116,22 @@ class OutfitRepository {
         .recoverLostPhoto();
   }
 
+  Future<FullBodyValidationResult>
+  validateFullBodyVisibility(
+      OutfitImageData outfitImage, {
+        double minimumLandmarkLikelihood = 0.55,
+        double minimumBodyHeightRatio = 0.55,
+      }) async {
+    return await _outfitRecognitionService
+        .validateFullBodyVisibility(
+      outfitImage,
+      minimumLandmarkLikelihood:
+      minimumLandmarkLikelihood,
+      minimumBodyHeightRatio:
+      minimumBodyHeightRatio,
+    );
+  }
+
   // =========================================================
   // IMAGE PREPROCESSING
   // =========================================================

@@ -34,6 +34,8 @@ class _OutfitRecognitionViewState
       'lib/assets/models/shoulder_coverage_model.tflite',
       headwearModelAssetPath:
       'lib/assets/models/headwear_detection_model.tflite',
+      humanModelAssetPath:
+      'lib/assets/models/human_detection_model.tflite',
     );
 
     await _viewModel.recoverLostPhoto();
@@ -652,9 +654,6 @@ class _OutfitRecognitionViewState
               ),
               confidence:
               sleeve.confidence,
-              isConfident:
-              sleeve.confidence >=
-                  0.75,
               icon:
               Icons.checkroom_outlined,
             ),
@@ -675,9 +674,6 @@ class _OutfitRecognitionViewState
               ),
               confidence:
               lowerBody.confidence,
-              isConfident:
-              lowerBody.confidence >=
-                  0.75,
               icon: Icons
                   .accessibility_new_outlined,
             ),
@@ -698,9 +694,6 @@ class _OutfitRecognitionViewState
               ),
               confidence:
               shoulder.confidence,
-              isConfident:
-              shoulder.confidence >=
-                  0.75,
               icon: Icons
                   .accessibility_outlined,
             ),
@@ -721,9 +714,6 @@ class _OutfitRecognitionViewState
               ),
               confidence:
               headwear.confidence,
-              isConfident:
-              headwear.confidence >=
-                  0.75,
               icon: Icons.person_outline,
             ),
 
@@ -746,12 +736,10 @@ class _OutfitRecognitionViewState
               ),
             ),
             child: const Text(
-              'AI results are advisory. '
-                  'If confidence is below 75%, '
-                  'CultureGuide will mark the attribute '
-                  'as Unable to Determine.\n\n'
-                  'Headwear detection identifies general '
-                  'visible headwear only.',
+              'AI results show the highest-scoring prediction '
+                  'from each clothing classifier.\n\n'
+                  'The confidence percentage shows how strongly '
+                  'the model preferred that result.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 12,
@@ -768,13 +756,12 @@ class _OutfitRecognitionViewState
     required String title,
     required String value,
     required double confidence,
-    required bool isConfident,
     required IconData icon,
   }) {
-    final displayValue =
-    isConfident
-        ? value
-        : 'Unable to Determine';
+    // Always display the model's highest-scoring prediction.
+    //
+    // We deliberately DO NOT reject predictions below 75%.
+    final displayValue = value;
 
     return Row(
       crossAxisAlignment:
@@ -842,15 +829,11 @@ class _OutfitRecognitionViewState
               Text(
                 'Confidence: '
                     '${(confidence * 100).toStringAsFixed(1)}%',
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 12,
-                  color: isConfident
-                      ? const Color(
+                  color: Color(
                     0xFF008F8C,
-                  )
-                      : Colors
-                      .orange
-                      .shade800,
+                  ),
                 ),
               ),
             ],
@@ -900,14 +883,14 @@ class _OutfitRecognitionViewState
       String value,
       ) {
     switch (value) {
-      case 'covered':
-        return 'Covered';
+      case 'long':
+        return 'Long';
 
-      case 'partial':
-        return 'Partially Covered';
+      case 'short':
+        return 'Short';
 
-      case 'uncovered':
-        return 'Uncovered';
+      case 'sleeveless':
+        return 'Sleeveless';
 
       default:
         return value;
@@ -958,7 +941,7 @@ class _OutfitRecognitionViewState
         return 'No Headwear Detected';
 
       default:
-        return 'Unable to Determine';
+        return value;
     }
   }
 }

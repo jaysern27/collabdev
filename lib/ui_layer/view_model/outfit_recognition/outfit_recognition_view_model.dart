@@ -1,742 +1,1161 @@
-import 'package:flutter/foundation.dart';
+  import 'package:flutter/foundation.dart';
 
-import '../../../data_layer/model/repositories/etiquette/etiquette_repository.dart';
-import '../../../data_layer/model/repositories/outfit/outfit_repository.dart';
-import '../../../data_layer/model/services/outfit_recognition/outfit_recognition_service.dart';
+  import '../../../data_layer/model/repositories/etiquette/etiquette_repository.dart';
+  import '../../../data_layer/model/repositories/outfit/outfit_repository.dart';
+  import '../../../data_layer/model/services/outfit_recognition/outfit_recognition_service.dart';
 
-class OutfitRecognitionViewModel extends ChangeNotifier {
-  final OutfitRepository _outfitRepository;
-  final EtiquetteRepository _etiquetteRepository;
+  class OutfitRecognitionViewModel extends ChangeNotifier {
+    final OutfitRepository _outfitRepository;
+    final EtiquetteRepository _etiquetteRepository;
 
-  OutfitRecognitionViewModel({
-    OutfitRepository? outfitRepository,
-    EtiquetteRepository? etiquetteRepository,
-  })  : _outfitRepository =
-      outfitRepository ?? OutfitRepository(),
-        _etiquetteRepository =
-            etiquetteRepository ?? EtiquetteRepository();
+    OutfitRecognitionViewModel({
+      OutfitRepository? outfitRepository,
+      EtiquetteRepository? etiquetteRepository,
+    })  : _outfitRepository =
+        outfitRepository ?? OutfitRepository(),
+          _etiquetteRepository =
+              etiquetteRepository ?? EtiquetteRepository();
 
-  // =========================================================
-  // STATE
-  // =========================================================
+    // =========================================================
+    // HUMAN DETECTION SETTINGS
+    // =========================================================
 
-  bool _consentGiven = false;
-  bool _isLoading = false;
-  bool _isAnalysing = false;
-  bool _isModelReady = false;
+    static const double minimumHumanConfidence = 0.60;
 
-  String? _selectedAttractionId;
-  String? _selectedAttractionName;
+    // =========================================================
+    // STATE
+    // =========================================================
 
-  OutfitImageData? _selectedImage;
-  PreparedOutfitInput? _preparedInput;
+    bool _consentGiven = false;
+    bool _isLoading = false;
+    bool _isAnalysing = false;
+    bool _isModelReady = false;
 
-  SleeveCoveragePrediction? _sleevePrediction;
-  LowerBodyCoveragePrediction? _lowerBodyPrediction;
-  ShoulderCoveragePrediction? _shoulderPrediction;
-  HeadwearPrediction? _headwearPrediction;
+    String? _selectedAttractionId;
+    String? _selectedAttractionName;
 
-  final Map<String, OutfitAttributePrediction>
-  _detectedAttributes = {};
+    OutfitImageData? _selectedImage;
+    PreparedOutfitInput? _preparedInput;
 
-  List<Map<String, dynamic>> _dressCodeRules = [];
+    // =========================================================
+    // AI PREDICTIONS
+    // =========================================================
 
-  OutfitAdvisoryResult? _advisoryResult;
+    HumanDetectionPrediction? _humanDetectionPrediction;
+    FullBodyValidationResult? _fullBodyValidationResult;
+    SleeveCoveragePrediction? _sleevePrediction;
+    LowerBodyCoveragePrediction? _lowerBodyPrediction;
+    ShoulderCoveragePrediction? _shoulderPrediction;
+    HeadwearPrediction? _headwearPrediction;
 
-  String? _errorMessage;
+    final Map<String, OutfitAttributePrediction>
+    _detectedAttributes = {};
 
-  // =========================================================
-  // GETTERS
-  // =========================================================
+    List<Map<String, dynamic>> _dressCodeRules = [];
 
-  bool get consentGiven => _consentGiven;
+    OutfitAdvisoryResult? _advisoryResult;
 
-  bool get isLoading => _isLoading;
+    String? _errorMessage;
 
-  bool get isAnalysing => _isAnalysing;
+    // =========================================================
+    // GETTERS
+    // =========================================================
 
-  bool get isModelReady => _isModelReady;
+    bool get consentGiven => _consentGiven;
 
-  bool get areModelsReady =>
-      _outfitRepository.areOutfitModelsReady;
+    bool get isLoading => _isLoading;
 
-  bool get hasSelectedImage => _selectedImage != null;
+    bool get isAnalysing => _isAnalysing;
 
-  bool get hasSelectedDestination =>
-      _selectedAttractionId != null;
+    bool get isModelReady => _isModelReady;
 
-  String? get selectedAttractionId =>
-      _selectedAttractionId;
+    bool get areModelsReady =>
+        _outfitRepository.areOutfitModelsReady;
 
-  String? get selectedAttractionName =>
-      _selectedAttractionName;
+    bool get hasSelectedImage =>
+        _selectedImage != null;
 
-  OutfitImageData? get selectedImage =>
-      _selectedImage;
+    bool get hasSelectedDestination =>
+        _selectedAttractionId != null;
 
-  PreparedOutfitInput? get preparedInput =>
-      _preparedInput;
+    String? get selectedAttractionId =>
+        _selectedAttractionId;
 
-  SleeveCoveragePrediction? get sleevePrediction =>
-      _sleevePrediction;
+    String? get selectedAttractionName =>
+        _selectedAttractionName;
 
-  LowerBodyCoveragePrediction? get lowerBodyPrediction =>
-      _lowerBodyPrediction;
+    OutfitImageData? get selectedImage =>
+        _selectedImage;
 
-  ShoulderCoveragePrediction? get shoulderPrediction =>
-      _shoulderPrediction;
+    PreparedOutfitInput? get preparedInput =>
+        _preparedInput;
 
-  HeadwearPrediction? get headwearPrediction =>
-      _headwearPrediction;
+    FullBodyValidationResult?
+    get fullBodyValidationResult =>
+        _fullBodyValidationResult;
 
-  Map<String, OutfitAttributePrediction>
-  get detectedAttributes =>
-      Map.unmodifiable(_detectedAttributes);
+    bool get hasValidFullBody =>
+        _fullBodyValidationResult
+            ?.isValid ??
+            false;
 
-  List<Map<String, dynamic>> get dressCodeRules =>
-      List.unmodifiable(_dressCodeRules);
+    // =========================================================
+    // HUMAN DETECTION GETTERS
+    // =========================================================
 
-  OutfitAdvisoryResult? get advisoryResult =>
-      _advisoryResult;
+    HumanDetectionPrediction?
+    get humanDetectionPrediction =>
+        _humanDetectionPrediction;
 
-  String? get result =>
-      _advisoryResult?.displayStatus;
+    bool get hasValidHuman =>
+        _humanDetectionPrediction?.passesThreshold(
+          minimumConfidence:
+          minimumHumanConfidence,
+        ) ??
+            false;
 
-  String? get recommendation =>
-      _advisoryResult?.message;
+    bool get isHumanDetectionModelReady =>
+        _outfitRepository
+            .isHumanDetectionModelReady;
 
-  String? get errorMessage =>
-      _errorMessage;
+    // =========================================================
+    // OUTFIT PREDICTION GETTERS
+    // =========================================================
 
-  // =========================================================
-  // CONSENT
-  // =========================================================
+    SleeveCoveragePrediction? get sleevePrediction =>
+        _sleevePrediction;
 
-  void setConsent(bool value) {
-    _consentGiven = value;
+    LowerBodyCoveragePrediction? get lowerBodyPrediction =>
+        _lowerBodyPrediction;
 
-    if (!value) {
-      clearPhoto();
-    }
+    ShoulderCoveragePrediction? get shoulderPrediction =>
+        _shoulderPrediction;
 
-    notifyListeners();
-  }
+    HeadwearPrediction? get headwearPrediction =>
+        _headwearPrediction;
 
-  // =========================================================
-  // DESTINATION
-  // =========================================================
+    Map<String, OutfitAttributePrediction>
+    get detectedAttributes =>
+        Map.unmodifiable(
+          _detectedAttributes,
+        );
 
-  Future<void> selectDestination({
-    required String attractionId,
-    required String attractionName,
-  }) async {
-    _selectedAttractionId = attractionId;
-    _selectedAttractionName = attractionName;
+    List<Map<String, dynamic>> get dressCodeRules =>
+        List.unmodifiable(
+          _dressCodeRules,
+        );
 
-    _dressCodeRules = [];
-    _advisoryResult = null;
-    _errorMessage = null;
+    OutfitAdvisoryResult? get advisoryResult =>
+        _advisoryResult;
 
-    notifyListeners();
+    String? get result =>
+        _advisoryResult?.displayStatus;
 
-    await loadDressCodeRules();
-  }
+    String? get recommendation =>
+        _advisoryResult?.message;
 
-  Future<void> loadDressCodeRules() async {
-    final attractionId = _selectedAttractionId;
+    String? get errorMessage =>
+        _errorMessage;
 
-    if (attractionId == null) {
-      _errorMessage =
-      'Please select a destination first.';
+    // =========================================================
+    // CONSENT
+    // =========================================================
 
-      notifyListeners();
-      return;
-    }
+    void setConsent(bool value) {
+      _consentGiven = value;
 
-    _setLoading(true);
-
-    try {
-      _errorMessage = null;
-
-      _dressCodeRules =
-      await _etiquetteRepository
-          .getDressCodeRules(
-        attractionId,
-      );
-    } catch (e) {
-      _errorMessage = e.toString();
-    } finally {
-      _setLoading(false);
-    }
-  }
-
-  // =========================================================
-  // CAMERA
-  // =========================================================
-
-  Future<void> capturePhoto() async {
-    if (!_checkConsent()) {
-      return;
-    }
-
-    _setLoading(true);
-
-    try {
-      _errorMessage = null;
-
-      final image =
-      await _outfitRepository.capturePhoto(
-        consentGiven: _consentGiven,
-      );
-
-      if (image != null) {
-        _setSelectedImage(image);
+      if (!value) {
+        clearPhoto();
       }
-    } catch (e) {
-      _errorMessage = e.toString();
-    } finally {
-      _setLoading(false);
-    }
-  }
-
-  // =========================================================
-  // GALLERY
-  // =========================================================
-
-  Future<void> selectPhoto() async {
-    if (!_checkConsent()) {
-      return;
-    }
-
-    _setLoading(true);
-
-    try {
-      _errorMessage = null;
-
-      final image =
-      await _outfitRepository.selectPhoto(
-        consentGiven: _consentGiven,
-      );
-
-      if (image != null) {
-        _setSelectedImage(image);
-      }
-    } catch (e) {
-      _errorMessage = e.toString();
-    } finally {
-      _setLoading(false);
-    }
-  }
-
-  // =========================================================
-  // ANDROID LOST PHOTO RECOVERY
-  // =========================================================
-
-  Future<void> recoverLostPhoto() async {
-    try {
-      final image =
-      await _outfitRepository
-          .recoverLostPhoto();
-
-      if (image != null) {
-        _setSelectedImage(image);
-      }
-    } catch (e) {
-      _errorMessage = e.toString();
 
       notifyListeners();
     }
-  }
 
-  // =========================================================
-  // MODEL INITIALIZATION
-  // =========================================================
+    // =========================================================
+    // DESTINATION
+    // =========================================================
 
-  Future<void> initializeModel({
-    required String modelAssetPath,
-  }) async {
-    _setLoading(true);
+    Future<void> selectDestination({
+      required String attractionId,
+      required String attractionName,
+    }) async {
+      _selectedAttractionId =
+          attractionId;
 
-    try {
-      _errorMessage = null;
+      _selectedAttractionName =
+          attractionName;
 
-      await _outfitRepository.initializeModel(
-        modelAssetPath: modelAssetPath,
-      );
+      _dressCodeRules = [];
 
-      _isModelReady =
-          _outfitRepository.isModelReady;
-    } catch (e) {
-      _isModelReady = false;
-      _errorMessage = e.toString();
-    } finally {
-      _setLoading(false);
-    }
-  }
-
-  Future<void> initializeOutfitModels({
-    required String sleeveModelAssetPath,
-    required String lowerBodyModelAssetPath,
-    required String shoulderModelAssetPath,
-    required String headwearModelAssetPath,
-  }) async {
-    try {
-      _isLoading = true;
-      _errorMessage = null;
-      notifyListeners();
-
-      await _outfitRepository.initializeModel(
-        modelAssetPath: sleeveModelAssetPath,
-      );
-
-      await _outfitRepository.initializeLowerBodyModel(
-        modelAssetPath: lowerBodyModelAssetPath,
-      );
-
-      await _outfitRepository.initializeShoulderModel(
-        modelAssetPath: shoulderModelAssetPath,
-      );
-
-      await _outfitRepository.initializeHeadwearModel(
-        modelAssetPath: headwearModelAssetPath,
-      );
-
-      _isModelReady =
-          _outfitRepository.areOutfitModelsReady;
-    } catch (e) {
-      _errorMessage =
-      'Failed to initialize outfit models: $e';
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
-
-  // =========================================================
-  // REAL SLEEVE COVERAGE ANALYSIS
-  // =========================================================
-
-  Future<void> analyseSleeveCoverage() async {
-    final image = _selectedImage;
-
-    if (image == null) {
-      _errorMessage =
-      'Please take or upload an outfit photo first.';
-
-      notifyListeners();
-      return;
-    }
-
-    if (!_outfitRepository.isModelReady) {
-      _errorMessage =
-      'Outfit recognition model is not ready.';
-
-      notifyListeners();
-      return;
-    }
-
-    _setAnalysing(true);
-
-    try {
-      _errorMessage = null;
       _advisoryResult = null;
 
-      // Prepare model input
-      _preparedInput =
-          _outfitRepository
-              .prepareImageForModel(
+      _errorMessage = null;
+
+      notifyListeners();
+
+      await loadDressCodeRules();
+    }
+
+    Future<void> loadDressCodeRules() async {
+      final attractionId =
+          _selectedAttractionId;
+
+      if (attractionId == null) {
+        _errorMessage =
+        'Please select a destination first.';
+
+        notifyListeners();
+
+        return;
+      }
+
+      _setLoading(true);
+
+      try {
+        _errorMessage = null;
+
+        _dressCodeRules =
+        await _etiquetteRepository
+            .getDressCodeRules(
+          attractionId,
+        );
+      } catch (e) {
+        _errorMessage =
+            e.toString();
+      } finally {
+        _setLoading(false);
+      }
+    }
+
+    // =========================================================
+    // CAMERA
+    // =========================================================
+
+    Future<void> capturePhoto() async {
+      if (!_checkConsent()) {
+        return;
+      }
+
+      _setLoading(true);
+
+      try {
+        _errorMessage = null;
+
+        final image =
+        await _outfitRepository
+            .capturePhoto(
+          consentGiven:
+          _consentGiven,
+        );
+
+        if (image != null) {
+          _setSelectedImage(
             image,
           );
+        }
+      } catch (e) {
+        _errorMessage =
+            e.toString();
+      } finally {
+        _setLoading(false);
+      }
+    }
 
-      // Run real TensorFlow Lite model
+    // =========================================================
+    // GALLERY
+    // =========================================================
+
+    Future<void> selectPhoto() async {
+      if (!_checkConsent()) {
+        return;
+      }
+
+      _setLoading(true);
+
+      try {
+        _errorMessage = null;
+
+        final image =
+        await _outfitRepository
+            .selectPhoto(
+          consentGiven:
+          _consentGiven,
+        );
+
+        if (image != null) {
+          _setSelectedImage(
+            image,
+          );
+        }
+      } catch (e) {
+        _errorMessage =
+            e.toString();
+      } finally {
+        _setLoading(false);
+      }
+    }
+
+    // =========================================================
+    // ANDROID LOST PHOTO RECOVERY
+    // =========================================================
+
+    Future<void> recoverLostPhoto() async {
+      try {
+        final image =
+        await _outfitRepository
+            .recoverLostPhoto();
+
+        if (image != null) {
+          _setSelectedImage(
+            image,
+          );
+        }
+      } catch (e) {
+        _errorMessage =
+            e.toString();
+
+        notifyListeners();
+      }
+    }
+
+    // =========================================================
+    // LEGACY SINGLE MODEL INITIALIZATION
+    // =========================================================
+
+    Future<void> initializeModel({
+      required String modelAssetPath,
+    }) async {
+      _setLoading(true);
+
+      try {
+        _errorMessage = null;
+
+        await _outfitRepository
+            .initializeModel(
+          modelAssetPath:
+          modelAssetPath,
+        );
+
+        // Do not report the entire module
+        // ready unless ALL models are loaded.
+        _isModelReady =
+            _outfitRepository
+                .areOutfitModelsReady;
+      } catch (e) {
+        _isModelReady = false;
+
+        _errorMessage =
+            e.toString();
+      } finally {
+        _setLoading(false);
+      }
+    }
+
+    // =========================================================
+    // INITIALIZE ALL OUTFIT MODELS
+    // =========================================================
+
+    Future<void> initializeOutfitModels({
+      required String humanModelAssetPath,
+      required String sleeveModelAssetPath,
+      required String lowerBodyModelAssetPath,
+      required String shoulderModelAssetPath,
+      required String headwearModelAssetPath,
+    }) async {
+      try {
+        _isLoading = true;
+
+        _isModelReady = false;
+
+        _errorMessage = null;
+
+        notifyListeners();
+
+        // =====================================================
+        // 1. HUMAN DETECTION MODEL
+        // =====================================================
+
+        await _outfitRepository
+            .initializeHumanDetectionModel(
+          modelAssetPath:
+          humanModelAssetPath,
+        );
+
+        // =====================================================
+        // 2. SLEEVE MODEL
+        // =====================================================
+
+        await _outfitRepository
+            .initializeModel(
+          modelAssetPath:
+          sleeveModelAssetPath,
+        );
+
+        // =====================================================
+        // 3. LOWER BODY MODEL
+        // =====================================================
+
+        await _outfitRepository
+            .initializeLowerBodyModel(
+          modelAssetPath:
+          lowerBodyModelAssetPath,
+        );
+
+        // =====================================================
+        // 4. SHOULDER MODEL
+        // =====================================================
+
+        await _outfitRepository
+            .initializeShoulderModel(
+          modelAssetPath:
+          shoulderModelAssetPath,
+        );
+
+        // =====================================================
+        // 5. HEADWEAR MODEL
+        // =====================================================
+
+        await _outfitRepository
+            .initializeHeadwearModel(
+          modelAssetPath:
+          headwearModelAssetPath,
+        );
+
+        // =====================================================
+        // CHECK ALL FIVE MODELS
+        // =====================================================
+
+        _isModelReady =
+            _outfitRepository
+                .areOutfitModelsReady;
+
+        if (!_isModelReady) {
+          _errorMessage =
+          'One or more AI models failed to become ready.';
+        }
+      } catch (e) {
+        _isModelReady = false;
+
+        _errorMessage =
+        'Failed to initialize outfit models: $e';
+      } finally {
+        _isLoading = false;
+
+        notifyListeners();
+      }
+    }
+
+    // =========================================================
+    // HUMAN DETECTION
+    // =========================================================
+
+    bool _detectHuman(
+        OutfitImageData image,
+        ) {
+      if (!_outfitRepository
+          .isHumanDetectionModelReady) {
+        _errorMessage =
+        'Human detection model is not ready.';
+
+        return false;
+      }
+
+      final humanInput =
+      _outfitRepository
+          .prepareHumanDetectionImageForModel(
+        image,
+      );
+
       final prediction =
       _outfitRepository
-          .predictSleeveCoverage(
+          .predictHumanPresence(
         preparedInput:
-        _preparedInput!,
+        humanInput,
       );
 
-      _sleevePrediction =
+      debugPrint(
+        '================ HUMAN DEBUG ================',
+      );
+
+      debugPrint(
+        'prediction.value = ${prediction.value}',
+      );
+
+      debugPrint(
+        'prediction.confidence = ${prediction.confidence}',
+      );
+
+      debugPrint(
+        'humanConfidence = ${prediction.humanConfidence}',
+      );
+
+      debugPrint(
+        'noHumanConfidence = ${prediction.noHumanConfidence}',
+      );
+
+      debugPrint(
+        'minimum required = $minimumHumanConfidence',
+      );
+
+      debugPrint(
+        '=============================================',
+      );
+
+      _humanDetectionPrediction =
           prediction;
 
-      _detectedAttributes.clear();
+      if (!prediction.passesThreshold(
+        minimumConfidence:
+        minimumHumanConfidence,
+      )) {
+        // Clear all outfit predictions.
+        // Keep the human prediction so it can
+        // still be inspected if needed.
 
-      // Only accept AI prediction when
-      // confidence is at least 75%.
-      if (prediction.confidence >= 0.75) {
-        _detectedAttributes[
-        'sleeveCoverage'
-        ] = OutfitAttributePrediction(
-          attribute: 'sleeveCoverage',
-          value: prediction.value,
-          confidence:
-          prediction.confidence,
+        _preparedInput = null;
+
+        _sleevePrediction = null;
+        _lowerBodyPrediction = null;
+        _shoulderPrediction = null;
+        _headwearPrediction = null;
+
+        _detectedAttributes.clear();
+
+        _advisoryResult =
+        const OutfitAdvisoryResult(
+          status:
+          OutfitAdvisoryStatus
+              .unableToDetermine,
+          checks: [],
+          message:
+          'No person was detected confidently in this image.',
         );
+
+        _errorMessage =
+        'No person detected. Please take or upload '
+            'a clear photo showing a person.';
+
+        return false;
       }
 
-      notifyListeners();
-    } catch (e) {
-      _errorMessage = e.toString();
-    } finally {
-      _setAnalysing(false);
-    }
-  }
-
-  Future<void> analyseOutfit() async {
-    final image = _selectedImage;
-
-    if (image == null) {
-      _errorMessage =
-      'Please take or upload an outfit photo first.';
-
-      notifyListeners();
-      return;
+      return true;
     }
 
-    if (!_outfitRepository.areOutfitModelsReady) {
-      _errorMessage =
-      'Outfit recognition models are not ready.';
+    // =========================================================
+  // FULL-BODY / POSE VALIDATION
+  // =========================================================
 
-      notifyListeners();
-      return;
+    Future<bool> _validateFullBody(
+        OutfitImageData image,
+        ) async {
+      final validation =
+      await _outfitRepository
+          .validateFullBodyVisibility(
+        image,
+        minimumLandmarkLikelihood:
+        0.55,
+        minimumBodyHeightRatio:
+        0.55,
+      );
+
+      _fullBodyValidationResult =
+          validation;
+
+      if (!validation.isValid) {
+        _preparedInput = null;
+
+        _sleevePrediction = null;
+        _lowerBodyPrediction = null;
+        _shoulderPrediction = null;
+        _headwearPrediction = null;
+
+        _detectedAttributes.clear();
+
+        _advisoryResult =
+            OutfitAdvisoryResult(
+              status:
+              OutfitAdvisoryStatus
+                  .unableToDetermine,
+              checks: const [],
+              message:
+              validation.message,
+            );
+
+        _errorMessage =
+            validation.message;
+
+        return false;
+      }
+
+      return true;
     }
 
-    _setAnalysing(true);
+    // =========================================================
+    // REAL SLEEVE COVERAGE ANALYSIS
+    // =========================================================
 
-    try {
-      _errorMessage = null;
+    Future<void> analyseSleeveCoverage() async {
+      final image =
+          _selectedImage;
+
+      if (image == null) {
+        _errorMessage =
+        'Please take or upload an outfit photo first.';
+
+        notifyListeners();
+
+        return;
+      }
+
+      if (!_outfitRepository
+          .isHumanDetectionModelReady ||
+          !_outfitRepository
+              .isModelReady) {
+        _errorMessage =
+        'Outfit recognition models are not ready.';
+
+        notifyListeners();
+
+        return;
+      }
+
+      _setAnalysing(true);
+
+      try {
+        _errorMessage = null;
+
+        _advisoryResult = null;
+
+        // =====================================================
+        // HUMAN GATE FIRST
+        // =====================================================
+
+        if (!_detectHuman(
+          image,
+        )) {
+          notifyListeners();
+
+          return;
+        }
+
+        if (!await _validateFullBody(
+          image,
+        )) {
+          notifyListeners();
+
+          return;
+        }
+
+        // =====================================================
+        // PREPARE SLEEVE INPUT
+        // =====================================================
+
+        _preparedInput =
+            _outfitRepository
+                .prepareImageForModel(
+              image,
+            );
+
+        // =====================================================
+        // RUN SLEEVE MODEL
+        // =====================================================
+
+        final prediction =
+        _outfitRepository
+            .predictSleeveCoverage(
+          preparedInput:
+          _preparedInput!,
+        );
+
+        _sleevePrediction =
+            prediction;
+
+        _detectedAttributes.clear();
+
+        if (prediction.confidence >=
+            0.75) {
+          _detectedAttributes[
+          'sleeveCoverage'] =
+              OutfitAttributePrediction(
+                attribute:
+                'sleeveCoverage',
+                value:
+                prediction.value,
+                confidence:
+                prediction.confidence,
+              );
+        }
+
+        notifyListeners();
+      } catch (e) {
+        _errorMessage =
+            e.toString();
+
+        notifyListeners();
+      } finally {
+        _setAnalysing(false);
+      }
+    }
+
+    // =========================================================
+    // FULL OUTFIT ANALYSIS
+    // =========================================================
+
+    Future<void> analyseOutfit() async {
+      final image = _selectedImage;
+
+      if (image == null) {
+        _errorMessage =
+        'Please take or upload an outfit photo first.';
+
+        notifyListeners();
+        return;
+      }
+
+      if (!_outfitRepository.areOutfitModelsReady) {
+        _errorMessage =
+        'Outfit recognition models are not ready.';
+
+        notifyListeners();
+        return;
+      }
+
+      _setAnalysing(true);
+
+      try {
+        _errorMessage = null;
+        _advisoryResult = null;
+
+        // =====================================================
+        // STEP 1
+        // HUMAN DETECTION
+        // =====================================================
+
+        if (!_detectHuman(image)) {
+          notifyListeners();
+          return;
+        }
+
+        if (!await _validateFullBody(image)) {
+          notifyListeners();
+          return;
+        }
+
+        // =====================================================
+        // STEP 2
+        // FULL-BODY / ARM VISIBILITY
+        // =====================================================
+
+        if (!await _validateFullBody(image)) {
+          notifyListeners();
+          return;
+        }
+
+        // =====================================================
+        // STEP 3
+        // SLEEVE COVERAGE
+        // =====================================================
+
+        final sleeveInput =
+        _outfitRepository.prepareImageForModel(
+          image,
+        );
+
+        final sleevePrediction =
+        _outfitRepository.predictSleeveCoverage(
+          preparedInput: sleeveInput,
+        );
+
+        _sleevePrediction = sleevePrediction;
+
+        // =====================================================
+        // STEP 4
+        // LOWER-BODY COVERAGE
+        // =====================================================
+
+        final lowerBodyInput =
+        _outfitRepository
+            .prepareLowerBodyImageForModel(
+          image,
+        );
+
+        final lowerBodyPrediction =
+        _outfitRepository
+            .predictLowerBodyCoverage(
+          preparedInput: lowerBodyInput,
+        );
+
+        _lowerBodyPrediction = lowerBodyPrediction;
+
+        // =====================================================
+        // STEP 5
+        // SHOULDER COVERAGE
+        // =====================================================
+
+        final shoulderInput =
+        _outfitRepository
+            .prepareShoulderImageForModel(
+          image,
+        );
+
+        final shoulderPrediction =
+        _outfitRepository
+            .predictShoulderCoverage(
+          preparedInput: shoulderInput,
+        );
+
+        _shoulderPrediction = shoulderPrediction;
+
+        // =====================================================
+        // STEP 6
+        // HEADWEAR
+        // =====================================================
+
+        final headwearInput =
+        _outfitRepository
+            .prepareHeadwearImageForModel(
+          image,
+        );
+
+        final headwearPrediction =
+        _outfitRepository.predictHeadwear(
+          preparedInput: headwearInput,
+        );
+
+        _headwearPrediction = headwearPrediction;
+
+        // =====================================================
+        // STEP 7
+        // STORE ALL ATTRIBUTES
+        // =====================================================
+
+        _detectedAttributes.clear();
+
+        _detectedAttributes['sleeveCoverage'] =
+            OutfitAttributePrediction(
+              attribute: 'sleeveCoverage',
+              value: sleevePrediction.value,
+              confidence: sleevePrediction.confidence,
+            );
+
+        _detectedAttributes['lowerBodyCoverage'] =
+            OutfitAttributePrediction(
+              attribute: 'lowerBodyCoverage',
+              value: lowerBodyPrediction.value,
+              confidence: lowerBodyPrediction.confidence,
+            );
+
+        _detectedAttributes['shoulderCoverage'] =
+            OutfitAttributePrediction(
+              attribute: 'shoulderCoverage',
+              value: shoulderPrediction.value,
+              confidence: shoulderPrediction.confidence,
+            );
+
+        _detectedAttributes['headwearPresence'] =
+            OutfitAttributePrediction(
+              attribute: 'headwearPresence',
+              value: headwearPrediction.value,
+              confidence: headwearPrediction.confidence,
+            );
+
+        notifyListeners();
+      } catch (e) {
+        _errorMessage = e.toString();
+
+        notifyListeners();
+      } finally {
+        _setAnalysing(false);
+      }
+    }
+
+    // =========================================================
+    // PREPARE IMAGE ONLY
+    // =========================================================
+
+    Future<bool> prepareSelectedImage() async {
+      final image =
+          _selectedImage;
+
+      if (image == null) {
+        _errorMessage =
+        'Please take or upload an outfit photo first.';
+
+        notifyListeners();
+
+        return false;
+      }
+
+      if (!_outfitRepository
+          .isHumanDetectionModelReady ||
+          !_outfitRepository
+              .isModelReady) {
+        _errorMessage =
+        'Outfit recognition models are not ready.';
+
+        notifyListeners();
+
+        return false;
+      }
+
+      _setAnalysing(true);
+
+      try {
+        _errorMessage = null;
+
+        // Human gate must pass before we
+        // prepare the outfit model input.
+        if (!_detectHuman(
+          image,
+        )) {
+          notifyListeners();
+
+          return false;
+        }
+
+        if (!await _validateFullBody(
+          image,
+        )) {
+          notifyListeners();
+
+          return false;
+        }
+
+        _preparedInput =
+            _outfitRepository
+                .prepareImageForModel(
+              image,
+            );
+
+        return true;
+      } catch (e) {
+        _errorMessage =
+            e.toString();
+
+        return false;
+      } finally {
+        _setAnalysing(false);
+      }
+    }
+
+    // =========================================================
+    // GENERIC ATTRIBUTE RESULTS
+    // =========================================================
+
+    void setDetectedAttributes(
+        Map<String, OutfitAttributePrediction>
+        predictions,
+        ) {
+      _detectedAttributes
+        ..clear()
+        ..addAll(
+          predictions,
+        );
+
       _advisoryResult = null;
 
-      // =====================================================
-      // 1. SLEEVE COVERAGE
-      // =====================================================
+      _errorMessage = null;
 
-      final sleeveInput =
-      _outfitRepository.prepareImageForModel(
-        image,
-      );
+      notifyListeners();
+    }
 
-      final sleevePrediction =
-      _outfitRepository.predictSleeveCoverage(
-        preparedInput: sleeveInput,
-      );
+    // =========================================================
+    // DRESS CODE COMPARISON
+    // =========================================================
 
-      _sleevePrediction =
-          sleevePrediction;
+    Future<void> evaluateOutfit({
+      double minimumConfidence = 0.75,
+    }) async {
+      if (!hasValidHuman) {
+        _errorMessage =
+        'A valid person photo is required before '
+            'evaluating outfit etiquette.';
 
-      // =====================================================
-      // 2. LOWER-BODY COVERAGE
-      // =====================================================
+        notifyListeners();
 
-      final lowerBodyInput =
-      _outfitRepository
-          .prepareLowerBodyImageForModel(
-        image,
-      );
+        return;
+      }
 
-      final lowerBodyPrediction =
-      _outfitRepository
-          .predictLowerBodyCoverage(
-        preparedInput: lowerBodyInput,
-      );
+      if (!hasValidFullBody) {
+        _errorMessage =
+            _fullBodyValidationResult
+                ?.message ??
+                'A clear full-body photo is required before '
+                    'evaluating outfit etiquette.';
 
-      _lowerBodyPrediction =
-          lowerBodyPrediction;
+        notifyListeners();
 
-      // =====================================================
-      // 3. SHOULDER COVERAGE
-      // =====================================================
+        return;
+      }
 
-      final shoulderInput =
-      _outfitRepository
-          .prepareShoulderImageForModel(
-        image,
-      );
+      if (_detectedAttributes.isEmpty) {
+        _errorMessage =
+        'No confident outfit attributes were detected.';
 
-      final headwearInput =
-      _outfitRepository.prepareHeadwearImageForModel(
-        image,
-      );
+        notifyListeners();
 
-      final headwearPrediction =
-      _outfitRepository.predictHeadwear(
-        preparedInput: headwearInput,
-      );
+        return;
+      }
 
-      _headwearPrediction =
-          headwearPrediction;
+      if (_selectedAttractionId == null) {
+        _errorMessage =
+        'Please select a destination first.';
 
-      final shoulderPrediction =
-      _outfitRepository
-          .predictShoulderCoverage(
-        preparedInput: shoulderInput,
-      );
+        notifyListeners();
 
-      _shoulderPrediction =
-          shoulderPrediction;
+        return;
+      }
 
-      // =====================================================
-      // 4. STORE ALL ATTRIBUTES
-      // =====================================================
+      _setAnalysing(true);
+
+      try {
+        _errorMessage = null;
+
+        if (_dressCodeRules.isEmpty) {
+          await loadDressCodeRules();
+        }
+
+        _advisoryResult =
+            _outfitRepository
+                .compareWithDressCode(
+              detectedAttributes:
+              _detectedAttributes,
+              dressCodeRules:
+              _dressCodeRules,
+              minimumConfidence:
+              minimumConfidence,
+            );
+      } catch (e) {
+        _errorMessage =
+            e.toString();
+      } finally {
+        _setAnalysing(false);
+      }
+    }
+
+    // =========================================================
+    // CLEAR / RESET
+    // =========================================================
+
+    void clearPhoto() {
+      _selectedImage = null;
+
+      _preparedInput = null;
+
+      _humanDetectionPrediction = null;
+      _fullBodyValidationResult = null;
+      _sleevePrediction = null;
+      _lowerBodyPrediction = null;
+      _shoulderPrediction = null;
+      _headwearPrediction = null;
 
       _detectedAttributes.clear();
 
-      _detectedAttributes[
-      'sleeveCoverage'
-      ] = OutfitAttributePrediction(
-        attribute: 'sleeveCoverage',
-        value: sleevePrediction.value,
-        confidence: sleevePrediction.confidence,
-      );
+      _advisoryResult = null;
 
-      _detectedAttributes[
-      'lowerBodyCoverage'
-      ] = OutfitAttributePrediction(
-        attribute: 'lowerBodyCoverage',
-        value: lowerBodyPrediction.value,
-        confidence: lowerBodyPrediction.confidence,
-      );
-
-      _detectedAttributes[
-      'shoulderCoverage'
-      ] = OutfitAttributePrediction(
-        attribute: 'shoulderCoverage',
-        value: shoulderPrediction.value,
-        confidence: shoulderPrediction.confidence,
-      );
-
-      _detectedAttributes[
-      'headwearPresence'
-      ] = OutfitAttributePrediction(
-        attribute: 'headwearPresence',
-        value: headwearPrediction.value,
-        confidence: headwearPrediction.confidence,
-      );
-
-      notifyListeners();
-    } catch (e) {
-      _errorMessage = e.toString();
-    } finally {
-      _setAnalysing(false);
-    }
-  }
-
-  // =========================================================
-  // PREPARE IMAGE ONLY
-  // =========================================================
-
-  Future<bool> prepareSelectedImage() async {
-    final image = _selectedImage;
-
-    if (image == null) {
-      _errorMessage =
-      'Please take or upload an outfit photo first.';
-
-      notifyListeners();
-      return false;
-    }
-
-    if (!_outfitRepository.isModelReady) {
-      _errorMessage =
-      'Outfit recognition model is not ready.';
-
-      notifyListeners();
-      return false;
-    }
-
-    _setAnalysing(true);
-
-    try {
       _errorMessage = null;
 
-      _preparedInput =
-          _outfitRepository
-              .prepareImageForModel(
-            image,
-          );
-
-      return true;
-    } catch (e) {
-      _errorMessage = e.toString();
-
-      return false;
-    } finally {
-      _setAnalysing(false);
-    }
-  }
-
-  // =========================================================
-  // GENERIC ATTRIBUTE RESULTS
-  // =========================================================
-
-  void setDetectedAttributes(
-      Map<String, OutfitAttributePrediction>
-      predictions,
-      ) {
-    _detectedAttributes
-      ..clear()
-      ..addAll(predictions);
-
-    _advisoryResult = null;
-    _errorMessage = null;
-
-    notifyListeners();
-  }
-
-  // =========================================================
-  // DRESS CODE COMPARISON
-  // =========================================================
-
-  Future<void> evaluateOutfit({
-    double minimumConfidence = 0.75,
-  }) async {
-    if (_detectedAttributes.isEmpty) {
-      _errorMessage =
-      'No confident outfit attributes were detected.';
-
       notifyListeners();
-      return;
     }
 
-    if (_selectedAttractionId == null) {
-      _errorMessage =
-      'Please select a destination first.';
+    void resetAnalysis() {
+      _preparedInput = null;
 
-      notifyListeners();
-      return;
-    }
+      _humanDetectionPrediction = null;
+      _fullBodyValidationResult = null;
+      _sleevePrediction = null;
+      _lowerBodyPrediction = null;
+      _shoulderPrediction = null;
+      _headwearPrediction = null;
 
-    _setAnalysing(true);
+      _detectedAttributes.clear();
 
-    try {
+      _advisoryResult = null;
+
       _errorMessage = null;
 
-      if (_dressCodeRules.isEmpty) {
-        await loadDressCodeRules();
+      notifyListeners();
+    }
+
+    void clearDestination() {
+      _selectedAttractionId = null;
+
+      _selectedAttractionName = null;
+
+      _dressCodeRules = [];
+
+      _advisoryResult = null;
+
+      notifyListeners();
+    }
+
+    void clearError() {
+      _errorMessage = null;
+
+      notifyListeners();
+    }
+
+    // =========================================================
+    // PRIVATE METHODS
+    // =========================================================
+
+    bool _checkConsent() {
+      if (_consentGiven) {
+        return true;
       }
 
-      _advisoryResult =
-          _outfitRepository
-              .compareWithDressCode(
-            detectedAttributes:
-            _detectedAttributes,
-            dressCodeRules:
-            _dressCodeRules,
-            minimumConfidence:
-            minimumConfidence,
-          );
-    } catch (e) {
-      _errorMessage = e.toString();
-    } finally {
-      _setAnalysing(false);
-    }
-  }
+      _errorMessage =
+      'Please provide consent before using '
+          'outfit recognition.';
 
-  // =========================================================
-  // CLEAR / RESET
-  // =========================================================
+      notifyListeners();
 
-  void clearPhoto() {
-    _selectedImage = null;
-    _preparedInput = null;
-
-    _sleevePrediction = null;
-    _lowerBodyPrediction = null;
-    _shoulderPrediction = null;
-    _headwearPrediction = null;
-
-    _detectedAttributes.clear();
-
-    _advisoryResult = null;
-    _errorMessage = null;
-
-    notifyListeners();
-  }
-
-  void resetAnalysis() {
-    _preparedInput = null;
-
-    _sleevePrediction = null;
-    _lowerBodyPrediction = null;
-    _shoulderPrediction = null;
-    _headwearPrediction = null;
-
-    _detectedAttributes.clear();
-
-    _advisoryResult = null;
-    _errorMessage = null;
-
-    notifyListeners();
-  }
-
-  void clearDestination() {
-    _selectedAttractionId = null;
-    _selectedAttractionName = null;
-
-    _dressCodeRules = [];
-    _advisoryResult = null;
-
-    notifyListeners();
-  }
-
-  void clearError() {
-    _errorMessage = null;
-
-    notifyListeners();
-  }
-
-  // =========================================================
-  // PRIVATE METHODS
-  // =========================================================
-
-  bool _checkConsent() {
-    if (_consentGiven) {
-      return true;
+      return false;
     }
 
-    _errorMessage =
-    'Please provide consent before using outfit recognition.';
+    void _setSelectedImage(
+        OutfitImageData image,
+        ) {
+      _selectedImage = image;
 
-    notifyListeners();
+      _preparedInput = null;
 
-    return false;
+      _humanDetectionPrediction = null;
+      _fullBodyValidationResult = null;
+      _sleevePrediction = null;
+      _lowerBodyPrediction = null;
+      _shoulderPrediction = null;
+      _headwearPrediction = null;
+
+      _detectedAttributes.clear();
+
+      _advisoryResult = null;
+
+      _errorMessage = null;
+
+      notifyListeners();
+    }
+
+    void _setLoading(bool value) {
+      _isLoading = value;
+
+      notifyListeners();
+    }
+
+    void _setAnalysing(bool value) {
+      _isAnalysing = value;
+
+      notifyListeners();
+    }
+
+    // =========================================================
+    // CLEANUP
+    // =========================================================
+
+    @override
+    void dispose() {
+      _outfitRepository.dispose();
+
+      super.dispose();
+    }
   }
-
-  void _setSelectedImage(
-      OutfitImageData image,
-      ) {
-    _selectedImage = image;
-
-    _preparedInput = null;
-    _sleevePrediction = null;
-    _lowerBodyPrediction = null;
-    _shoulderPrediction = null;
-    _headwearPrediction = null;
-
-    _detectedAttributes.clear();
-
-    _advisoryResult = null;
-    _errorMessage = null;
-
-    notifyListeners();
-  }
-
-  void _setLoading(bool value) {
-    _isLoading = value;
-
-    notifyListeners();
-  }
-
-  void _setAnalysing(bool value) {
-    _isAnalysing = value;
-
-    notifyListeners();
-  }
-
-  @override
-  void dispose() {
-    _outfitRepository.dispose();
-
-    super.dispose();
-  }
-}

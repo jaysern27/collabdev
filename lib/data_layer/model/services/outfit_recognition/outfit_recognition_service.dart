@@ -1,10 +1,11 @@
+import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
 import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
 
 import '../../../../external_data_sources/ml_kit_tensorflow_lite/ml_kit_tensorflow_lite_data_source.dart';
-
 
 // ============================================================
 // IMAGE DATA
@@ -87,6 +88,32 @@ class HumanDetectionPrediction {
   }
 }
 
+// ============================================================
+// FULL-BODY / POSE VALIDATION RESULT
+// ============================================================
+
+class FullBodyValidationResult {
+  final bool poseDetected;
+  final bool fullBodyVisible;
+  final bool armsVisible;
+  final double bodyHeightRatio;
+  final List<String> missingLandmarks;
+  final String message;
+
+  const FullBodyValidationResult({
+    required this.poseDetected,
+    required this.fullBodyVisible,
+    required this.armsVisible,
+    required this.bodyHeightRatio,
+    required this.missingLandmarks,
+    required this.message,
+  });
+
+  bool get isValid =>
+      poseDetected &&
+          fullBodyVisible &&
+          armsVisible;
+}
 
 // ============================================================
 // SLEEVE COVERAGE PREDICTION
@@ -213,7 +240,7 @@ class OutfitAdvisoryResult {
 class OutfitRecognitionService {
   final MlKitTensorflowLiteDataSource
   _humanDetectionDataSource;
-
+  final PoseDetector _poseDetector;
   final MlKitTensorflowLiteDataSource _dataSource;
   final MlKitTensorflowLiteDataSource _lowerBodyDataSource;
   final MlKitTensorflowLiteDataSource _shoulderDataSource;
@@ -224,6 +251,7 @@ class OutfitRecognitionService {
   OutfitRecognitionService({
     MlKitTensorflowLiteDataSource?
     humanDetectionDataSource,
+    PoseDetector? poseDetector,
     MlKitTensorflowLiteDataSource? dataSource,
     MlKitTensorflowLiteDataSource? lowerBodyDataSource,
     MlKitTensorflowLiteDataSource? shoulderDataSource,
@@ -232,6 +260,14 @@ class OutfitRecognitionService {
   })  : _humanDetectionDataSource =
       humanDetectionDataSource ??
           MlKitTensorflowLiteDataSource(),
+        _poseDetector =
+            poseDetector ??
+                PoseDetector(
+                  options: PoseDetectorOptions(
+                    model: PoseDetectionModel.accurate,
+                    mode: PoseDetectionMode.single,
+                  ),
+                ),
         _dataSource =
             dataSource ??
                 MlKitTensorflowLiteDataSource(),
@@ -400,6 +436,456 @@ class OutfitRecognitionService {
     );
   }
 
+  // ==========================================================
+// FULL-BODY / POSE VALIDATION
+// ==========================================================
+
+  Future<FullBodyValidationResult>
+  validateFullBodyVisibility(
+      OutfitImageData outfitImage, {
+        double minimumLandmarkLikelihood = 0.55,
+        double minimumBodyHeightRatio = 0.55,
+      }) async {
+    if (minimumLandmarkLikelihood < 0 ||
+        minimumLandmarkLikelihood > 1) {
+      throw ArgumentError(
+        'minimumLandmarkLikelihood must be between 0 and 1.',
+      );
+    }
+
+    if (minimumBodyHeightRatio < 0 ||
+        minimumBodyHeightRatio > 1) {
+      throw ArgumentError(
+        'minimumBodyHeightRatio must be between 0 and 1.',
+      );
+    }
+
+    if (outfitImage.path.trim().isEmpty) {
+      return const FullBodyValidationResult(
+        poseDetected: false,
+        fullBodyVisible: false,
+        armsVisible: false,
+        bodyHeightRatio: 0,
+        missingLandmarks: [],
+        message:
+        'Unable to validate body visibility for this image.',
+      );
+    }
+
+    final decodedImage =
+    img.decodeImage(
+      outfitImage.bytes,
+    );
+
+    if (decodedImage == null) {
+      return const FullBodyValidationResult(
+        poseDetected: false,
+        fullBodyVisible: false,
+        armsVisible: false,
+        bodyHeightRatio: 0,
+        missingLandmarks: [],
+        message:
+        'Unable to read the selected image for full-body validation.',
+      );
+    }
+
+    final orientedImage =
+    img.bakeOrientation(
+      decodedImage,
+    );
+
+    final imageWidth =
+    orientedImage.width.toDouble();
+
+    final imageHeight =
+    orientedImage.height.toDouble();
+
+    final inputImage =
+    InputImage.fromFilePath(
+      outfitImage.path,
+    );
+
+    final poses =
+    await _poseDetector.processImage(
+      inputImage,
+    );
+
+    if (poses.isEmpty) {
+      return const FullBodyValidationResult(
+        poseDetected: false,
+        fullBodyVisible: false,
+        armsVisible: false,
+        bodyHeightRatio: 0,
+        missingLandmarks: [],
+        message:
+        'A person was detected, but body landmarks could not be identified. '
+            'Please use a clear full-body photo.',
+      );
+    }
+
+    final pose =
+    _selectBestPose(
+      poses,
+    );
+
+    bool visible(
+        PoseLandmarkType type,
+        ) {
+      final landmark =
+      pose.landmarks[type];
+
+      if (landmark == null) {
+        return false;
+      }
+
+      if (landmark.likelihood <
+          minimumLandmarkLikelihood) {
+        return false;
+      }
+
+      if (landmark.x < 0 ||
+          landmark.x > imageWidth ||
+          landmark.y < 0 ||
+          landmark.y > imageHeight) {
+        return false;
+      }
+
+      return true;
+    }
+
+    final missing =
+    <String>[];
+
+    // ========================================================
+    // HEAD
+    // ========================================================
+
+    final headVisible =
+        visible(
+          PoseLandmarkType.nose,
+        ) ||
+            visible(
+              PoseLandmarkType.leftEye,
+            ) ||
+            visible(
+              PoseLandmarkType.rightEye,
+            ) ||
+            visible(
+              PoseLandmarkType.leftEar,
+            ) ||
+            visible(
+              PoseLandmarkType.rightEar,
+            );
+
+    if (!headVisible) {
+      missing.add(
+        'head',
+      );
+    }
+
+    // ========================================================
+    // CORE FULL-BODY LANDMARKS
+    // ========================================================
+
+    final requiredBodyLandmarks =
+    <PoseLandmarkType, String>{
+      PoseLandmarkType.leftShoulder:
+      'left shoulder',
+      PoseLandmarkType.rightShoulder:
+      'right shoulder',
+
+      PoseLandmarkType.leftHip:
+      'left hip',
+      PoseLandmarkType.rightHip:
+      'right hip',
+
+      PoseLandmarkType.leftKnee:
+      'left knee',
+      PoseLandmarkType.rightKnee:
+      'right knee',
+
+      PoseLandmarkType.leftAnkle:
+      'left ankle',
+      PoseLandmarkType.rightAnkle:
+      'right ankle',
+    };
+
+    for (final entry
+    in requiredBodyLandmarks.entries) {
+      if (!visible(
+        entry.key,
+      )) {
+        missing.add(
+          entry.value,
+        );
+      }
+    }
+
+    // ========================================================
+    // ARM LANDMARKS
+    //
+    // We require these because sleeve analysis cannot be
+    // trusted if the arms are hidden/cropped.
+    // ========================================================
+
+    final requiredArmLandmarks =
+    <PoseLandmarkType, String>{
+      PoseLandmarkType.leftElbow:
+      'left elbow',
+      PoseLandmarkType.rightElbow:
+      'right elbow',
+
+      PoseLandmarkType.leftWrist:
+      'left wrist',
+      PoseLandmarkType.rightWrist:
+      'right wrist',
+    };
+
+    final missingArms =
+    <String>[];
+
+    for (final entry
+    in requiredArmLandmarks.entries) {
+      if (!visible(
+        entry.key,
+      )) {
+        missingArms.add(
+          entry.value,
+        );
+      }
+    }
+
+    // ========================================================
+    // CHECK HOW MUCH OF THE IMAGE THE PERSON OCCUPIES
+    // ========================================================
+
+    final headLandmarks =
+    <PoseLandmarkType>[
+      PoseLandmarkType.nose,
+      PoseLandmarkType.leftEye,
+      PoseLandmarkType.rightEye,
+      PoseLandmarkType.leftEar,
+      PoseLandmarkType.rightEar,
+    ];
+
+    final headYValues =
+    <double>[];
+
+    for (final type
+    in headLandmarks) {
+      if (visible(type)) {
+        final landmark =
+        pose.landmarks[type];
+
+        if (landmark != null) {
+          headYValues.add(
+            landmark.y,
+          );
+        }
+      }
+    }
+
+    final ankleYValues =
+    <double>[];
+
+    for (final type in [
+      PoseLandmarkType.leftAnkle,
+      PoseLandmarkType.rightAnkle,
+    ]) {
+      if (visible(type)) {
+        final landmark =
+        pose.landmarks[type];
+
+        if (landmark != null) {
+          ankleYValues.add(
+            landmark.y,
+          );
+        }
+      }
+    }
+
+    double bodyHeightRatio = 0;
+
+    if (headYValues.isNotEmpty &&
+        ankleYValues.isNotEmpty &&
+        imageHeight > 0) {
+      final topY =
+      headYValues.reduce(
+            (a, b) =>
+        a < b ? a : b,
+      );
+
+      final bottomY =
+      ankleYValues.reduce(
+            (a, b) =>
+        a > b ? a : b,
+      );
+
+      bodyHeightRatio =
+          ((bottomY - topY).abs() /
+              imageHeight)
+              .clamp(
+            0.0,
+            1.0,
+          )
+              .toDouble();
+    }
+
+    final bodyLargeEnough =
+        bodyHeightRatio >=
+            minimumBodyHeightRatio;
+
+    final fullBodyVisible =
+        headVisible &&
+            missing.isEmpty &&
+            bodyLargeEnough;
+
+    final armsVisible =
+        missingArms.isEmpty;
+
+    final allMissing =
+    <String>[
+      ...missing,
+      ...missingArms,
+    ];
+
+    // ========================================================
+    // FULL BODY FAILED
+    // ========================================================
+
+    if (!fullBodyVisible) {
+      if (!bodyLargeEnough &&
+          missing.isEmpty) {
+        return FullBodyValidationResult(
+          poseDetected: true,
+          fullBodyVisible: false,
+          armsVisible: armsVisible,
+          bodyHeightRatio:
+          bodyHeightRatio,
+          missingLandmarks:
+          allMissing,
+          message:
+          'Your full body is visible, but you are too small in the frame. '
+              'Move closer while keeping your head, shoulders, hips, knees '
+              'and ankles visible.',
+        );
+      }
+
+      return FullBodyValidationResult(
+        poseDetected: true,
+        fullBodyVisible: false,
+        armsVisible: armsVisible,
+        bodyHeightRatio:
+        bodyHeightRatio,
+        missingLandmarks:
+        allMissing,
+        message:
+        'Full body not visible. Please make sure your head, shoulders, '
+            'hips, knees and ankles are inside the photo.',
+      );
+    }
+
+    // ========================================================
+    // ARMS FAILED
+    // ========================================================
+
+    if (!armsVisible) {
+      return FullBodyValidationResult(
+        poseDetected: true,
+        fullBodyVisible: true,
+        armsVisible: false,
+        bodyHeightRatio:
+        bodyHeightRatio,
+        missingLandmarks:
+        allMissing,
+        message:
+        'Your full body is visible, but your arms are not clear enough. '
+            'Please keep both elbows and wrists visible for sleeve analysis.',
+      );
+    }
+
+    return FullBodyValidationResult(
+      poseDetected: true,
+      fullBodyVisible: true,
+      armsVisible: true,
+      bodyHeightRatio:
+      bodyHeightRatio,
+      missingLandmarks: const [],
+      message:
+      'Full body and arms are clearly visible.',
+    );
+  }
+
+  Pose _selectBestPose(
+      List<Pose> poses,
+      ) {
+    if (poses.length == 1) {
+      return poses.first;
+    }
+
+    const scoringLandmarks =
+    <PoseLandmarkType>[
+      PoseLandmarkType.nose,
+
+      PoseLandmarkType.leftShoulder,
+      PoseLandmarkType.rightShoulder,
+
+      PoseLandmarkType.leftHip,
+      PoseLandmarkType.rightHip,
+
+      PoseLandmarkType.leftKnee,
+      PoseLandmarkType.rightKnee,
+
+      PoseLandmarkType.leftAnkle,
+      PoseLandmarkType.rightAnkle,
+
+      PoseLandmarkType.leftElbow,
+      PoseLandmarkType.rightElbow,
+
+      PoseLandmarkType.leftWrist,
+      PoseLandmarkType.rightWrist,
+    ];
+
+    double score(
+        Pose pose,
+        ) {
+      double total = 0;
+
+      for (final type
+      in scoringLandmarks) {
+        total +=
+            pose.landmarks[type]
+                ?.likelihood ??
+                0;
+      }
+
+      return total;
+    }
+
+    Pose bestPose =
+        poses.first;
+
+    double bestScore =
+    score(
+      bestPose,
+    );
+
+    for (final pose
+    in poses.skip(1)) {
+      final currentScore =
+      score(
+        pose,
+      );
+
+      if (currentScore >
+          bestScore) {
+        bestPose = pose;
+        bestScore = currentScore;
+      }
+    }
+
+    return bestPose;
+  }
 
   // ==========================================================
   // IMAGE PREPROCESSING
@@ -462,9 +948,9 @@ class OutfitRecognitionService {
               );
 
               return [
-                pixel.r.toDouble() / 255.0,
-                pixel.g.toDouble() / 255.0,
-                pixel.b.toDouble() / 255.0,
+                pixel.r.toDouble()/255.0,
+                pixel.g.toDouble()/255.0,
+                pixel.b.toDouble()/255.0,
               ];
             },
           );
@@ -558,14 +1044,9 @@ class OutfitRecognitionService {
               );
 
               return [
-                pixel.r.toDouble() /
-                    255.0,
-
-                pixel.g.toDouble() /
-                    255.0,
-
-                pixel.b.toDouble() /
-                    255.0,
+                pixel.r.toDouble(),
+                pixel.g.toDouble(),
+                pixel.b.toDouble(),
               ];
             },
           );
@@ -817,58 +1298,70 @@ class OutfitRecognitionService {
     );
   }
 
-  SleeveCoveragePrediction
-  predictSleeveCoverage({
-    required PreparedOutfitInput
-    preparedInput,
+  SleeveCoveragePrediction predictSleeveCoverage({
+    required PreparedOutfitInput preparedInput,
   }) {
     if (!isReady) {
       throw Exception(
-        'Outfit recognition model is not ready.',
+        'Sleeve recognition model is not ready.',
+      );
+    }
+
+    final outputShape =
+    _dataSource.getOutputShape();
+
+    if (outputShape.isEmpty) {
+      throw Exception(
+        'Unable to determine sleeve model output shape.',
+      );
+    }
+
+    final outputSize =
+        outputShape.last;
+
+    if (outputSize != 3) {
+      throw Exception(
+        'Expected sleeve model output size 3 '
+            '[long, short, sleeveless], '
+            'but received shape $outputShape.',
       );
     }
 
     final output =
-    _dataSource
-        .runSingleOutputInference(
-      input:
-      preparedInput.input,
-      outputSize: 3,
+    _dataSource.runSingleOutputInference(
+      input: preparedInput.input,
+      outputSize: outputSize,
     );
 
     if (output.length != 3) {
       throw Exception(
-        'Unexpected sleeve model output: '
-            '$output',
+        'Unexpected sleeve model output: $output',
       );
     }
 
-    /*
-      IMPORTANT:
-      This order MUST match
-      the Colab training output:
-
-      0 -> covered
-      1 -> partial
-      2 -> uncovered
-    */
+    // ==========================================================
+    // NEW SLEEVE MODEL
+    //
+    // Must exactly match Colab:
+    //
+    // 0 -> long
+    // 1 -> short
+    // 2 -> sleeveless
+    // ==========================================================
 
     const labels = [
-      'covered',
-      'partial',
-      'uncovered',
+      'long',
+      'short',
+      'sleeveless',
     ];
 
     int bestIndex = 0;
-
     double bestConfidence =
     output[0];
 
-    for (
-    int i = 1;
+    for (int i = 1;
     i < output.length;
-    i++
-    ) {
+    i++) {
       if (output[i] >
           bestConfidence) {
         bestConfidence =
@@ -983,6 +1476,18 @@ class OutfitRecognitionService {
       outputSize: 3,
     );
 
+    if (output.length != 3) {
+      throw Exception(
+        'Unexpected lower-body model output: $output',
+      );
+    }
+
+    // CURRENT OLD MODEL
+    // This will be replaced after lower-body retraining.
+    //
+    // 0 -> short
+    // 1 -> medium
+    // 2 -> covered
     const labels = [
       'short',
       'medium',
@@ -992,7 +1497,11 @@ class OutfitRecognitionService {
     int bestIndex = 0;
     double bestConfidence = output[0];
 
-    for (int i = 1; i < output.length; i++) {
+    for (
+    int i = 1;
+    i < output.length;
+    i++
+    ) {
       if (output[i] > bestConfidence) {
         bestConfidence = output[i];
         bestIndex = i;
@@ -1427,9 +1936,12 @@ class OutfitRecognitionService {
   // ==========================================================
   // DISPOSE
   // ==========================================================
-
   void dispose() {
     _humanDetectionDataSource.close();
+
+    unawaited(
+      _poseDetector.close(),
+    );
 
     _dataSource.close();
     _lowerBodyDataSource.close();
