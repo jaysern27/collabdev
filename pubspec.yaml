@@ -66,6 +66,7 @@ flutter:
   uses-material-design: true
 
   assets:
+    - lib/assets/models/human_detection_model.tflite
     - lib/assets/models/sleeve_coverage_model.tflite
     - lib/assets/models/lower_body_coverage_model.tflite
     - lib/assets/models/shoulder_coverage_model.tflite

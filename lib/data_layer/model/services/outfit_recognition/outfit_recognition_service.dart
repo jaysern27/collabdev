@@ -56,6 +56,37 @@ class OutfitAttributePrediction {
   });
 }
 
+// ============================================================
+// HUMAN DETECTION PREDICTION
+// ============================================================
+
+class HumanDetectionPrediction {
+  final String value;
+
+  final double confidence;
+
+  final double humanConfidence;
+
+  final double noHumanConfidence;
+
+  const HumanDetectionPrediction({
+    required this.value,
+    required this.confidence,
+    required this.humanConfidence,
+    required this.noHumanConfidence,
+  });
+
+  bool get isHuman =>
+      value == 'human';
+
+  bool passesThreshold({
+    double minimumConfidence = 0.60,
+  }) {
+    return isHuman &&
+        humanConfidence >= minimumConfidence;
+  }
+}
+
 
 // ============================================================
 // SLEEVE COVERAGE PREDICTION
@@ -180,6 +211,9 @@ class OutfitAdvisoryResult {
 // ============================================================
 
 class OutfitRecognitionService {
+  final MlKitTensorflowLiteDataSource
+  _humanDetectionDataSource;
+
   final MlKitTensorflowLiteDataSource _dataSource;
   final MlKitTensorflowLiteDataSource _lowerBodyDataSource;
   final MlKitTensorflowLiteDataSource _shoulderDataSource;
@@ -188,14 +222,19 @@ class OutfitRecognitionService {
   final ImagePicker _imagePicker;
 
   OutfitRecognitionService({
+    MlKitTensorflowLiteDataSource?
+    humanDetectionDataSource,
     MlKitTensorflowLiteDataSource? dataSource,
     MlKitTensorflowLiteDataSource? lowerBodyDataSource,
     MlKitTensorflowLiteDataSource? shoulderDataSource,
     MlKitTensorflowLiteDataSource? headwearDataSource,
     ImagePicker? imagePicker,
-  })  : _dataSource =
-      dataSource ??
+  })  : _humanDetectionDataSource =
+      humanDetectionDataSource ??
           MlKitTensorflowLiteDataSource(),
+        _dataSource =
+            dataSource ??
+                MlKitTensorflowLiteDataSource(),
         _lowerBodyDataSource =
             lowerBodyDataSource ??
                 MlKitTensorflowLiteDataSource(),
@@ -219,10 +258,19 @@ class OutfitRecognitionService {
       _shoulderDataSource.isModelLoaded;
   bool get isHeadwearModelReady =>
       _headwearDataSource.isModelLoaded;
+  bool get isHumanDetectionModelReady =>
+      _humanDetectionDataSource.isModelLoaded;
 
   // ==========================================================
   // MODEL INITIALIZATION
   // ==========================================================
+  Future<void> initializeHumanDetectionModel({
+    required String modelAssetPath,
+  }) async {
+    await _humanDetectionDataSource.loadModel(
+      assetPath: modelAssetPath,
+    );
+  }
 
   Future<void> initialize({
     required String modelAssetPath,
@@ -356,6 +404,80 @@ class OutfitRecognitionService {
   // ==========================================================
   // IMAGE PREPROCESSING
   // ==========================================================
+  PreparedOutfitInput
+  prepareHumanDetectionImageForModel(
+      OutfitImageData outfitImage,
+      ) {
+    if (!_humanDetectionDataSource.isModelLoaded) {
+      throw Exception(
+        'Human detection model is not loaded.',
+      );
+    }
+
+    final inputShape =
+    _humanDetectionDataSource.getInputShape();
+
+    if (inputShape.length != 4 ||
+        inputShape[0] != 1 ||
+        inputShape[3] != 3) {
+      throw Exception(
+        'Unexpected human detection model '
+            'input shape: $inputShape',
+      );
+    }
+
+    final height = inputShape[1];
+    final width = inputShape[2];
+
+    final decodedImage =
+    img.decodeImage(
+      outfitImage.bytes,
+    );
+
+    if (decodedImage == null) {
+      throw Exception(
+        'Unable to decode image for '
+            'human detection.',
+      );
+    }
+
+    final resizedImage =
+    img.copyResize(
+      decodedImage,
+      width: width,
+      height: height,
+    );
+
+    final input = [
+      List.generate(
+        height,
+            (y) {
+          return List.generate(
+            width,
+                (x) {
+              final pixel =
+              resizedImage.getPixel(
+                x,
+                y,
+              );
+
+              return [
+                pixel.r.toDouble() / 255.0,
+                pixel.g.toDouble() / 255.0,
+                pixel.b.toDouble() / 255.0,
+              ];
+            },
+          );
+        },
+      ),
+    ];
+
+    return PreparedOutfitInput(
+      input: input,
+      width: width,
+      height: height,
+    );
+  }
 
   PreparedOutfitInput prepareImageForModel(
       OutfitImageData outfitImage,
@@ -637,6 +759,63 @@ class OutfitRecognitionService {
   // ==========================================================
   // REAL SLEEVE COVERAGE AI
   // ==========================================================
+  HumanDetectionPrediction
+  predictHumanPresence({
+    required PreparedOutfitInput
+    preparedInput,
+  }) {
+    if (!_humanDetectionDataSource.isModelLoaded) {
+      throw Exception(
+        'Human detection model is not loaded.',
+      );
+    }
+
+    final output =
+    _humanDetectionDataSource
+        .runSingleOutputInference(
+      input: preparedInput.input,
+      outputSize: 2,
+    );
+
+    if (output.length != 2) {
+      throw Exception(
+        'Unexpected human detection '
+            'model output: $output',
+      );
+    }
+
+    // Must exactly match Colab:
+    //
+    // 0 -> human
+    // 1 -> no_human
+
+    final humanConfidence =
+    output[0];
+
+    final noHumanConfidence =
+    output[1];
+
+    if (humanConfidence >=
+        noHumanConfidence) {
+      return HumanDetectionPrediction(
+        value: 'human',
+        confidence: humanConfidence,
+        humanConfidence:
+        humanConfidence,
+        noHumanConfidence:
+        noHumanConfidence,
+      );
+    }
+
+    return HumanDetectionPrediction(
+      value: 'no_human',
+      confidence: noHumanConfidence,
+      humanConfidence:
+      humanConfidence,
+      noHumanConfidence:
+      noHumanConfidence,
+    );
+  }
 
   SleeveCoveragePrediction
   predictSleeveCoverage({
@@ -1195,6 +1374,15 @@ class OutfitRecognitionService {
   // ==========================================================
   // MODEL INFORMATION
   // ==========================================================
+  List<int> getHumanDetectionInputShape() {
+    return _humanDetectionDataSource
+        .getInputShape();
+  }
+
+  List<int> getHumanDetectionOutputShape() {
+    return _humanDetectionDataSource
+        .getOutputShape();
+  }
 
   List<int> getInputShape() {
     return _dataSource
@@ -1241,6 +1429,8 @@ class OutfitRecognitionService {
   // ==========================================================
 
   void dispose() {
+    _humanDetectionDataSource.close();
+
     _dataSource.close();
     _lowerBodyDataSource.close();
     _shoulderDataSource.close();

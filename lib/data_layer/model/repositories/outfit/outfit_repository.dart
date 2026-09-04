@@ -23,9 +23,13 @@ class OutfitRepository {
       _outfitRecognitionService.isShoulderModelReady;
   bool get isHeadwearModelReady =>
       _outfitRecognitionService.isHeadwearModelReady;
+  bool get isHumanDetectionModelReady =>
+      _outfitRecognitionService
+          .isHumanDetectionModelReady;
 
   bool get areOutfitModelsReady =>
-      isSleeveModelReady &&
+      isHumanDetectionModelReady &&
+          isSleeveModelReady &&
           isLowerBodyModelReady &&
           isShoulderModelReady &&
           isHeadwearModelReady;
@@ -37,6 +41,15 @@ class OutfitRepository {
     required String modelAssetPath,
   }) async {
     await _outfitRecognitionService.initialize(
+      modelAssetPath: modelAssetPath,
+    );
+  }
+
+  Future<void> initializeHumanDetectionModel({
+    required String modelAssetPath,
+  }) async {
+    await _outfitRecognitionService
+        .initializeHumanDetectionModel(
       modelAssetPath: modelAssetPath,
     );
   }
@@ -106,6 +119,15 @@ class OutfitRepository {
   // =========================================================
   // IMAGE PREPROCESSING
   // =========================================================
+  PreparedOutfitInput
+  prepareHumanDetectionImageForModel(
+      OutfitImageData outfitImage,
+      ) {
+    return _outfitRecognitionService
+        .prepareHumanDetectionImageForModel(
+      outfitImage,
+    );
+  }
 
   PreparedOutfitInput prepareImageForModel(
       OutfitImageData outfitImage,
@@ -146,6 +168,16 @@ class OutfitRepository {
   // =========================================================
   // REAL SLEEVE COVERAGE PREDICTION
   // =========================================================
+  HumanDetectionPrediction
+  predictHumanPresence({
+    required PreparedOutfitInput
+    preparedInput,
+  }) {
+    return _outfitRecognitionService
+        .predictHumanPresence(
+      preparedInput: preparedInput,
+    );
+  }
 
   SleeveCoveragePrediction predictSleeveCoverage({
     required PreparedOutfitInput preparedInput,
@@ -227,6 +259,15 @@ class OutfitRepository {
   // =========================================================
   // MODEL INFORMATION
   // =========================================================
+  List<int> getHumanDetectionInputShape() {
+    return _outfitRecognitionService
+        .getHumanDetectionInputShape();
+  }
+
+  List<int> getHumanDetectionOutputShape() {
+    return _outfitRecognitionService
+        .getHumanDetectionOutputShape();
+  }
 
   List<int> getInputShape() {
     return _outfitRecognitionService

@@ -24,6 +24,12 @@ class OutfitViewModel extends ChangeNotifier {
                 OutfitEtiquetteRepository();
 
   // =========================================================
+  // HUMAN DETECTION SETTINGS
+  // =========================================================
+
+  static const double minimumHumanConfidence = 0.60;
+
+  // =========================================================
   // STATE
   // =========================================================
 
@@ -43,7 +49,12 @@ class OutfitViewModel extends ChangeNotifier {
 
   Map<String, dynamic>? _outfitEtiquette;
 
-  // AI predictions
+  // =========================================================
+  // AI PREDICTIONS
+  // =========================================================
+
+  HumanDetectionPrediction? _humanDetectionPrediction;
+
   SleeveCoveragePrediction? _sleevePrediction;
 
   LowerBodyCoveragePrediction? _lowerBodyPrediction;
@@ -81,6 +92,25 @@ class OutfitViewModel extends ChangeNotifier {
   Map<String, dynamic>? get outfitEtiquette =>
       _outfitEtiquette;
 
+  // =========================================================
+  // HUMAN DETECTION GETTERS
+  // =========================================================
+
+  HumanDetectionPrediction?
+  get humanDetectionPrediction =>
+      _humanDetectionPrediction;
+
+  bool get hasValidHuman =>
+      _humanDetectionPrediction?.passesThreshold(
+        minimumConfidence:
+        minimumHumanConfidence,
+      ) ??
+          false;
+
+  // =========================================================
+  // OUTFIT PREDICTION GETTERS
+  // =========================================================
+
   SleeveCoveragePrediction? get sleevePrediction =>
       _sleevePrediction;
 
@@ -110,6 +140,10 @@ class OutfitViewModel extends ChangeNotifier {
   // MODEL STATUS
   // =========================================================
 
+  bool get isHumanDetectionModelReady =>
+      _outfitRepository
+          .isHumanDetectionModelReady;
+
   bool get isModelReady =>
       _outfitRepository.isModelReady;
 
@@ -133,6 +167,7 @@ class OutfitViewModel extends ChangeNotifier {
   // =========================================================
 
   Future<void> initializeModels({
+    required String humanModelAssetPath,
     required String modelAssetPath,
     required String lowerBodyModelAssetPath,
     required String shoulderModelAssetPath,
@@ -140,25 +175,59 @@ class OutfitViewModel extends ChangeNotifier {
   }) async {
     try {
       _setLoading(true);
+
       _errorMessage = null;
+
+      // =====================================================
+      // HUMAN DETECTION MODEL
+      // =====================================================
+
+      await _outfitRepository
+          .initializeHumanDetectionModel(
+        modelAssetPath:
+        humanModelAssetPath,
+      );
+
+      // =====================================================
+      // SLEEVE MODEL
+      // =====================================================
 
       await _outfitRepository.initializeModel(
         modelAssetPath: modelAssetPath,
       );
 
-      await _outfitRepository.initializeLowerBodyModel(
-        modelAssetPath: lowerBodyModelAssetPath,
+      // =====================================================
+      // LOWER BODY MODEL
+      // =====================================================
+
+      await _outfitRepository
+          .initializeLowerBodyModel(
+        modelAssetPath:
+        lowerBodyModelAssetPath,
       );
 
-      await _outfitRepository.initializeShoulderModel(
-        modelAssetPath: shoulderModelAssetPath,
+      // =====================================================
+      // SHOULDER MODEL
+      // =====================================================
+
+      await _outfitRepository
+          .initializeShoulderModel(
+        modelAssetPath:
+        shoulderModelAssetPath,
       );
 
-      await _outfitRepository.initializeHeadwearModel(
-        modelAssetPath: headwearModelAssetPath,
+      // =====================================================
+      // HEADWEAR MODEL
+      // =====================================================
+
+      await _outfitRepository
+          .initializeHeadwearModel(
+        modelAssetPath:
+        headwearModelAssetPath,
       );
     } catch (e) {
       _errorMessage = e.toString();
+
       notifyListeners();
     } finally {
       _setLoading(false);
@@ -174,6 +243,7 @@ class OutfitViewModel extends ChangeNotifier {
   }) async {
     try {
       _setLoading(true);
+
       _errorMessage = null;
 
       final result =
@@ -186,6 +256,7 @@ class OutfitViewModel extends ChangeNotifier {
       }
     } catch (e) {
       _errorMessage = e.toString();
+
       notifyListeners();
     } finally {
       _setLoading(false);
@@ -201,6 +272,7 @@ class OutfitViewModel extends ChangeNotifier {
   }) async {
     try {
       _setLoading(true);
+
       _errorMessage = null;
 
       final result =
@@ -213,6 +285,7 @@ class OutfitViewModel extends ChangeNotifier {
       }
     } catch (e) {
       _errorMessage = e.toString();
+
       notifyListeners();
     } finally {
       _setLoading(false);
@@ -226,6 +299,7 @@ class OutfitViewModel extends ChangeNotifier {
   Future<void> recoverLostPhoto() async {
     try {
       _setLoading(true);
+
       _errorMessage = null;
 
       final result =
@@ -236,6 +310,7 @@ class OutfitViewModel extends ChangeNotifier {
       }
     } catch (e) {
       _errorMessage = e.toString();
+
       notifyListeners();
     } finally {
       _setLoading(false);
@@ -246,7 +321,9 @@ class OutfitViewModel extends ChangeNotifier {
   // SET OUTFIT IMAGE
   // =========================================================
 
-  void setOutfitImage(OutfitImageData image) {
+  void setOutfitImage(
+      OutfitImageData image,
+      ) {
     _outfitImage = image;
 
     _clearAnalysisResults();
@@ -261,17 +338,29 @@ class OutfitViewModel extends ChangeNotifier {
   Future<void> analyseOutfit() async {
     final image = _outfitImage;
 
+    // =======================================================
+    // IMAGE VALIDATION
+    // =======================================================
+
     if (image == null) {
       _errorMessage =
       'Please take or upload an outfit photo first.';
+
       notifyListeners();
+
       return;
     }
+
+    // =======================================================
+    // MODEL VALIDATION
+    // =======================================================
 
     if (!_outfitRepository.areOutfitModelsReady) {
       _errorMessage =
       'Outfit recognition models are not ready.';
+
       notifyListeners();
+
       return;
     }
 
@@ -279,10 +368,83 @@ class OutfitViewModel extends ChangeNotifier {
 
     try {
       _errorMessage = null;
+
       _advisoryResult = null;
 
       // =====================================================
-      // 1. SLEEVE COVERAGE
+      // STEP 1
+      // HUMAN DETECTION
+      //
+      // THIS MUST PASS BEFORE ANY OUTFIT MODEL RUNS.
+      // =====================================================
+
+      final humanInput =
+      _outfitRepository
+          .prepareHumanDetectionImageForModel(
+        image,
+      );
+
+      _humanDetectionPrediction =
+          _outfitRepository
+              .predictHumanPresence(
+            preparedInput: humanInput,
+          );
+
+      // =====================================================
+      // HUMAN GATE
+      // =====================================================
+
+      if (!_humanDetectionPrediction!
+          .passesThreshold(
+        minimumConfidence:
+        minimumHumanConfidence,
+      )) {
+        // Clear all outfit predictions.
+        //
+        // We deliberately KEEP the human prediction
+        // so the UI can inspect/display the result.
+
+        _sleevePrediction = null;
+
+        _lowerBodyPrediction = null;
+
+        _shoulderPrediction = null;
+
+        _headwearPrediction = null;
+
+        _detectedAttributes.clear();
+
+        _advisoryResult =
+        const OutfitAdvisoryResult(
+          status:
+          OutfitAdvisoryStatus
+              .unableToDetermine,
+          checks: [],
+          message:
+          'No person was detected confidently in this image.',
+        );
+
+        _errorMessage =
+        'No person detected. Please take or upload '
+            'a clear photo showing a person.';
+
+        notifyListeners();
+
+        // ===================================================
+        // IMPORTANT
+        //
+        // STOP HERE.
+        //
+        // Sleeve, lower-body, shoulder and headwear
+        // models DO NOT RUN.
+        // ===================================================
+
+        return;
+      }
+
+      // =====================================================
+      // STEP 2
+      // SLEEVE COVERAGE
       // =====================================================
 
       final sleeveInput =
@@ -291,12 +453,14 @@ class OutfitViewModel extends ChangeNotifier {
       );
 
       _sleevePrediction =
-          _outfitRepository.predictSleeveCoverage(
+          _outfitRepository
+              .predictSleeveCoverage(
             preparedInput: sleeveInput,
           );
 
       // =====================================================
-      // 2. LOWER BODY COVERAGE
+      // STEP 3
+      // LOWER BODY COVERAGE
       // =====================================================
 
       final lowerBodyInput =
@@ -306,12 +470,14 @@ class OutfitViewModel extends ChangeNotifier {
       );
 
       _lowerBodyPrediction =
-          _outfitRepository.predictLowerBodyCoverage(
+          _outfitRepository
+              .predictLowerBodyCoverage(
             preparedInput: lowerBodyInput,
           );
 
       // =====================================================
-      // 3. SHOULDER COVERAGE
+      // STEP 4
+      // SHOULDER COVERAGE
       // =====================================================
 
       final shoulderInput =
@@ -321,12 +487,14 @@ class OutfitViewModel extends ChangeNotifier {
       );
 
       _shoulderPrediction =
-          _outfitRepository.predictShoulderCoverage(
+          _outfitRepository
+              .predictShoulderCoverage(
             preparedInput: shoulderInput,
           );
 
       // =====================================================
-      // 4. HEADWEAR
+      // STEP 5
+      // HEADWEAR
       // =====================================================
 
       final headwearInput =
@@ -341,7 +509,8 @@ class OutfitViewModel extends ChangeNotifier {
           );
 
       // =====================================================
-      // 5. STORE DETECTED ATTRIBUTES
+      // STEP 6
+      // STORE DETECTED ATTRIBUTES
       // =====================================================
 
       _detectedAttributes.clear();
@@ -350,7 +519,8 @@ class OutfitViewModel extends ChangeNotifier {
       'sleeveCoverage'] =
           OutfitAttributePrediction(
             attribute: 'sleeveCoverage',
-            value: _sleevePrediction!.value,
+            value:
+            _sleevePrediction!.value,
             confidence:
             _sleevePrediction!.confidence,
           );
@@ -358,8 +528,10 @@ class OutfitViewModel extends ChangeNotifier {
       _detectedAttributes[
       'lowerBodyCoverage'] =
           OutfitAttributePrediction(
-            attribute: 'lowerBodyCoverage',
-            value: _lowerBodyPrediction!.value,
+            attribute:
+            'lowerBodyCoverage',
+            value:
+            _lowerBodyPrediction!.value,
             confidence:
             _lowerBodyPrediction!.confidence,
           );
@@ -367,8 +539,10 @@ class OutfitViewModel extends ChangeNotifier {
       _detectedAttributes[
       'shoulderCoverage'] =
           OutfitAttributePrediction(
-            attribute: 'shoulderCoverage',
-            value: _shoulderPrediction!.value,
+            attribute:
+            'shoulderCoverage',
+            value:
+            _shoulderPrediction!.value,
             confidence:
             _shoulderPrediction!.confidence,
           );
@@ -376,8 +550,10 @@ class OutfitViewModel extends ChangeNotifier {
       _detectedAttributes[
       'headwearPresence'] =
           OutfitAttributePrediction(
-            attribute: 'headwearPresence',
-            value: _headwearPrediction!.value,
+            attribute:
+            'headwearPresence',
+            value:
+            _headwearPrediction!.value,
             confidence:
             _headwearPrediction!.confidence,
           );
@@ -385,6 +561,7 @@ class OutfitViewModel extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       _errorMessage = e.toString();
+
       notifyListeners();
     } finally {
       _setLoading(false);
@@ -406,6 +583,7 @@ class OutfitViewModel extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       _errorMessage = e.toString();
+
       notifyListeners();
     }
   }
@@ -419,6 +597,7 @@ class OutfitViewModel extends ChangeNotifier {
   }) async {
     try {
       _setLoading(true);
+
       _errorMessage = null;
 
       if (_currentPosition == null) {
@@ -460,8 +639,10 @@ class OutfitViewModel extends ChangeNotifier {
             .getDistanceFromAttraction(
           currentPosition:
           _currentPosition!,
-          attractionLatitude: latitude,
-          attractionLongitude: longitude,
+          attractionLatitude:
+          latitude,
+          attractionLongitude:
+          longitude,
         );
 
         if (distance <= radiusInMeters) {
@@ -491,6 +672,7 @@ class OutfitViewModel extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       _errorMessage = e.toString();
+
       notifyListeners();
     } finally {
       _setLoading(false);
@@ -514,7 +696,9 @@ class OutfitViewModel extends ChangeNotifier {
     }
 
     return await _outfitEtiquetteRepository
-        .getOutfitByCategory(category);
+        .getOutfitByCategory(
+      category,
+    );
   }
 
   // =========================================================
@@ -524,6 +708,7 @@ class OutfitViewModel extends ChangeNotifier {
   Future<void> generateRecommendations() async {
     try {
       _setLoading(true);
+
       _errorMessage = null;
 
       if (_nearbyAttractions.isEmpty) {
@@ -560,6 +745,7 @@ class OutfitViewModel extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       _errorMessage = e.toString();
+
       notifyListeners();
     } finally {
       _setLoading(false);
@@ -574,7 +760,8 @@ class OutfitViewModel extends ChangeNotifier {
       Map<String, dynamic> attraction,
       ) async {
     try {
-      _selectedAttraction = attraction;
+      _selectedAttraction =
+          attraction;
 
       final category =
       attraction['category']?.toString();
@@ -593,6 +780,7 @@ class OutfitViewModel extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       _errorMessage = e.toString();
+
       notifyListeners();
     }
   }
@@ -604,6 +792,12 @@ class OutfitViewModel extends ChangeNotifier {
   bool isSuitableForSelectedAttraction({
     required double minimumConfidence,
   }) {
+    // Human detection must have passed first.
+
+    if (!hasValidHuman) {
+      return false;
+    }
+
     if (_outfitEtiquette == null) {
       return false;
     }
@@ -641,9 +835,16 @@ class OutfitViewModel extends ChangeNotifier {
   }) async {
     try {
       _setLoading(true);
+
       _errorMessage = null;
 
-      await selectAttraction(attraction);
+      await selectAttraction(
+        attraction,
+      );
+
+      // =====================================================
+      // IMAGE MUST EXIST
+      // =====================================================
 
       if (_outfitImage == null) {
         throw Exception(
@@ -651,9 +852,30 @@ class OutfitViewModel extends ChangeNotifier {
         );
       }
 
-      if (_detectedAttributes.isEmpty) {
+      // =====================================================
+      // RUN AI ANALYSIS IF NEEDED
+      // =====================================================
+
+      if (_detectedAttributes.isEmpty ||
+          _humanDetectionPrediction == null) {
         await analyseOutfit();
       }
+
+      // =====================================================
+      // HUMAN DETECTION SAFEGUARD
+      //
+      // If analyseOutfit() rejected the image,
+      // stop the attraction etiquette flow too.
+      // =====================================================
+
+      if (!hasValidHuman ||
+          _detectedAttributes.isEmpty) {
+        return;
+      }
+
+      // =====================================================
+      // ETIQUETTE MUST EXIST
+      // =====================================================
 
       if (_outfitEtiquette == null) {
         _advisoryResult =
@@ -667,11 +889,17 @@ class OutfitViewModel extends ChangeNotifier {
         );
 
         notifyListeners();
+
         return;
       }
 
+      // =====================================================
+      // COMPARE OUTFIT WITH ETIQUETTE
+      // =====================================================
+
       final result =
-      _outfitRepository.compareWithDressCode(
+      _outfitRepository
+          .compareWithDressCode(
         detectedAttributes:
         _detectedAttributes,
         dressCodeRules: [
@@ -686,6 +914,7 @@ class OutfitViewModel extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       _errorMessage = e.toString();
+
       notifyListeners();
     } finally {
       _setLoading(false);
@@ -697,9 +926,14 @@ class OutfitViewModel extends ChangeNotifier {
   // =========================================================
 
   void _clearAnalysisResults() {
+    _humanDetectionPrediction = null;
+
     _sleevePrediction = null;
+
     _lowerBodyPrediction = null;
+
     _shoulderPrediction = null;
+
     _headwearPrediction = null;
 
     _detectedAttributes.clear();
@@ -717,9 +951,11 @@ class OutfitViewModel extends ChangeNotifier {
     _clearAnalysisResults();
 
     _nearbyAttractions = [];
+
     _recommendations = [];
 
     _selectedAttraction = null;
+
     _outfitEtiquette = null;
 
     notifyListeners();
@@ -731,6 +967,7 @@ class OutfitViewModel extends ChangeNotifier {
 
   void clearError() {
     _errorMessage = null;
+
     notifyListeners();
   }
 
@@ -740,6 +977,7 @@ class OutfitViewModel extends ChangeNotifier {
 
   void _setLoading(bool value) {
     _isLoading = value;
+
     notifyListeners();
   }
 
@@ -747,7 +985,9 @@ class OutfitViewModel extends ChangeNotifier {
   // DOUBLE CONVERSION
   // =========================================================
 
-  double? _toDouble(dynamic value) {
+  double? _toDouble(
+      dynamic value,
+      ) {
     if (value == null) {
       return null;
     }
@@ -772,6 +1012,7 @@ class OutfitViewModel extends ChangeNotifier {
   @override
   void dispose() {
     _outfitRepository.dispose();
+
     super.dispose();
   }
 }
