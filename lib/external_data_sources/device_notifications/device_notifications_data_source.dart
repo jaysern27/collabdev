@@ -4,7 +4,9 @@ class DeviceNotificationsDataSource {
   final FlutterLocalNotificationsPlugin _plugin =
   FlutterLocalNotificationsPlugin();
 
-  Future<void> initialize() async {
+  Future<void> initialize({
+    void Function(String? payload)? onNotificationTap,
+  }) async {
     const androidSettings =
     AndroidInitializationSettings('@mipmap/ic_launcher');
 
@@ -17,6 +19,9 @@ class DeviceNotificationsDataSource {
 
     await _plugin.initialize(
       settings: settings,
+      onDidReceiveNotificationResponse: (response) {
+        onNotificationTap?.call(response.payload);
+      },
     );
   }
 

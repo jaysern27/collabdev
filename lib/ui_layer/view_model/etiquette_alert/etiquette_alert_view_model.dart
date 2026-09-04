@@ -1,84 +1,108 @@
-import 'dart:async';
-
 import 'package:flutter/foundation.dart';
 
+import '../../../data_layer/model/repositories/attraction/attraction_repository.dart';
 import '../../../data_layer/model/repositories/etiquette/etiquette_repository.dart';
-import '../../../data_layer/model/services/location_geofencing/location_geofencing_service.dart';
-import '../../../data_layer/model/services/notification/notification_service.dart';
+import '../../../data_layer/model/repositories/ranking_report/ranking_report_repository.dart';
 
+// UC02 – Receive Etiquette Alert (Basic Flow steps 8-9, A2).
+//
+// Backs the screen the Tourist lands on after opening the
+// etiquette notification: shows the destination's general
+// ("default") etiquette list together with its location-specific
+// list, plus that location's own violation ranking (Module 4,
+// built from Admin-approved UC04 reports) so the Tourist can see
+// the most commonly reported issue at that specific attraction.
+// Geofence monitoring itself runs in GeofenceAlertMonitorService,
+// not here.
 class EtiquetteAlertViewModel extends ChangeNotifier {
   final EtiquetteRepository _etiquetteRepository;
-  final LocationGeofencingService _locationService;
-  final NotificationService _notificationService;
+  final AttractionRepository _attractionRepository;
+  final RankingReportRepository _rankingReportRepository;
 
   EtiquetteAlertViewModel({
     EtiquetteRepository? etiquetteRepository,
-    LocationGeofencingService? locationService,
-    NotificationService? notificationService,
+    AttractionRepository? attractionRepository,
+    RankingReportRepository? rankingReportRepository,
   })  : _etiquetteRepository =
       etiquetteRepository ?? EtiquetteRepository(),
-        _locationService =
-            locationService ?? LocationGeofencingService(),
-        _notificationService =
-            notificationService ?? NotificationService();
+        _attractionRepository =
+            attractionRepository ?? AttractionRepository(),
+        _rankingReportRepository =
+            rankingReportRepository ?? RankingReportRepository();
 
-  StreamSubscription<bool>? _geofenceSubscription;
-
-  List<Map<String, dynamic>> _etiquetteRules = [];
-
-  bool _isInsideGeofence = false;
-  bool _isMonitoring = false;
   bool _isLoading = false;
-
-  String? _currentAttractionId;
-  String? _currentAttractionName;
   String? _errorMessage;
 
-  DateTime? _lastAlertTime;
+  String? _attractionId;
+  Map<String, dynamic>? _attraction;
 
-  List<Map<String, dynamic>> get etiquetteRules =>
-      _etiquetteRules;
-
-  bool get isInsideGeofence => _isInsideGeofence;
-
-  bool get isMonitoring => _isMonitoring;
+  List<Map<String, dynamic>> _defaultRules = [];
+  List<Map<String, dynamic>> _locationRules = [];
+  List<Map<String, dynamic>> _rankings = [];
 
   bool get isLoading => _isLoading;
 
-  String? get currentAttractionId =>
-      _currentAttractionId;
-
-  String? get currentAttractionName =>
-      _currentAttractionName;
-
   String? get errorMessage => _errorMessage;
 
-  DateTime? get lastAlertTime => _lastAlertTime;
+  Map<String, dynamic>? get attraction => _attraction;
 
-  // Load etiquette rules for one attraction
-  Future<void> loadEtiquetteRules(
-      String attractionId,
-      ) async {
+  String get attractionName =>
+      _attraction?['name']?.toString() ?? 'This attraction';
+
+  List<Map<String, dynamic>> get defaultRules => _defaultRules;
+
+  List<Map<String, dynamic>> get locationRules => _locationRules;
+
+  List<Map<String, dynamic>> get defaultDos =>
+      _filterByType(_defaultRules, 'do');
+
+  List<Map<String, dynamic>> get defaultDonts =>
+      _filterByType(_defaultRules, 'dont');
+
+  List<Map<String, dynamic>> get locationDos =>
+      _filterByType(_locationRules, 'do');
+
+  List<Map<String, dynamic>> get locationDonts =>
+      _filterByType(_locationRules, 'dont');
+
+  // This attraction's own violation ranking (Module 4), most
+  // commonly reported issue first. Null when there is not yet
+  // enough approved-report data for this location.
+  Map<String, dynamic>? get topViolation =>
+      _rankings.isEmpty ? null : _rankings.first;
+
+  // A2 – Tourist Opens Notification: query the default etiquette
+  // list and the location-based etiquette list, then display both.
+  Future<void> loadForAttraction(String attractionId) async {
+    _attractionId = attractionId;
     _setLoading(true);
+    _errorMessage = null;
 
     try {
-      _errorMessage = null;
+      final attraction =
+      await _attractionRepository.getAttractionById(attractionId);
 
-      _etiquetteRules =
-      await _etiquetteRepository.getRulesByAttraction(
-        attractionId,
-      );
+      final defaultRules = await _etiquetteRepository
+          .getDefaultRulesForAttraction(attractionId);
 
-      // Higher severity rules appear first
-      _etiquetteRules.sort((a, b) {
-        final severityA =
-        (a['severity'] ?? 0) as num;
+      final locationRules = await _etiquetteRepository
+          .getLocationRulesForAttraction(attractionId);
 
-        final severityB =
-        (b['severity'] ?? 0) as num;
+      // Best-effort: the ranking may not exist yet (too few
+      // approved reports), so this should never block the rest of
+      // the screen from loading.
+      List<Map<String, dynamic>> rankings = [];
+      try {
+        rankings = await _rankingReportRepository
+            .getRankingByAttraction(attractionId);
+      } catch (_) {
+        rankings = [];
+      }
 
-        return severityB.compareTo(severityA);
-      });
+      _attraction = attraction;
+      _defaultRules = defaultRules;
+      _locationRules = locationRules;
+      _rankings = rankings;
     } catch (e) {
       _errorMessage = e.toString();
     } finally {
@@ -86,171 +110,33 @@ class EtiquetteAlertViewModel extends ChangeNotifier {
     }
   }
 
-  // Start monitoring one attraction's geofence
-  Future<void> startMonitoringAttraction({
-    required String attractionId,
-    required String attractionName,
-    required double latitude,
-    required double longitude,
-    required double geofenceRadiusMeters,
-  }) async {
-    await stopMonitoring();
+  Future<void> refresh() async {
+    final attractionId = _attractionId;
 
-    _currentAttractionId = attractionId;
-    _currentAttractionName = attractionName;
-    _isInsideGeofence = false;
-    _isMonitoring = true;
-    _errorMessage = null;
-
-    await loadEtiquetteRules(attractionId);
-
-    _geofenceSubscription =
-        _locationService
-            .watchGeofence(
-          attractionLatitude: latitude,
-          attractionLongitude: longitude,
-          geofenceRadiusMeters:
-          geofenceRadiusMeters,
-        )
-            .listen(
-              (inside) async {
-            final wasInside = _isInsideGeofence;
-
-            _isInsideGeofence = inside;
-
-            notifyListeners();
-
-            // Trigger only when user moves from
-            // outside -> inside the geofence.
-            if (!wasInside && inside) {
-              await _handleGeofenceEntry();
-            }
-          },
-          onError: (error) {
-            _errorMessage = error.toString();
-
-            notifyListeners();
-          },
-        );
-
-    notifyListeners();
+    if (attractionId != null) {
+      await loadForAttraction(attractionId);
+    }
   }
 
-  // Called when user enters attraction area
-  Future<void> _handleGeofenceEntry() async {
-    if (!_canSendAlert()) {
-      return;
-    }
-
-    final attractionId = _currentAttractionId;
-    final attractionName = _currentAttractionName;
-
-    if (attractionId == null ||
-        attractionName == null) {
-      return;
-    }
-
-    if (_etiquetteRules.isEmpty) {
-      await loadEtiquetteRules(attractionId);
-    }
-
-    final message = _buildAlertMessage();
-
-    await _notificationService.showEtiquetteAlert(
-      id: attractionId.hashCode & 0x7fffffff,
-      attractionName: attractionName,
-      message: message,
-    );
-
-    _lastAlertTime = DateTime.now();
-
-    notifyListeners();
-  }
-
-  // Prevent repeated notifications
-  bool _canSendAlert() {
-    if (_lastAlertTime == null) {
-      return true;
-    }
-
-    final difference =
-    DateTime.now().difference(
-      _lastAlertTime!,
-    );
-
-    // 30-minute cooldown
-    return difference.inMinutes >= 30;
-  }
-
-  // Build notification using important etiquette rules
-  String _buildAlertMessage() {
-    if (_etiquetteRules.isEmpty) {
-      return 'You are entering a cultural attraction. '
-          'Please respect the local etiquette.';
-    }
-
-    final importantRules =
-    _etiquetteRules.take(2).toList();
-
-    return importantRules
-        .map((rule) {
-      return rule['title']?.toString() ??
-          rule['description']?.toString() ??
-          '';
-    })
+  List<Map<String, dynamic>> _filterByType(
+      List<Map<String, dynamic>> rules,
+      String type,
+      ) {
+    return rules
         .where(
-          (message) => message.isNotEmpty,
+          (rule) =>
+      rule['type']?.toString().toLowerCase() == type,
     )
-        .join(' • ');
-  }
-
-  // Get DO rules for the alert screen
-  List<Map<String, dynamic>> getDos() {
-    return _etiquetteRules.where((rule) {
-      return rule['type']
-          ?.toString()
-          .toLowerCase() ==
-          'do';
-    }).toList();
-  }
-
-  // Get DON'T rules for the alert screen
-  List<Map<String, dynamic>> getDonts() {
-    return _etiquetteRules.where((rule) {
-      return rule['type']
-          ?.toString()
-          .toLowerCase() ==
-          'dont';
-    }).toList();
-  }
-
-  // Stop GPS/geofence monitoring
-  Future<void> stopMonitoring() async {
-    await _geofenceSubscription?.cancel();
-
-    _geofenceSubscription = null;
-    _isMonitoring = false;
-    _isInsideGeofence = false;
-
-    notifyListeners();
+        .toList();
   }
 
   void clearError() {
     _errorMessage = null;
-
     notifyListeners();
   }
 
   void _setLoading(bool value) {
     _isLoading = value;
-
     notifyListeners();
-  }
-
-  @override
-  void dispose() {
-    _geofenceSubscription?.cancel();
-
-    super.dispose();
   }
 }

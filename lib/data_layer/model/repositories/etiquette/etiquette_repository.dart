@@ -39,6 +39,38 @@ class EtiquetteRepository {
         .toList();
   }
 
+  // UC02 A2: an attraction's rules are split by a `scope` field
+  // into "default" (general guidance for that destination, e.g.
+  // dress code) and "location" (specific to that physical site).
+  Future<List<Map<String, dynamic>>> getDefaultRulesForAttraction(
+      String attractionId,
+      ) async {
+    final rules = await getRulesByAttraction(attractionId);
+
+    return rules
+        .where(
+          (rule) =>
+      (rule['scope']?.toString().toLowerCase() ??
+          'default') ==
+          'default',
+    )
+        .toList();
+  }
+
+  Future<List<Map<String, dynamic>>> getLocationRulesForAttraction(
+      String attractionId,
+      ) async {
+    final rules = await getRulesByAttraction(attractionId);
+
+    return rules
+        .where(
+          (rule) =>
+      rule['scope']?.toString().toLowerCase() ==
+          'location',
+    )
+        .toList();
+  }
+
   // Get rules by category
   Future<List<Map<String, dynamic>>> getRulesByCategory(
       String category,

@@ -436,7 +436,7 @@ class _CulturalMapViewState
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor:
-      const Color(0xFFFFFBF5),
+      const Color(0xFFFFFFFF),
       builder: (
           sheetContext,
           ) {
@@ -1526,7 +1526,7 @@ class _CulturalMapViewState
             icon,
             color:
             const Color(
-              0xFF6C4DB5,
+              0xFF2F6FED,
             ),
           ),
           const SizedBox(
@@ -2344,7 +2344,7 @@ class _FullEtiquetteGuidePage
         ),
       ),
       backgroundColor:
-      const Color(0xFFFFFBF5),
+      const Color(0xFFFFFFFF),
       body:
       ListView(
         padding:
@@ -2357,7 +2357,7 @@ class _FullEtiquetteGuidePage
             style:
             const TextStyle(
               color:
-              Color(0xFF6C4DB5),
+              Color(0xFF2F6FED),
               fontWeight:
               FontWeight.w600,
             ),

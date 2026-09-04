@@ -187,4 +187,89 @@ class AttractionRepository {
       position: position,
     );
   }
+
+  // =========================================================
+  // GEOFENCE (UC03 – Configure Geofence)
+  // =========================================================
+
+  // UC03 A2.3/A2.6: the Admin sets or updates the geofence
+  // location and radius, or toggles its active status. The
+  // geofence location defaults to the attraction's own map pin
+  // when the Admin hasn't set a distinct one.
+  Future<void> updateGeofenceConfig({
+    required String attractionId,
+    required double radiusMeters,
+    required bool active,
+    double? latitude,
+    double? longitude,
+  }) async {
+    await _firestoreService.updateDocument(
+      collection: _collection,
+      documentId: attractionId,
+      data: {
+        'geofenceRadiusMeters': radiusMeters,
+        'geofenceActive': active,
+        if (latitude != null) 'geofenceLatitude': latitude,
+        if (longitude != null) 'geofenceLongitude': longitude,
+      },
+    );
+  }
+
+  // The geofence's centre point: the Admin-configured
+  // geofenceLatitude/geofenceLongitude when set, otherwise the
+  // attraction's own map location.
+  static Map<String, double>? geofenceCenter(
+      Map<String, dynamic> attraction,
+      ) {
+    final latitude =
+        attraction['geofenceLatitude'] ?? attraction['latitude'];
+    final longitude =
+        attraction['geofenceLongitude'] ?? attraction['longitude'];
+
+    if (latitude is! num || longitude is! num) {
+      return null;
+    }
+
+    return {
+      'latitude': latitude.toDouble(),
+      'longitude': longitude.toDouble(),
+    };
+  }
+
+  // Attractions within [radiusKm] of the tourist that have an
+  // active, configured geofence (UC02 constraint C1).
+  Future<List<Map<String, dynamic>>>
+  getGeofenceEnabledAttractionsNear(
+      Position position, {
+        double radiusKm = 5.0,
+      }) async {
+    final attractions = await getAllAttractions();
+
+    return attractions.where((attraction) {
+      if (attraction['geofenceActive'] != true) {
+        return false;
+      }
+
+      final radius = attraction['geofenceRadiusMeters'];
+
+      if (radius is! num || radius <= 0) {
+        return false;
+      }
+
+      final center = geofenceCenter(attraction);
+
+      if (center == null) {
+        return false;
+      }
+
+      final distanceKm = getDistanceFromAttraction(
+            currentPosition: position,
+            attractionLatitude: center['latitude']!,
+            attractionLongitude: center['longitude']!,
+          ) /
+          1000.0;
+
+      return distanceKm < radiusKm;
+    }).toList();
+  }
 }
