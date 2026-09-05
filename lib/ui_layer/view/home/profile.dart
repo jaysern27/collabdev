@@ -1,13 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
-import '../../../data_layer/model/repositories/ranking_report/ranking_report_repository.dart';
 import '../../../data_layer/model/services/firebase_authentication/firebase_authentication_service.dart';
 import '../../../data_layer/model/services/geofence_alert_monitor/geofence_alert_monitor_service.dart';
-
-import '../cultural_map/cultural_map.dart';
-import '../outfit_recognition/outfit_recognition.dart';
-import '../violation_dashboard_report/my_etiquette_reports_page.dart';
+import '../../view_model/settings/app_settings_controller.dart';
 import '../violation_dashboard_report/user_etiquette_report_page.dart';
 import 'edit_profile_page.dart';
 import 'login_page.dart';
@@ -24,67 +20,64 @@ class ProfileView extends StatefulWidget {
 
 class _ProfileViewState
     extends State<ProfileView> {
-  final FirebaseAuthenticationService
-  authService =
+  final FirebaseAuthenticationService authService =
   FirebaseAuthenticationService();
-
-  final RankingReportRepository
-  reportRepository =
-  RankingReportRepository();
 
   final FirebaseFirestore firestore =
       FirebaseFirestore.instance;
 
-  bool loading = true;
+  final AppSettingsController settings =
+      AppSettingsController.instance;
 
-  int submittedCount = 0;
-  int pendingCount = 0;
-  int approvedCount = 0;
+  bool loading = true;
 
   String profileName = '';
   String profilePhone = '';
   String profilePhotoUrl = '';
 
-  static const Color _primary =
-  Color(0xFF2F6FED);
-
-  static const Color _background =
-  Color(0xFFFFFFFF);
-
   @override
   void initState() {
     super.initState();
-    _loadProfilePage();
+    settings.addListener(_onSettingsChanged);
+    _loadProfileDetails();
   }
 
-  Future<void> _loadProfilePage() async {
+  void _onSettingsChanged() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  @override
+  void dispose() {
+    settings.removeListener(_onSettingsChanged);
+    super.dispose();
+  }
+
+  Future<void> _loadProfileDetails() async {
     if (mounted) {
       setState(() {
         loading = true;
       });
     }
 
-    await Future.wait([
-      _loadProfileDetails(),
-      _loadEtiquetteActivity(),
-    ]);
-
-    if (mounted) {
-      setState(() {
-        loading = false;
-      });
-    }
-  }
-
-  Future<void> _loadProfileDetails() async {
-    final user =
-        authService.currentUser;
+    final user = authService.currentUser;
 
     if (user == null) {
-      profileName =
-      'Guest Traveller';
+      profileName = settings.text(
+        en: 'Guest Traveller',
+        zh: '访客旅客',
+        ms: 'Pelancong Tetamu',
+      );
       profilePhone = '';
       profilePhotoUrl = '';
+
+      if (mounted) {
+        setState(() {
+          loading = false;
+        });
+      }
+
       return;
     }
 
@@ -95,116 +88,58 @@ class _ProfileViewState
         user.photoURL?.trim() ?? '';
 
     try {
-      final snapshot =
-      await firestore
+      final snapshot = await firestore
           .collection('users')
           .doc(user.uid)
           .get();
 
-      final data =
-      snapshot.data();
+      final data = snapshot.data();
 
-      if (data == null) {
-        return;
-      }
+      if (data != null) {
+        final firestoreName =
+            data['name']
+                ?.toString()
+                .trim() ??
+                '';
 
-      final firestoreName =
-          data['name']
-              ?.toString()
-              .trim() ??
-              '';
+        final phone =
+            data['phone']
+                ?.toString()
+                .trim() ??
+                '';
 
-      final phone =
-          data['phone']
-              ?.toString()
-              .trim() ??
-              '';
+        final photoUrl =
+            data['photoUrl']
+                ?.toString()
+                .trim() ??
+                '';
 
-      final photoUrl =
-          data['photoUrl']
-              ?.toString()
-              .trim() ??
-              '';
+        if (firestoreName.isNotEmpty) {
+          profileName = firestoreName;
+        }
 
-      if (firestoreName.isNotEmpty) {
-        profileName =
-            firestoreName;
-      }
+        profilePhone = phone;
 
-      profilePhone =
-          phone;
-
-      if (photoUrl.isNotEmpty) {
-        profilePhotoUrl =
-            photoUrl;
+        if (photoUrl.isNotEmpty) {
+          profilePhotoUrl = photoUrl;
+        }
       }
     } catch (_) {
-      // Keep Firebase Auth values as fallback.
-    }
-  }
-
-  Future<void>
-  _loadEtiquetteActivity() async {
-    final user =
-        authService.currentUser;
-
-    if (user == null) {
-      submittedCount = 0;
-      pendingCount = 0;
-      approvedCount = 0;
-      return;
+      // Keep Firebase Authentication values as fallback.
     }
 
-    try {
-      final reports =
-      await reportRepository
-          .getReportsByUser(
-        user.uid,
-      );
-
-      submittedCount =
-          reports.length;
-
-      pendingCount =
-          reports.where(
-                (report) {
-              return _status(
-                report['status'],
-              ) ==
-                  'pending';
-            },
-          ).length;
-
-      approvedCount =
-          reports.where(
-                (report) {
-              return _status(
-                report['status'],
-              ) ==
-                  'approved';
-            },
-          ).length;
-    } catch (_) {
-      // Do not block profile if reports fail.
+    if (mounted) {
+      setState(() {
+        loading = false;
+      });
     }
-  }
-
-  String _status(
-      dynamic value,
-      ) {
-    return value
-        ?.toString()
-        .trim()
-        .toLowerCase() ??
-        '';
   }
 
   Future<void> _openLogin() async {
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(
-        builder:
-            (_) =>
+        builder: (_) =>
         const LoginPage(),
       ),
           (route) => false,
@@ -212,6 +147,68 @@ class _ProfileViewState
   }
 
   Future<void> _logout() async {
+    final shouldLogout =
+    await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          icon: const Icon(
+            Icons.logout_rounded,
+          ),
+          title: Text(
+            settings.text(
+              en: 'Sign out?',
+              zh: '退出登录？',
+              ms: 'Log keluar?',
+            ),
+          ),
+          content: Text(
+            settings.text(
+              en: 'You can sign in again anytime to continue using CultureGuide.',
+              zh: '你可以随时再次登录并继续使用 CultureGuide。',
+              ms: 'Anda boleh log masuk semula pada bila-bila masa untuk terus menggunakan CultureGuide.',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(
+                  dialogContext,
+                  false,
+                );
+              },
+              child: Text(
+                settings.text(
+                  en: 'Cancel',
+                  zh: '取消',
+                  ms: 'Batal',
+                ),
+              ),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.pop(
+                  dialogContext,
+                  true,
+                );
+              },
+              child: Text(
+                settings.text(
+                  en: 'Sign Out',
+                  zh: '退出登录',
+                  ms: 'Log Keluar',
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (shouldLogout != true) {
+      return;
+    }
+
     GeofenceAlertMonitorService.instance.stop();
 
     await authService.logout();
@@ -224,9 +221,8 @@ class _ProfileViewState
   }
 
   Future<void> _editProfile() async {
-    if (authService.currentUser ==
-        null) {
-      _requireLogin(() {});
+    if (authService.currentUser == null) {
+      _showSignInDialog();
       return;
     }
 
@@ -234,29 +230,28 @@ class _ProfileViewState
     await Navigator.push<bool>(
       context,
       MaterialPageRoute(
-        builder:
-            (_) =>
+        builder: (_) =>
         const EditProfilePage(),
       ),
     );
 
-    if (result == true &&
-        mounted) {
-      await _loadProfilePage();
+    if (result == true && mounted) {
+      await _loadProfileDetails();
 
       if (!mounted) {
         return;
       }
 
-      ScaffoldMessenger.of(
-        context,
-      )
+      ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(
-          const SnackBar(
-            content:
-            Text(
-              'Profile updated successfully.',
+          SnackBar(
+            content: Text(
+              settings.text(
+                en: 'Profile updated successfully.',
+                zh: '个人资料已成功更新。',
+                ms: 'Profil berjaya dikemas kini.',
+              ),
             ),
             behavior:
             SnackBarBehavior.floating,
@@ -265,31 +260,27 @@ class _ProfileViewState
     }
   }
 
-  void _requireLogin(
-      VoidCallback action,
-      ) {
-    if (authService.currentUser !=
-        null) {
-      action();
-      return;
-    }
-
+  void _showSignInDialog() {
     showDialog<void>(
       context: context,
-      builder:
-          (dialogContext) {
+      builder: (dialogContext) {
         return AlertDialog(
-          icon:
-          const Icon(
+          icon: const Icon(
             Icons.login_rounded,
           ),
-          title:
-          const Text(
-            'Sign In Required',
+          title: Text(
+            settings.text(
+              en: 'Sign In Required',
+              zh: '需要登录',
+              ms: 'Log Masuk Diperlukan',
+            ),
           ),
-          content:
-          const Text(
-            'Please sign in to use this etiquette feature.',
+          content: Text(
+            settings.text(
+              en: 'Please sign in to use this feature.',
+              zh: '请先登录以使用此功能。',
+              ms: 'Sila log masuk untuk menggunakan ciri ini.',
+            ),
           ),
           actions: [
             TextButton(
@@ -298,9 +289,12 @@ class _ProfileViewState
                   dialogContext,
                 );
               },
-              child:
-              const Text(
-                'Cancel',
+              child: Text(
+                settings.text(
+                  en: 'Cancel',
+                  zh: '取消',
+                  ms: 'Batal',
+                ),
               ),
             ),
             FilledButton(
@@ -308,18 +302,251 @@ class _ProfileViewState
                 Navigator.pop(
                   dialogContext,
                 );
-
                 _openLogin();
               },
-              child:
-              const Text(
-                'Sign In',
+              child: Text(
+                settings.text(
+                  en: 'Sign In',
+                  zh: '登录',
+                  ms: 'Log Masuk',
+                ),
               ),
             ),
           ],
         );
       },
     );
+  }
+
+  void _openReportPage() {
+    if (authService.currentUser == null) {
+      _showSignInDialog();
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) =>
+        const UserEtiquetteReportPage(),
+      ),
+    );
+  }
+
+  void _showLanguageSheet() {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      useSafeArea: true,
+      builder: (sheetContext) {
+        final colorScheme =
+            Theme.of(sheetContext)
+                .colorScheme;
+
+        return Padding(
+          padding:
+          const EdgeInsets.fromLTRB(
+            20,
+            4,
+            20,
+            24,
+          ),
+          child: Column(
+            mainAxisSize:
+            MainAxisSize.min,
+            crossAxisAlignment:
+            CrossAxisAlignment.start,
+            children: [
+              Text(
+                settings.text(
+                  en: 'Choose language',
+                  zh: '选择语言',
+                  ms: 'Pilih bahasa',
+                ),
+                style: Theme.of(
+                  sheetContext,
+                )
+                    .textTheme
+                    .titleLarge
+                    ?.copyWith(
+                  fontWeight:
+                  FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                settings.text(
+                  en: 'This changes the language used across CultureGuide.',
+                  zh: '这会更改 CultureGuide 中使用的语言。',
+                  ms: 'Ini akan menukar bahasa yang digunakan dalam CultureGuide.',
+                ),
+                style: Theme.of(
+                  sheetContext,
+                )
+                    .textTheme
+                    .bodyMedium
+                    ?.copyWith(
+                  color:
+                  colorScheme
+                      .onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 16),
+              _languageOption(
+                sheetContext,
+                language:
+                AppLanguage.english,
+                title:
+                'English',
+                subtitle:
+                'English',
+              ),
+              _languageOption(
+                sheetContext,
+                language:
+                AppLanguage.chinese,
+                title:
+                '中文',
+                subtitle:
+                'Chinese',
+              ),
+              _languageOption(
+                sheetContext,
+                language:
+                AppLanguage.malay,
+                title:
+                'Bahasa Melayu',
+                subtitle:
+                'Malay',
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _languageOption(
+      BuildContext sheetContext, {
+        required AppLanguage language,
+        required String title,
+        required String subtitle,
+      }) {
+    final selected =
+        settings.language == language;
+
+    final colorScheme =
+        Theme.of(sheetContext)
+            .colorScheme;
+
+    return Padding(
+      padding:
+      const EdgeInsets.only(
+        bottom: 8,
+      ),
+      child: Material(
+        color: selected
+            ? colorScheme
+            .primaryContainer
+            : colorScheme
+            .surfaceContainerLow,
+        borderRadius:
+        BorderRadius.circular(16),
+        child: InkWell(
+          borderRadius:
+          BorderRadius.circular(16),
+          onTap: () {
+            settings.setLanguage(
+              language,
+            );
+
+            Navigator.pop(
+              sheetContext,
+            );
+          },
+          child: Padding(
+            padding:
+            const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 13,
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color:
+                    colorScheme.surface,
+                    borderRadius:
+                    BorderRadius.circular(
+                      12,
+                    ),
+                  ),
+                  child: Icon(
+                    Icons.language_rounded,
+                    color:
+                    colorScheme.primary,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment:
+                    CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: Theme.of(
+                          sheetContext,
+                        )
+                            .textTheme
+                            .titleMedium
+                            ?.copyWith(
+                          fontWeight:
+                          FontWeight.w700,
+                        ),
+                      ),
+                      Text(
+                        subtitle,
+                        style: Theme.of(
+                          sheetContext,
+                        )
+                            .textTheme
+                            .bodySmall
+                            ?.copyWith(
+                          color:
+                          colorScheme
+                              .onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (selected)
+                  Icon(
+                    Icons
+                        .check_circle_rounded,
+                    color:
+                    colorScheme.primary,
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _currentLanguageLabel() {
+    switch (settings.language) {
+      case AppLanguage.english:
+        return 'English';
+      case AppLanguage.chinese:
+        return '中文';
+      case AppLanguage.malay:
+        return 'Bahasa Melayu';
+    }
   }
 
   @override
@@ -331,50 +558,92 @@ class _ProfileViewState
 
     final email =
         user?.email ??
-            'Guest mode';
+            settings.text(
+              en: 'Guest mode',
+              zh: '访客模式',
+              ms: 'Mod tetamu',
+            );
 
     final fallbackName =
         user?.email
             ?.split('@')
             .first ??
-            'Guest Traveller';
+            settings.text(
+              en: 'Guest Traveller',
+              zh: '访客旅客',
+              ms: 'Pelancong Tetamu',
+            );
 
     final displayName =
     profileName.isNotEmpty
         ? profileName
         : fallbackName;
 
+    final colorScheme =
+        Theme.of(context).colorScheme;
+
     return Scaffold(
       backgroundColor:
-      _background,
+      colorScheme.surface,
       appBar: AppBar(
-        title:
-        const Text(
-          'Etiquette Profile',
+        backgroundColor:
+        colorScheme.surface,
+        surfaceTintColor:
+        Colors.transparent,
+        title: Text(
+          settings.text(
+            en: 'Profile',
+            zh: '个人资料',
+            ms: 'Profil',
+          ),
           style:
-          TextStyle(
+          const TextStyle(
             fontWeight:
-            FontWeight.w700,
+            FontWeight.w800,
           ),
         ),
-        backgroundColor:
-        _background,
-        surfaceTintColor:
-        _background,
+        actions: [
+          IconButton(
+            tooltip: settings.text(
+              en: 'Refresh',
+              zh: '刷新',
+              ms: 'Muat semula',
+            ),
+            onPressed:
+            loading
+                ? null
+                : _loadProfileDetails,
+            icon: loading
+                ? const SizedBox(
+              width: 18,
+              height: 18,
+              child:
+              CircularProgressIndicator(
+                strokeWidth: 2,
+              ),
+            )
+                : const Icon(
+              Icons.refresh_rounded,
+            ),
+          ),
+          const SizedBox(width: 4),
+        ],
       ),
       body: RefreshIndicator(
         onRefresh:
-        _loadProfilePage,
+        _loadProfileDetails,
         child: ListView(
+          physics:
+          const AlwaysScrollableScrollPhysics(),
           padding:
           const EdgeInsets.fromLTRB(
             18,
             8,
             18,
-            28,
+            30,
           ),
           children: [
-            _buildProfileHeader(
+            _buildProfileCard(
               displayName:
               displayName,
               email:
@@ -386,54 +655,40 @@ class _ProfileViewState
               signedIn:
               user != null,
             ),
-            const SizedBox(
-              height: 18,
-            ),
+            const SizedBox(height: 26),
 
-            _sectionTitle(
-              'Your Etiquette Toolkit',
-              'Quick access to respectful travel features',
+            _sectionLabel(
+              settings.text(
+                en: 'Quick access',
+                zh: '快捷功能',
+                ms: 'Akses pantas',
+              ),
             ),
-            const SizedBox(
-              height: 10,
-            ),
+            const SizedBox(height: 10),
 
-            _buildEtiquetteTools(),
+            _buildReportTile(),
+            const SizedBox(height: 26),
 
-            const SizedBox(
-              height: 22,
+            _sectionLabel(
+              settings.text(
+                en: 'Preferences',
+                zh: '偏好设置',
+                ms: 'Pilihan',
+              ),
             ),
+            const SizedBox(height: 10),
 
-            _sectionTitle(
-              'My Etiquette Activity',
-              'Your submitted and verified reports',
-            ),
-            const SizedBox(
-              height: 10,
-            ),
+            _buildPreferencesCard(),
+            const SizedBox(height: 26),
 
-            _buildActivityCard(
-              signedIn:
-              user != null,
+            _sectionLabel(
+              settings.text(
+                en: 'Account',
+                zh: '账户',
+                ms: 'Akaun',
+              ),
             ),
-
-            const SizedBox(
-              height: 22,
-            ),
-
-            _buildRespectReminder(),
-
-            const SizedBox(
-              height: 22,
-            ),
-
-            _sectionTitle(
-              'Account',
-              'Personal details and account access',
-            ),
-            const SizedBox(
-              height: 10,
-            ),
+            const SizedBox(height: 10),
 
             _buildAccountCard(
               signedIn:
@@ -449,485 +704,374 @@ class _ProfileViewState
     );
   }
 
-  Widget _buildProfileHeader({
+  Widget _buildProfileCard({
     required String displayName,
     required String email,
     required String phone,
     required String photoUrl,
     required bool signedIn,
   }) {
+    final colorScheme =
+        Theme.of(context).colorScheme;
+
     return Container(
       padding:
-      const EdgeInsets.all(
-        20,
-      ),
-      decoration:
-      BoxDecoration(
-        gradient:
-        const LinearGradient(
-          colors: [
-            Color(
-              0xFFDCE9FD,
-            ),
-            Color(
-              0xFFE4F7F2,
-            ),
-          ],
-          begin:
-          Alignment.topLeft,
-          end:
-          Alignment.bottomRight,
-        ),
+      const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color:
+        colorScheme
+            .surfaceContainerLow,
         borderRadius:
-        BorderRadius.circular(
-          24,
+        BorderRadius.circular(22),
+        border: Border.all(
+          color:
+          colorScheme
+              .outlineVariant,
         ),
       ),
-      child:
-      Column(
+      child: Column(
         children: [
           Row(
+            crossAxisAlignment:
+            CrossAxisAlignment.center,
             children: [
-              Container(
-                width:
-                72,
-                height:
-                72,
-                decoration:
-                BoxDecoration(
-                  color:
-                  Colors.white,
-                  borderRadius:
-                  BorderRadius.circular(
-                    22,
-                  ),
-                  boxShadow:
-                  const [
-                    BoxShadow(
-                      color:
-                      Color(
-                        0x166C4DB5,
-                      ),
-                      blurRadius:
-                      16,
-                      offset:
-                      Offset(
-                        0,
-                        6,
-                      ),
-                    ),
-                  ],
-                ),
-                child:
-                ClipRRect(
-                  borderRadius:
-                  BorderRadius.circular(
-                    22,
-                  ),
-                  child:
-                  photoUrl.isNotEmpty
-                      ? Image.network(
-                    photoUrl,
-                    fit:
-                    BoxFit.cover,
-                    errorBuilder:
-                        (
-                        context,
-                        error,
-                        stackTrace,
-                        ) {
-                      return const Icon(
-                        Icons.person_rounded,
-                        size:
-                        38,
-                        color:
-                        _primary,
-                      );
-                    },
-                  )
-                      : const Icon(
-                    Icons.person_rounded,
-                    size:
-                    38,
-                    color:
-                    _primary,
-                  ),
-                ),
+              _buildAvatar(
+                photoUrl:
+                photoUrl,
+                displayName:
+                displayName,
+                signedIn:
+                signedIn,
               ),
-              const SizedBox(
-                width: 15,
-              ),
+              const SizedBox(width: 16),
               Expanded(
-                child:
-                Column(
+                child: Column(
                   crossAxisAlignment:
                   CrossAxisAlignment.start,
                   children: [
                     Text(
                       displayName,
-                      maxLines:
-                      1,
+                      maxLines: 1,
                       overflow:
                       TextOverflow.ellipsis,
-                      style:
-                      const TextStyle(
-                        fontSize:
-                        21,
+                      style: Theme.of(
+                        context,
+                      )
+                          .textTheme
+                          .titleLarge
+                          ?.copyWith(
                         fontWeight:
                         FontWeight.w800,
-                        color:
-                        Color(
-                          0xFF14213D,
-                        ),
                       ),
                     ),
-                    const SizedBox(
-                      height: 5,
-                    ),
+                    const SizedBox(height: 4),
                     Text(
                       email,
-                      maxLines:
-                      1,
+                      maxLines: 1,
                       overflow:
                       TextOverflow.ellipsis,
-                      style:
-                      const TextStyle(
+                      style: Theme.of(
+                        context,
+                      )
+                          .textTheme
+                          .bodyMedium
+                          ?.copyWith(
                         color:
-                        Color(
-                          0xFF64748B,
-                        ),
+                        colorScheme
+                            .onSurfaceVariant,
                       ),
                     ),
                     if (phone.isNotEmpty) ...[
-                      const SizedBox(
-                        height: 4,
-                      ),
+                      const SizedBox(height: 3),
                       Text(
                         phone,
-                        style:
-                        const TextStyle(
+                        maxLines: 1,
+                        overflow:
+                        TextOverflow.ellipsis,
+                        style: Theme.of(
+                          context,
+                        )
+                            .textTheme
+                            .bodySmall
+                            ?.copyWith(
                           color:
-                          Color(
-                            0xFF64748B,
-                          ),
-                          fontSize:
-                          12.5,
+                          colorScheme
+                              .onSurfaceVariant,
                         ),
                       ),
                     ],
-                    const SizedBox(
-                      height: 9,
-                    ),
-                    Container(
-                      padding:
-                      const EdgeInsets.symmetric(
-                        horizontal:
-                        10,
-                        vertical:
-                        5,
-                      ),
-                      decoration:
-                      BoxDecoration(
-                        color:
-                        signedIn
-                            ? const Color(
-                          0xFFDDF5EA,
-                        )
-                            : const Color(
-                          0xFFFFF0D9,
-                        ),
-                        borderRadius:
-                        BorderRadius.circular(
-                          30,
-                        ),
-                      ),
-                      child:
-                      Text(
-                        signedIn
-                            ? 'Respectful Traveller'
-                            : 'Guest Traveller',
-                        style:
-                        TextStyle(
-                          fontSize:
-                          12,
-                          fontWeight:
-                          FontWeight.w700,
-                          color:
-                          signedIn
-                              ? const Color(
-                            0xFF136B4D,
-                          )
-                              : const Color(
-                            0xFF8A5A13,
-                          ),
-                        ),
-                      ),
-                    ),
                   ],
                 ),
               ),
             ],
           ),
-          if (signedIn) ...[
-            const SizedBox(
-              height: 16,
-            ),
-            SizedBox(
-              width:
-              double.infinity,
-              child:
-              FilledButton.tonalIcon(
-                onPressed:
-                _editProfile,
-                icon:
-                const Icon(
-                  Icons.edit_outlined,
+          const SizedBox(height: 18),
+          SizedBox(
+            width:
+            double.infinity,
+            child: signedIn
+                ? FilledButton.tonalIcon(
+              onPressed:
+              _editProfile,
+              icon:
+              const Icon(
+                Icons.edit_outlined,
+                size: 18,
+              ),
+              label: Text(
+                settings.text(
+                  en: 'Edit Profile',
+                  zh: '编辑资料',
+                  ms: 'Edit Profil',
                 ),
-                label:
-                const Text(
-                  'Edit Profile & Photo',
-                  style:
-                  TextStyle(
-                    fontWeight:
-                    FontWeight.w700,
-                  ),
+              ),
+            )
+                : FilledButton.icon(
+              onPressed:
+              _openLogin,
+              icon:
+              const Icon(
+                Icons.login_rounded,
+              ),
+              label: Text(
+                settings.text(
+                  en: 'Sign In',
+                  zh: '登录',
+                  ms: 'Log Masuk',
                 ),
               ),
             ),
-          ],
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildEtiquetteTools() {
-    return GridView.count(
-      crossAxisCount:
-      2,
-      shrinkWrap:
-      true,
-      physics:
-      const NeverScrollableScrollPhysics(),
-      crossAxisSpacing:
-      11,
-      mainAxisSpacing:
-      11,
-      childAspectRatio:
-      1.06,
+  Widget _buildAvatar({
+    required String photoUrl,
+    required String displayName,
+    required bool signedIn,
+  }) {
+    final colorScheme =
+        Theme.of(context).colorScheme;
+
+    final trimmedName =
+    displayName.trim();
+
+    final initial =
+    trimmedName.isEmpty
+        ? '?'
+        : trimmedName[0]
+        .toUpperCase();
+
+    return Stack(
+      clipBehavior:
+      Clip.none,
       children: [
-        _toolCard(
-          icon:
-          Icons.report_problem_outlined,
-          title:
-          'Report an\nEtiquette Issue',
-          subtitle:
-          'Submit evidence',
-          color:
-          const Color(
-            0xFFFFEEE9,
+        Container(
+          width: 76,
+          height: 76,
+          decoration: BoxDecoration(
+            color:
+            colorScheme
+                .primaryContainer,
+            shape:
+            BoxShape.circle,
+            border: Border.all(
+              color:
+              colorScheme
+                  .outlineVariant,
+            ),
           ),
-          iconColor:
-          const Color(
-            0xFFC54A2F,
-          ),
-          onTap:
-              () {
-            _requireLogin(
-                  () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder:
-                        (_) =>
-                    const UserEtiquetteReportPage(),
+          clipBehavior:
+          Clip.antiAlias,
+          child: photoUrl.isNotEmpty
+              ? Image.network(
+            photoUrl,
+            fit:
+            BoxFit.cover,
+            errorBuilder:
+                (
+                context,
+                error,
+                stackTrace,
+                ) {
+              return Center(
+                child: Text(
+                  initial,
+                  style: TextStyle(
+                    color:
+                    colorScheme
+                        .onPrimaryContainer,
+                    fontSize: 28,
+                    fontWeight:
+                    FontWeight.w800,
                   ),
-                ).then(
-                      (_) =>
-                      _loadProfilePage(),
-                );
-              },
-            );
-          },
-        ),
-        _toolCard(
-          icon:
-          Icons.assignment_outlined,
-          title:
-          'My Submitted\nReports',
-          subtitle:
-          'Track report status',
-          color:
-          const Color(
-            0xFFF3F8FE,
+                ),
+              );
+            },
+          )
+              : Center(
+            child: Text(
+              initial,
+              style: TextStyle(
+                color:
+                colorScheme
+                    .onPrimaryContainer,
+                fontSize: 28,
+                fontWeight:
+                FontWeight.w800,
+              ),
+            ),
           ),
-          iconColor:
-          _primary,
-          onTap:
-              () {
-            _requireLogin(
-                  () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder:
-                        (_) =>
-                    const MyEtiquetteReportsPage(),
+        ),
+        if (signedIn)
+          Positioned(
+            right: -2,
+            bottom: -2,
+            child: Material(
+              color:
+              colorScheme.primary,
+              shape:
+              const CircleBorder(),
+              child: InkWell(
+                customBorder:
+                const CircleBorder(),
+                onTap:
+                _editProfile,
+                child: Padding(
+                  padding:
+                  const EdgeInsets.all(
+                    7,
                   ),
-                ).then(
-                      (_) =>
-                      _loadProfilePage(),
-                );
-              },
-            );
-          },
-        ),
-        _toolCard(
-          icon:
-          Icons.checkroom_outlined,
-          title:
-          'Outfit Etiquette\nCheck',
-          subtitle:
-          'Check dress suitability',
-          color:
-          const Color(
-            0xFFE8F7F3,
-          ),
-          iconColor:
-          const Color(
-            0xFF13806C,
-          ),
-          onTap:
-              () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder:
-                    (_) =>
-                const OutfitRecognitionView(),
+                  child: Icon(
+                    Icons.edit_rounded,
+                    color:
+                    colorScheme
+                        .onPrimary,
+                    size: 15,
+                  ),
+                ),
               ),
-            );
-          },
-        ),
-        _toolCard(
-          icon:
-          Icons.menu_book_outlined,
-          title:
-          'Explore Etiquette\nGuides',
-          subtitle:
-          'DOs, DON\'Ts & tips',
-          color:
-          const Color(
-            0xFFFFF4DB,
+            ),
           ),
-          iconColor:
-          const Color(
-            0xFF9A6712,
-          ),
-          onTap:
-              () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder:
-                    (_) =>
-                const CulturalMapView(),
-              ),
-            );
-          },
-        ),
       ],
     );
   }
 
-  Widget _toolCard({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required Color color,
-    required Color iconColor,
-    required VoidCallback onTap,
-  }) {
+  Widget _sectionLabel(
+      String text,
+      ) {
+    return Text(
+      text,
+      style: Theme.of(context)
+          .textTheme
+          .titleMedium
+          ?.copyWith(
+        fontWeight:
+        FontWeight.w800,
+      ),
+    );
+  }
+
+  Widget _buildReportTile() {
+    final colorScheme =
+        Theme.of(context).colorScheme;
+
     return Material(
       color:
-      color,
+      colorScheme
+          .surfaceContainerLow,
       borderRadius:
-      BorderRadius.circular(
-        20,
-      ),
-      child:
-      InkWell(
-        borderRadius:
-        BorderRadius.circular(
-          20,
-        ),
+      BorderRadius.circular(18),
+      child: InkWell(
         onTap:
-        onTap,
-        child:
-        Padding(
+        _openReportPage,
+        borderRadius:
+        BorderRadius.circular(18),
+        child: Container(
           padding:
-          const EdgeInsets.all(
-            15,
+          const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius:
+            BorderRadius.circular(18),
+            border: Border.all(
+              color:
+              colorScheme
+                  .outlineVariant,
+            ),
           ),
-          child:
-          Column(
-            crossAxisAlignment:
-            CrossAxisAlignment.start,
+          child: Row(
             children: [
               Container(
-                width:
-                42,
-                height:
-                42,
-                decoration:
-                BoxDecoration(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
                   color:
-                  Colors.white.withValues(
-                    alpha:
-                    0.82,
-                  ),
+                  colorScheme
+                      .primaryContainer,
                   borderRadius:
                   BorderRadius.circular(
-                    13,
+                    14,
                   ),
                 ),
-                child:
-                Icon(
-                  icon,
+                child: Icon(
+                  Icons
+                      .flag_outlined,
                   color:
-                  iconColor,
+                  colorScheme
+                      .onPrimaryContainer,
                 ),
               ),
-              const Spacer(),
-              Text(
-                title,
-                style:
-                const TextStyle(
-                  fontSize:
-                  14.5,
-                  fontWeight:
-                  FontWeight.w800,
-                  height:
-                  1.16,
-                  color:
-                  Color(
-                    0xFF14213D,
-                  ),
+              const SizedBox(width: 13),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment:
+                  CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      settings.text(
+                        en: 'Report an etiquette issue',
+                        zh: '举报礼仪问题',
+                        ms: 'Laporkan isu etika',
+                      ),
+                      style: Theme.of(
+                        context,
+                      )
+                          .textTheme
+                          .titleSmall
+                          ?.copyWith(
+                        fontWeight:
+                        FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      settings.text(
+                        en: 'Submit a location-based report with evidence.',
+                        zh: '提交包含地点与证据的礼仪举报。',
+                        ms: 'Hantar laporan berdasarkan lokasi bersama bukti.',
+                      ),
+                      style: Theme.of(
+                        context,
+                      )
+                          .textTheme
+                          .bodySmall
+                          ?.copyWith(
+                        color:
+                        colorScheme
+                            .onSurfaceVariant,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(
-                height: 5,
-              ),
-              Text(
-                subtitle,
-                style:
-                const TextStyle(
-                  fontSize:
-                  11.5,
-                  color:
-                  Color(
-                    0xFF64748B,
-                  ),
-                ),
+              const SizedBox(width: 8),
+              Icon(
+                Icons.chevron_right_rounded,
+                color:
+                colorScheme
+                    .onSurfaceVariant,
               ),
             ],
           ),
@@ -936,262 +1080,149 @@ class _ProfileViewState
     );
   }
 
-  Widget _buildActivityCard({
-    required bool signedIn,
-  }) {
-    if (!signedIn) {
-      return Container(
-        padding:
-        const EdgeInsets.all(
-          18,
-        ),
-        decoration:
-        _whiteCardDecoration(),
-        child:
-        Column(
-          children: [
-            const Icon(
-              Icons.lock_outline_rounded,
-              size:
-              32,
-              color:
-              _primary,
-            ),
-            const SizedBox(
-              height: 10,
-            ),
-            const Text(
-              'Sign in to track your etiquette reports',
-              textAlign:
-              TextAlign.center,
-              style:
-              TextStyle(
-                fontWeight:
-                FontWeight.w800,
-              ),
-            ),
-            const SizedBox(
-              height: 12,
-            ),
-            FilledButton(
-              onPressed:
-              _openLogin,
-              child:
-              const Text(
-                'Sign In',
-              ),
-            ),
-          ],
-        ),
-      );
-    }
+  Widget _buildPreferencesCard() {
+    final colorScheme =
+        Theme.of(context).colorScheme;
 
     return Container(
-      padding:
-      const EdgeInsets.all(
-        17,
-      ),
-      decoration:
-      _whiteCardDecoration(),
-      child:
-      loading
-          ? const Center(
-        child:
-        Padding(
-          padding:
-          EdgeInsets.all(
-            14,
-          ),
-          child:
-          CircularProgressIndicator(),
-        ),
-      )
-          : Row(
-        children: [
-          _statItem(
-            value:
-            '$submittedCount',
-            label:
-            'Submitted',
-            icon:
-            Icons.description_outlined,
-            color:
-            _primary,
-          ),
-          _verticalDivider(),
-          _statItem(
-            value:
-            '$pendingCount',
-            label:
-            'Pending',
-            icon:
-            Icons.schedule_rounded,
-            color:
-            const Color(
-              0xFFB36B00,
-            ),
-          ),
-          _verticalDivider(),
-          _statItem(
-            value:
-            '$approvedCount',
-            label:
-            'Approved',
-            icon:
-            Icons.verified_outlined,
-            color:
-            const Color(
-              0xFF16805F,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _statItem({
-    required String value,
-    required String label,
-    required IconData icon,
-    required Color color,
-  }) {
-    return Expanded(
-      child:
-      Column(
-        children: [
-          Icon(
-            icon,
-            color:
-            color,
-            size:
-            21,
-          ),
-          const SizedBox(
-            height: 6,
-          ),
-          Text(
-            value,
-            style:
-            const TextStyle(
-              fontSize:
-              21,
-              fontWeight:
-              FontWeight.w800,
-              color:
-              Color(
-                0xFF14213D,
-              ),
-            ),
-          ),
-          Text(
-            label,
-            style:
-            const TextStyle(
-              fontSize:
-              11.5,
-              color:
-              Color(
-                0xFF64748B,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _verticalDivider() {
-    return Container(
-      width:
-      1,
-      height:
-      46,
-      color:
-      const Color(
-        0xFFE3EDFC,
-      ),
-    );
-  }
-
-  Widget _buildRespectReminder() {
-    return Container(
-      padding:
-      const EdgeInsets.all(
-        18,
-      ),
-      decoration:
-      BoxDecoration(
-        gradient:
-        const LinearGradient(
-          colors: [
-            Color(
-              0xFF2F6FED,
-            ),
-            Color(
-              0xFF3E7D79,
-            ),
-          ],
-        ),
+      decoration: BoxDecoration(
+        color:
+        colorScheme
+            .surfaceContainerLow,
         borderRadius:
-        BorderRadius.circular(
-          22,
+        BorderRadius.circular(18),
+        border: Border.all(
+          color:
+          colorScheme
+              .outlineVariant,
         ),
       ),
-      child:
-      const Row(
-        crossAxisAlignment:
-        CrossAxisAlignment.start,
+      child: Column(
         children: [
-          Icon(
-            Icons.volunteer_activism_rounded,
-            color:
-            Colors.white,
-            size:
-            27,
-          ),
-          SizedBox(
-            width: 13,
-          ),
-          Expanded(
-            child:
-            Column(
-              crossAxisAlignment:
-              CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Respect Reminder',
-                  style:
-                  TextStyle(
-                    color:
-                    Colors.white,
-                    fontWeight:
-                    FontWeight.w800,
-                    fontSize:
-                    16,
-                  ),
-                ),
-                SizedBox(
-                  height: 5,
-                ),
-                Text(
-                  'Before entering a cultural or religious site, check the local dress code, photography rules and worship etiquette.',
-                  style:
-                  TextStyle(
-                    color:
-                    Color(
-                      0xFFF3F8FE,
-                    ),
-                    height:
-                    1.4,
-                    fontSize:
-                    12.5,
-                  ),
-                ),
-              ],
+          _settingsRow(
+            icon:
+            settings.darkMode
+                ? Icons
+                .dark_mode_rounded
+                : Icons
+                .light_mode_rounded,
+            title:
+            settings.text(
+              en: 'Appearance',
+              zh: '外观',
+              ms: 'Penampilan',
             ),
+            subtitle:
+            settings.darkMode
+                ? settings.text(
+              en: 'Dark',
+              zh: '深色',
+              ms: 'Gelap',
+            )
+                : settings.text(
+              en: 'Light',
+              zh: '浅色',
+              ms: 'Cerah',
+            ),
+            trailing:
+            Switch.adaptive(
+              value:
+              settings.darkMode,
+              onChanged:
+              settings.setDarkMode,
+            ),
+          ),
+          Divider(
+            height: 1,
+            indent: 66,
+            color:
+            colorScheme
+                .outlineVariant,
+          ),
+          _settingsRow(
+            icon:
+            Icons.translate_rounded,
+            title:
+            settings.text(
+              en: 'Language',
+              zh: '语言',
+              ms: 'Bahasa',
+            ),
+            subtitle:
+            _currentLanguageLabel(),
+            trailing:
+            const Icon(
+              Icons.chevron_right_rounded,
+            ),
+            onTap:
+            _showLanguageSheet,
           ),
         ],
       ),
+    );
+  }
+
+  Widget _settingsRow({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Widget trailing,
+    VoidCallback? onTap,
+  }) {
+    final colorScheme =
+        Theme.of(context).colorScheme;
+
+    return ListTile(
+      onTap:
+      onTap,
+      contentPadding:
+      const EdgeInsets.fromLTRB(
+        14,
+        5,
+        10,
+        5,
+      ),
+      leading: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color:
+          colorScheme
+              .primaryContainer,
+          borderRadius:
+          BorderRadius.circular(12),
+        ),
+        child: Icon(
+          icon,
+          size: 20,
+          color:
+          colorScheme
+              .onPrimaryContainer,
+        ),
+      ),
+      title: Text(
+        title,
+        style: Theme.of(context)
+            .textTheme
+            .titleSmall
+            ?.copyWith(
+          fontWeight:
+          FontWeight.w700,
+        ),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: Theme.of(context)
+            .textTheme
+            .bodySmall
+            ?.copyWith(
+          color:
+          colorScheme
+              .onSurfaceVariant,
+        ),
+      ),
+      trailing:
+      trailing,
     );
   }
 
@@ -1200,218 +1231,203 @@ class _ProfileViewState
     required String email,
     required String phone,
   }) {
+    final colorScheme =
+        Theme.of(context).colorScheme;
+
     return Container(
-      decoration:
-      _whiteCardDecoration(),
-      child:
-      Column(
+      decoration: BoxDecoration(
+        color:
+        colorScheme
+            .surfaceContainerLow,
+        borderRadius:
+        BorderRadius.circular(18),
+        border: Border.all(
+          color:
+          colorScheme
+              .outlineVariant,
+        ),
+      ),
+      child: Column(
         children: [
-          if (signedIn) ...[
-            ListTile(
-              leading:
-              const Icon(
-                Icons.manage_accounts_outlined,
-                color:
-                _primary,
-              ),
-              title:
-              const Text(
-                'Edit Personal Details',
-                style:
-                TextStyle(
-                  fontWeight:
-                  FontWeight.w700,
-                ),
-              ),
-              subtitle:
-              const Text(
-                'Photo, full name and phone number',
-              ),
-              trailing:
-              const Icon(
-                Icons.chevron_right_rounded,
-              ),
-              onTap:
-              _editProfile,
+          _accountInfoRow(
+            icon:
+            Icons
+                .alternate_email_rounded,
+            title:
+            settings.text(
+              en: 'Email',
+              zh: '邮箱',
+              ms: 'E-mel',
             ),
-            const Divider(
+            value:
+            email,
+          ),
+          if (signedIn &&
+              phone.isNotEmpty) ...[
+            Divider(
               height: 1,
+              indent: 66,
+              color:
+              colorScheme
+                  .outlineVariant,
+            ),
+            _accountInfoRow(
+              icon:
+              Icons.phone_outlined,
+              title:
+              settings.text(
+                en: 'Phone',
+                zh: '电话',
+                ms: 'Telefon',
+              ),
+              value:
+              phone,
             ),
           ],
+          Divider(
+            height: 1,
+            indent: 66,
+            color:
+            colorScheme
+                .outlineVariant,
+          ),
           ListTile(
-            leading:
-            const Icon(
-              Icons.alternate_email_rounded,
-              color:
-              _primary,
+            onTap:
+            signedIn
+                ? _logout
+                : _openLogin,
+            contentPadding:
+            const EdgeInsets.fromLTRB(
+              14,
+              5,
+              10,
+              5,
             ),
-            title:
-            const Text(
-              'Account Email',
-              style:
-              TextStyle(
+            leading: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color:
+                signedIn
+                    ? colorScheme
+                    .errorContainer
+                    : colorScheme
+                    .primaryContainer,
+                borderRadius:
+                BorderRadius.circular(
+                  12,
+                ),
+              ),
+              child: Icon(
+                signedIn
+                    ? Icons.logout_rounded
+                    : Icons.login_rounded,
+                size: 20,
+                color:
+                signedIn
+                    ? colorScheme
+                    .onErrorContainer
+                    : colorScheme
+                    .onPrimaryContainer,
+              ),
+            ),
+            title: Text(
+              signedIn
+                  ? settings.text(
+                en: 'Sign Out',
+                zh: '退出登录',
+                ms: 'Log Keluar',
+              )
+                  : settings.text(
+                en: 'Sign In',
+                zh: '登录',
+                ms: 'Log Masuk',
+              ),
+              style: Theme.of(context)
+                  .textTheme
+                  .titleSmall
+                  ?.copyWith(
+                color:
+                signedIn
+                    ? colorScheme
+                    .error
+                    : colorScheme
+                    .onSurface,
                 fontWeight:
                 FontWeight.w700,
               ),
             ),
-            subtitle:
-            Text(
-              email,
+            trailing:
+            Icon(
+              Icons.chevron_right_rounded,
+              color:
+              colorScheme
+                  .onSurfaceVariant,
             ),
           ),
-          if (signedIn &&
-              phone.isNotEmpty) ...[
-            const Divider(
-              height: 1,
-            ),
-            ListTile(
-              leading:
-              const Icon(
-                Icons.phone_outlined,
-                color:
-                _primary,
-              ),
-              title:
-              const Text(
-                'Phone Number',
-                style:
-                TextStyle(
-                  fontWeight:
-                  FontWeight.w700,
-                ),
-              ),
-              subtitle:
-              Text(
-                phone,
-              ),
-            ),
-          ],
-          const Divider(
-            height: 1,
-          ),
-          if (signedIn)
-            ListTile(
-              leading:
-              const Icon(
-                Icons.logout_rounded,
-                color:
-                Color(
-                  0xFFB43D3D,
-                ),
-              ),
-              title:
-              const Text(
-                'Sign Out',
-                style:
-                TextStyle(
-                  color:
-                  Color(
-                    0xFFB43D3D,
-                  ),
-                  fontWeight:
-                  FontWeight.w700,
-                ),
-              ),
-              onTap:
-              _logout,
-            )
-          else
-            ListTile(
-              leading:
-              const Icon(
-                Icons.login_rounded,
-                color:
-                _primary,
-              ),
-              title:
-              const Text(
-                'Sign In',
-                style:
-                TextStyle(
-                  fontWeight:
-                  FontWeight.w700,
-                ),
-              ),
-              onTap:
-              _openLogin,
-            ),
         ],
       ),
     );
   }
 
-  Widget _sectionTitle(
-      String title,
-      String subtitle,
-      ) {
-    return Column(
-      crossAxisAlignment:
-      CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style:
-          const TextStyle(
-            fontSize:
-            18,
-            fontWeight:
-            FontWeight.w800,
-            color:
-            Color(
-              0xFF14213D,
-            ),
-          ),
-        ),
-        const SizedBox(
-          height: 3,
-        ),
-        Text(
-          subtitle,
-          style:
-          const TextStyle(
-            color:
-            Color(
-              0xFF64748B,
-            ),
-            fontSize:
-            12.5,
-          ),
-        ),
-      ],
-    );
-  }
+  Widget _accountInfoRow({
+    required IconData icon,
+    required String title,
+    required String value,
+  }) {
+    final colorScheme =
+        Theme.of(context).colorScheme;
 
-  BoxDecoration _whiteCardDecoration() {
-    return BoxDecoration(
-      color:
-      Colors.white,
-      borderRadius:
-      BorderRadius.circular(
-        20,
+    return ListTile(
+      contentPadding:
+      const EdgeInsets.fromLTRB(
+        14,
+        5,
+        12,
+        5,
       ),
-      border:
-      Border.all(
-        color:
-        const Color(
-          0xFFE3EDFC,
-        ),
-      ),
-      boxShadow:
-      const [
-        BoxShadow(
+      leading: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
           color:
-          Color(
-            0x0A1D1B20,
-          ),
-          blurRadius:
-          18,
-          offset:
-          Offset(
-            0,
-            6,
-          ),
+          colorScheme
+              .surfaceContainerHighest,
+          borderRadius:
+          BorderRadius.circular(12),
         ),
-      ],
+        child: Icon(
+          icon,
+          size: 20,
+          color:
+          colorScheme
+              .onSurfaceVariant,
+        ),
+      ),
+      title: Text(
+        title,
+        style: Theme.of(context)
+            .textTheme
+            .labelLarge
+            ?.copyWith(
+          fontWeight:
+          FontWeight.w700,
+        ),
+      ),
+      subtitle: Text(
+        value,
+        maxLines: 1,
+        overflow:
+        TextOverflow.ellipsis,
+        style: Theme.of(context)
+            .textTheme
+            .bodySmall
+            ?.copyWith(
+          color:
+          colorScheme
+              .onSurfaceVariant,
+        ),
+      ),
     );
   }
 }

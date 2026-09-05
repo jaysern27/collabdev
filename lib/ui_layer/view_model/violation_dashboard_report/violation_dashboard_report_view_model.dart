@@ -349,42 +349,34 @@ class ViolationDashboardReportViewModel extends ChangeNotifier {
         data['attractions'] ?? const [],
       );
 
-      _totalReports = _asInt(data['totalReports']);
-      _approvedReports = _asInt(data['approvedReports']);
-      _pendingReports = _asInt(data['pendingReports']);
+      // Dashboard metrics count INDIVIDUAL selected violations.
+      // One Firestore report can contain multiple DON'T rules.
+      _totalReports = _asInt(
+        data['totalViolationCount'] ??
+            data['totalReports'],
+      );
 
-      final repositoryRejected = _asInt(data['rejectedReports']);
+      _approvedReports = _asInt(
+        data['approvedViolationCount'] ??
+            data['approvedReports'],
+      );
 
-      // Any remaining report has already been counted in totalReports but not
-      // in approved/pending. With the current project status model this means
-      // rejected. This fallback also handles manually entered Firestore test
-      // values containing hidden characters.
-      final remainingReports =
-          _totalReports - _approvedReports - _pendingReports;
+      _pendingReports = _asInt(
+        data['pendingViolationCount'] ??
+            data['pendingReports'],
+      );
 
-      if (repositoryRejected > 0) {
-        _rejectedReports = repositoryRejected;
-        _unclassifiedReports =
-            (remainingReports - repositoryRejected).clamp(0, 999999).toInt();
-      } else {
-        _rejectedReports = remainingReports > 0 ? remainingReports : 0;
-        _unclassifiedReports = 0;
-      }
+      _rejectedReports = _asInt(
+        data['rejectedViolationCount'] ??
+            data['rejectedReports'],
+      );
 
-      // Pending reports are NOT evaluated and therefore are not included
-      // in the verification-rate denominator.
-      //
-      // Example:
-      // approved = 3
-      // rejected = 1
-      // pending = 1
-      //
-      // verification rate = 3 / (3 + 1) * 100 = 75%
-      final evaluatedReports = _approvedReports + _rejectedReports;
+      _unclassifiedReports = 0;
 
-      _verificationRate = evaluatedReports == 0
-          ? 0.0
-          : (_approvedReports / evaluatedReports) * 100.0;
+      _verificationRate =
+          _asDouble(
+            data['verificationRate'],
+          );
 
       _insufficientData = data['insufficientData'] == true;
 
@@ -547,6 +539,19 @@ class ViolationDashboardReportViewModel extends ChangeNotifier {
       value?.toString() ?? '',
     ) ??
         0;
+  }
+
+  static double _asDouble(
+      dynamic value,
+      ) {
+    if (value is num) {
+      return value.toDouble();
+    }
+
+    return double.tryParse(
+      value?.toString() ?? '',
+    ) ??
+        0.0;
   }
 
   static String _cleanError(
