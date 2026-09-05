@@ -1482,16 +1482,10 @@ class OutfitRecognitionService {
       );
     }
 
-    // CURRENT OLD MODEL
-    // This will be replaced after lower-body retraining.
-    //
-    // 0 -> short
-    // 1 -> medium
-    // 2 -> covered
     const labels = [
       'short',
       'medium',
-      'covered',
+      'long',
     ];
 
     int bestIndex = 0;

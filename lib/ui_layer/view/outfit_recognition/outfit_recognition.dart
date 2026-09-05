@@ -905,10 +905,10 @@ class _OutfitRecognitionViewState
         return 'Short';
 
       case 'medium':
-        return 'Medium Coverage';
+        return 'Medium';
 
-      case 'covered':
-        return 'Covered';
+      case 'long':
+        return 'Long';
 
       default:
         return value;
