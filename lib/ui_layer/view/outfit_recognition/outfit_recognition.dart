@@ -162,6 +162,12 @@ class _OutfitRecognitionViewState
                   height: 24,
                 ),
                 _buildResultCard(),
+
+                const SizedBox(
+                  height: 20,
+                ),
+
+                _buildPlaceRecommendationSection(),
               ],
 
               if (_viewModel.errorMessage != null) ...[
@@ -667,7 +673,7 @@ class _OutfitRecognitionViewState
           if (lowerBody != null)
             _buildAttributeResult(
               title:
-              'Lower-Body Coverage',
+              'Lower-Body Length',
               value:
               _formatLowerBodyPrediction(
                 lowerBody.value,
@@ -749,6 +755,407 @@ class _OutfitRecognitionViewState
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildPlaceRecommendationSection() {
+    final recommendations =
+        _viewModel.placeRecommendations;
+
+    final message =
+        _viewModel.placeRecommendationMessage;
+
+    if (_viewModel.isFindingPlaceRecommendations) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(
+          20,
+        ),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(
+            20,
+          ),
+          border: Border.all(
+            color: const Color(
+              0xFFE5E5E5,
+            ),
+          ),
+        ),
+        child: const Column(
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(
+              height: 12,
+            ),
+            Text(
+              'Finding nearby places that match your outfit...',
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(
+        20,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(
+          20,
+        ),
+        border: Border.all(
+          color: const Color(
+            0xFFE5E5E5,
+          ),
+        ),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(
+              0x0D000000,
+            ),
+            blurRadius: 10,
+            offset: Offset(
+              0,
+              4,
+            ),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment:
+        CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(
+                Icons.place_outlined,
+                color: Color(
+                  0xFF2864D7,
+                ),
+                size: 27,
+              ),
+              SizedBox(
+                width: 10,
+              ),
+              Expanded(
+                child: Text(
+                  'Places That Match Your Outfit',
+                  style: TextStyle(
+                    fontSize: 19,
+                    fontWeight:
+                    FontWeight.bold,
+                    color: Color(
+                      0xFF14213D,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(
+            height: 8,
+          ),
+
+          Text(
+            message ??
+                'Nearby cultural attractions are checked against '
+                    'your detected outfit.',
+            style: const TextStyle(
+              fontSize: 13,
+              height: 1.4,
+              color: Color(
+                0xFF666666,
+              ),
+            ),
+          ),
+
+          if (_viewModel
+              .recommendationsUsingDefaultArea) ...[
+            const SizedBox(
+              height: 12,
+            ),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(
+                12,
+              ),
+              decoration: BoxDecoration(
+                color: const Color(
+                  0xFFFFF7E6,
+                ),
+                borderRadius: BorderRadius.circular(
+                  12,
+                ),
+              ),
+              child: const Row(
+                crossAxisAlignment:
+                CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    Icons.location_off_outlined,
+                    size: 19,
+                    color: Color(
+                      0xFF9A6700,
+                    ),
+                  ),
+                  SizedBox(
+                    width: 8,
+                  ),
+                  Expanded(
+                    child: Text(
+                      'Current GPS location was unavailable, so '
+                          'the Kuala Lumpur pilot area was used.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        height: 1.4,
+                        color: Color(
+                          0xFF7A5300,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
+          if (recommendations.isNotEmpty) ...[
+            const SizedBox(
+              height: 16,
+            ),
+
+            for (int index = 0;
+            index < recommendations.length;
+            index++) ...[
+              _buildPlaceRecommendationTile(
+                recommendations[index],
+              ),
+
+              if (index <
+                  recommendations.length - 1)
+                const Divider(
+                  height: 26,
+                ),
+            ],
+          ],
+
+          const SizedBox(
+            height: 14,
+          ),
+
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed:
+              _viewModel.isFindingPlaceRecommendations
+                  ? null
+                  : _viewModel
+                  .refreshPlaceRecommendations,
+              icon: const Icon(
+                Icons.refresh,
+              ),
+              label: const Text(
+                'Refresh Nearby Matches',
+              ),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(
+                  0xFF2864D7,
+                ),
+                side: const BorderSide(
+                  color: Color(
+                    0xFF2864D7,
+                  ),
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(
+                    12,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPlaceRecommendationTile(
+      Map<String, dynamic> attraction,
+      ) {
+    final name =
+        attraction['name']
+            ?.toString()
+            .trim();
+
+    final category =
+        attraction['category']
+            ?.toString()
+            .trim();
+
+    final distanceText =
+        attraction['distanceText']
+            ?.toString()
+            .trim();
+
+    final address =
+        attraction['address']
+            ?.toString()
+            .trim();
+
+    return Row(
+      crossAxisAlignment:
+      CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            color: const Color(
+              0xFFEAF3FF,
+            ),
+            borderRadius: BorderRadius.circular(
+              12,
+            ),
+          ),
+          child: const Icon(
+            Icons.location_on_outlined,
+            color: Color(
+              0xFF2864D7,
+            ),
+          ),
+        ),
+
+        const SizedBox(
+          width: 12,
+        ),
+
+        Expanded(
+          child: Column(
+            crossAxisAlignment:
+            CrossAxisAlignment.start,
+            children: [
+              Text(
+                name == null || name.isEmpty
+                    ? 'Cultural Attraction'
+                    : name,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight:
+                  FontWeight.bold,
+                  color: Color(
+                    0xFF14213D,
+                  ),
+                ),
+              ),
+
+              if (category != null &&
+                  category.isNotEmpty) ...[
+                const SizedBox(
+                  height: 3,
+                ),
+                Text(
+                  category,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(
+                      0xFF666666,
+                    ),
+                  ),
+                ),
+              ],
+
+              if (distanceText != null &&
+                  distanceText.isNotEmpty) ...[
+                const SizedBox(
+                  height: 5,
+                ),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.near_me_outlined,
+                      size: 15,
+                      color: Color(
+                        0xFF008F8C,
+                      ),
+                    ),
+                    const SizedBox(
+                      width: 5,
+                    ),
+                    Text(
+                      distanceText,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight:
+                        FontWeight.w600,
+                        color: Color(
+                          0xFF008F8C,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+
+              if (address != null &&
+                  address.isNotEmpty) ...[
+                const SizedBox(
+                  height: 5,
+                ),
+                Text(
+                  address,
+                  maxLines: 2,
+                  overflow:
+                  TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    height: 1.35,
+                    color: Color(
+                      0xFF777777,
+                    ),
+                  ),
+                ),
+              ],
+
+              const SizedBox(
+                height: 7,
+              ),
+
+              const Row(
+                children: [
+                  Icon(
+                    Icons.check_circle_outline,
+                    size: 16,
+                    color: Color(
+                      0xFF16855B,
+                    ),
+                  ),
+                  SizedBox(
+                    width: 5,
+                  ),
+                  Expanded(
+                    child: Text(
+                      'Your outfit matches this destination\'s '
+                          'structured dress-code rules.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        height: 1.35,
+                        color: Color(
+                          0xFF16855B,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 

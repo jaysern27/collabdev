@@ -1,26 +1,43 @@
   import 'package:flutter/foundation.dart';
 
   import '../../../data_layer/model/repositories/etiquette/etiquette_repository.dart';
+  import '../../../data_layer/model/repositories/outfit/outfit_place_recommendation_repository.dart';
   import '../../../data_layer/model/repositories/outfit/outfit_repository.dart';
   import '../../../data_layer/model/services/outfit_recognition/outfit_recognition_service.dart';
 
   class OutfitRecognitionViewModel extends ChangeNotifier {
     final OutfitRepository _outfitRepository;
     final EtiquetteRepository _etiquetteRepository;
+    final OutfitPlaceRecommendationRepository
+    _placeRecommendationRepository;
 
     OutfitRecognitionViewModel({
       OutfitRepository? outfitRepository,
       EtiquetteRepository? etiquetteRepository,
+      OutfitPlaceRecommendationRepository?
+      placeRecommendationRepository,
     })  : _outfitRepository =
         outfitRepository ?? OutfitRepository(),
           _etiquetteRepository =
-              etiquetteRepository ?? EtiquetteRepository();
+              etiquetteRepository ?? EtiquetteRepository(),
+          _placeRecommendationRepository =
+              placeRecommendationRepository ??
+                  OutfitPlaceRecommendationRepository();
 
     // =========================================================
     // HUMAN DETECTION SETTINGS
     // =========================================================
 
     static const double minimumHumanConfidence = 0.60;
+
+    // Keep this aligned with the Cultural Map module.
+    static const double recommendationRadiusKm = 20.0;
+
+    // Recommendations remain conservative even though the UI
+    // always displays the classifier's highest-scoring label.
+    static const double recommendationMinimumConfidence = 0.75;
+
+    static const int maximumPlaceRecommendations = 5;
 
     // =========================================================
     // STATE
@@ -54,6 +71,19 @@
     List<Map<String, dynamic>> _dressCodeRules = [];
 
     OutfitAdvisoryResult? _advisoryResult;
+
+    // =========================================================
+    // NEARBY OUTFIT-MATCHED PLACE RECOMMENDATIONS
+    // =========================================================
+
+    bool _isFindingPlaceRecommendations = false;
+
+    bool _recommendationsUsingDefaultArea = false;
+
+    List<Map<String, dynamic>>
+    _placeRecommendations = [];
+
+    String? _placeRecommendationMessage;
 
     String? _errorMessage;
 
@@ -153,6 +183,21 @@
 
     String? get recommendation =>
         _advisoryResult?.message;
+
+    bool get isFindingPlaceRecommendations =>
+        _isFindingPlaceRecommendations;
+
+    bool get recommendationsUsingDefaultArea =>
+        _recommendationsUsingDefaultArea;
+
+    List<Map<String, dynamic>>
+    get placeRecommendations =>
+        List.unmodifiable(
+          _placeRecommendations,
+        );
+
+    String? get placeRecommendationMessage =>
+        _placeRecommendationMessage;
 
     String? get errorMessage =>
         _errorMessage;
@@ -736,11 +781,6 @@
           return;
         }
 
-        if (!await _validateFullBody(image)) {
-          notifyListeners();
-          return;
-        }
-
         // =====================================================
         // STEP 2
         // FULL-BODY / ARM VISIBILITY
@@ -859,6 +899,13 @@
               confidence: headwearPrediction.confidence,
             );
 
+        // =====================================================
+        // STEP 8
+        // FIND NEARBY PLACES THAT MATCH THIS OUTFIT
+        // =====================================================
+
+        await _generatePlaceRecommendations();
+
         notifyListeners();
       } catch (e) {
         _errorMessage = e.toString();
@@ -866,6 +913,194 @@
         notifyListeners();
       } finally {
         _setAnalysing(false);
+      }
+    }
+
+    // =========================================================
+    // NEARBY PLACE RECOMMENDATIONS
+    // =========================================================
+
+    Future<void> refreshPlaceRecommendations() async {
+      if (_detectedAttributes.isEmpty ||
+          !hasValidHuman ||
+          !hasValidFullBody) {
+        _placeRecommendationMessage =
+        'Analyse a clear full-body outfit photo first.';
+
+        notifyListeners();
+
+        return;
+      }
+
+      await _generatePlaceRecommendations();
+    }
+
+    Future<void> _generatePlaceRecommendations() async {
+      if (_detectedAttributes.isEmpty) {
+        return;
+      }
+
+      _isFindingPlaceRecommendations = true;
+
+      _placeRecommendations = [];
+
+      _placeRecommendationMessage = null;
+
+      notifyListeners();
+
+      try {
+        final nearbyResult =
+        await _placeRecommendationRepository
+            .getNearbyCulturalAttractions(
+          radiusKm: recommendationRadiusKm,
+        );
+
+        _recommendationsUsingDefaultArea =
+            nearbyResult.usingDefaultArea;
+
+        final nearbyAttractions =
+            nearbyResult.attractions;
+
+        if (nearbyAttractions.isEmpty) {
+          _placeRecommendationMessage =
+          nearbyResult.usingDefaultArea
+              ? 'No supported cultural attractions were found '
+              'within ${recommendationRadiusKm.toStringAsFixed(0)} km '
+              'of the default Kuala Lumpur pilot area.'
+              : 'No supported cultural attractions were found '
+              'within ${recommendationRadiusKm.toStringAsFixed(0)} km '
+              'of your current location.';
+
+          return;
+        }
+
+        // Load the rule collection once instead of reading the
+        // full collection again for every nearby attraction.
+        final allEtiquetteRules =
+        await _etiquetteRepository
+            .getAllEtiquetteRules();
+
+        final matches =
+        <Map<String, dynamic>>[];
+
+        for (final attraction
+        in nearbyAttractions) {
+          final attractionId =
+              attraction['id']
+                  ?.toString()
+                  .trim() ??
+                  '';
+
+          if (attractionId.isEmpty) {
+            continue;
+          }
+
+          final dressCodeRules =
+          allEtiquetteRules.where(
+                (rule) {
+              final ruleAttractionId =
+                  rule['attractionId']
+                      ?.toString()
+                      .trim() ??
+                      '';
+
+              final ruleCategory =
+                  rule['ruleCategory']
+                      ?.toString()
+                      .trim()
+                      .toLowerCase() ??
+                      '';
+
+              return ruleAttractionId ==
+                  attractionId &&
+                  ruleCategory ==
+                      'dress_code';
+            },
+          ).toList();
+
+          // We only call a place an outfit match when there are
+          // structured dress-code rules to compare against.
+          if (dressCodeRules.isEmpty) {
+            continue;
+          }
+
+          final advisory =
+          _outfitRepository
+              .compareWithDressCode(
+            detectedAttributes:
+            _detectedAttributes,
+            dressCodeRules:
+            dressCodeRules,
+            minimumConfidence:
+            recommendationMinimumConfidence,
+          );
+
+          if (advisory.status !=
+              OutfitAdvisoryStatus.suitable) {
+            continue;
+          }
+
+          matches.add({
+            ...attraction,
+            'outfitStatus':
+            advisory.displayStatus,
+            'outfitMessage':
+            advisory.message,
+          });
+        }
+
+        // NearbyResult is already nearest-first, but sort again
+        // here so this stays correct if its implementation changes.
+        matches.sort(
+              (first, second) {
+            final firstDistance =
+                (first['distanceKm']
+                as num?)
+                    ?.toDouble() ??
+                    double.infinity;
+
+            final secondDistance =
+                (second['distanceKm']
+                as num?)
+                    ?.toDouble() ??
+                    double.infinity;
+
+            return firstDistance.compareTo(
+              secondDistance,
+            );
+          },
+        );
+
+        _placeRecommendations =
+            matches
+                .take(
+              maximumPlaceRecommendations,
+            )
+                .toList();
+
+        if (_placeRecommendations.isEmpty) {
+          _placeRecommendationMessage =
+          'No nearby attraction with a known dress code '
+              'confidently matched your current outfit.';
+        } else {
+          final count =
+              _placeRecommendations.length;
+
+          _placeRecommendationMessage =
+          '$count nearby ${count == 1 ? 'place matches' : 'places match'} '
+              'your current outfit.';
+        }
+      } catch (_) {
+        // Recommendation failure must not erase a successful
+        // outfit analysis. Show a recommendation-specific message.
+        _placeRecommendations = [];
+
+        _placeRecommendationMessage =
+        'Unable to load nearby place recommendations right now.';
+      } finally {
+        _isFindingPlaceRecommendations = false;
+
+        notifyListeners();
       }
     }
 
@@ -1053,6 +1288,11 @@
 
       _advisoryResult = null;
 
+      _placeRecommendations = [];
+      _placeRecommendationMessage = null;
+      _recommendationsUsingDefaultArea = false;
+      _isFindingPlaceRecommendations = false;
+
       _errorMessage = null;
 
       notifyListeners();
@@ -1071,6 +1311,11 @@
       _detectedAttributes.clear();
 
       _advisoryResult = null;
+
+      _placeRecommendations = [];
+      _placeRecommendationMessage = null;
+      _recommendationsUsingDefaultArea = false;
+      _isFindingPlaceRecommendations = false;
 
       _errorMessage = null;
 
@@ -1130,6 +1375,11 @@
       _detectedAttributes.clear();
 
       _advisoryResult = null;
+
+      _placeRecommendations = [];
+      _placeRecommendationMessage = null;
+      _recommendationsUsingDefaultArea = false;
+      _isFindingPlaceRecommendations = false;
 
       _errorMessage = null;
 
