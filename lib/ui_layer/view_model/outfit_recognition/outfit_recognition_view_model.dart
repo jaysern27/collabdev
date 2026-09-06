@@ -935,24 +935,33 @@
       await _generatePlaceRecommendations();
     }
 
-    Future<void> _generatePlaceRecommendations() async {
+    Future<void>
+    _generatePlaceRecommendations() async {
       if (_detectedAttributes.isEmpty) {
         return;
       }
 
-      _isFindingPlaceRecommendations = true;
+      _isFindingPlaceRecommendations =
+      true;
 
       _placeRecommendations = [];
 
-      _placeRecommendationMessage = null;
+      _placeRecommendationMessage =
+      null;
 
       notifyListeners();
 
       try {
+        // =======================================================
+        // STEP 1
+        // GET NEARBY CULTURAL ATTRACTIONS
+        // =======================================================
+
         final nearbyResult =
         await _placeRecommendationRepository
             .getNearbyCulturalAttractions(
-          radiusKm: recommendationRadiusKm,
+          radiusKm:
+          recommendationRadiusKm,
         );
 
         _recommendationsUsingDefaultArea =
@@ -963,7 +972,8 @@
 
         if (nearbyAttractions.isEmpty) {
           _placeRecommendationMessage =
-          nearbyResult.usingDefaultArea
+          nearbyResult
+              .usingDefaultArea
               ? 'No supported cultural attractions were found '
               'within ${recommendationRadiusKm.toStringAsFixed(0)} km '
               'of the default Kuala Lumpur pilot area.'
@@ -974,55 +984,82 @@
           return;
         }
 
-        // Load the rule collection once instead of reading the
-        // full collection again for every nearby attraction.
-        final allEtiquetteRules =
-        await _etiquetteRepository
-            .getAllEtiquetteRules();
+        // =======================================================
+        // STEP 2
+        // CHECK EACH NEARBY ATTRACTION
+        // =======================================================
 
         final matches =
         <Map<String, dynamic>>[];
 
         for (final attraction
         in nearbyAttractions) {
-          final attractionId =
-              attraction['id']
+          final category =
+              attraction['category']
                   ?.toString()
                   .trim() ??
                   '';
 
-          if (attractionId.isEmpty) {
+          if (category.isEmpty) {
             continue;
           }
+
+          // =====================================================
+          // STEP 3
+          // GET CATEGORY OUTFIT RULE
+          //
+          // Example:
+          //
+          // Islamic Culture
+          //        ↓
+          // etiquette_outfit/islamic_culture
+          //        ↓
+          // sleeve = covered
+          // lowerbody = covered
+          // shoulder = covered
+          // headwear = optional
+          // =====================================================
 
           final dressCodeRules =
-          allEtiquetteRules.where(
-                (rule) {
-              final ruleAttractionId =
-                  rule['attractionId']
-                      ?.toString()
-                      .trim() ??
-                      '';
+          await _placeRecommendationRepository
+              .getStructuredDressCodeRulesForCategory(
+            category,
+          );
 
-              final ruleCategory =
-                  rule['ruleCategory']
-                      ?.toString()
-                      .trim()
-                      .toLowerCase() ??
-                      '';
+          debugPrint(
+            '=============================================',
+          );
 
-              return ruleAttractionId ==
-                  attractionId &&
-                  ruleCategory ==
-                      'dress_code';
-            },
-          ).toList();
+          debugPrint(
+            'OUTFIT PLACE CHECK',
+          );
 
-          // We only call a place an outfit match when there are
-          // structured dress-code rules to compare against.
+          debugPrint(
+            'place = ${attraction['name']}',
+          );
+
+          debugPrint(
+            'category = $category',
+          );
+
+          debugPrint(
+            'structured rules = '
+                '${dressCodeRules.length}',
+          );
+
+          // No category-level outfit rule exists.
           if (dressCodeRules.isEmpty) {
+            debugPrint(
+              'SKIPPED: no outfit etiquette found.',
+            );
+
             continue;
           }
+
+          // =====================================================
+          // STEP 4
+          // COMPARE AI RESULTS AGAINST FIRESTORE RULE
+          // =====================================================
 
           final advisory =
           _outfitRepository
@@ -1035,22 +1072,42 @@
             recommendationMinimumConfidence,
           );
 
+          debugPrint(
+            'result = '
+                '${advisory.displayStatus}',
+          );
+
+          debugPrint(
+            '=============================================',
+          );
+
+          // =====================================================
+          // STEP 5
+          // ONLY RECOMMEND SUITABLE PLACES
+          // =====================================================
+
           if (advisory.status !=
-              OutfitAdvisoryStatus.suitable) {
+              OutfitAdvisoryStatus
+                  .suitable) {
             continue;
           }
 
           matches.add({
             ...attraction,
+
             'outfitStatus':
             advisory.displayStatus,
+
             'outfitMessage':
             advisory.message,
           });
         }
 
-        // NearbyResult is already nearest-first, but sort again
-        // here so this stays correct if its implementation changes.
+        // =======================================================
+        // STEP 6
+        // NEAREST SUITABLE PLACES FIRST
+        // =======================================================
+
         matches.sort(
               (first, second) {
             final firstDistance =
@@ -1065,11 +1122,17 @@
                     ?.toDouble() ??
                     double.infinity;
 
-            return firstDistance.compareTo(
+            return firstDistance
+                .compareTo(
               secondDistance,
             );
           },
         );
+
+        // =======================================================
+        // STEP 7
+        // LIMIT TO TOP 5
+        // =======================================================
 
         _placeRecommendations =
             matches
@@ -1078,29 +1141,45 @@
             )
                 .toList();
 
-        if (_placeRecommendations.isEmpty) {
+        // =======================================================
+        // STEP 8
+        // RESULT MESSAGE
+        // =======================================================
+
+        if (_placeRecommendations
+            .isEmpty) {
           _placeRecommendationMessage =
-          'No nearby attraction with a known dress code '
-              'confidently matched your current outfit.';
+          'No nearby cultural attraction matched '
+              'your current outfit requirements.';
         } else {
           final count =
-              _placeRecommendations.length;
+              _placeRecommendations
+                  .length;
 
           _placeRecommendationMessage =
-          '$count nearby ${count == 1 ? 'place matches' : 'places match'} '
+          '$count nearby '
+              '${count == 1 ? 'place matches' : 'places match'} '
               'your current outfit.';
         }
-      } catch (_) {
-        // Recommendation failure must not erase a successful
-        // outfit analysis. Show a recommendation-specific message.
-        _placeRecommendations = [];
+      } catch (e, stackTrace) {
+      debugPrint(
+      'PLACE RECOMMENDATION ERROR: $e',
+      );
 
-        _placeRecommendationMessage =
-        'Unable to load nearby place recommendations right now.';
+      debugPrint(
+      '$stackTrace',
+      );
+
+      _placeRecommendations = [];
+
+      _placeRecommendationMessage =
+      'Unable to load nearby place '
+      'recommendations right now.';
       } finally {
-        _isFindingPlaceRecommendations = false;
+      _isFindingPlaceRecommendations =
+      false;
 
-        notifyListeners();
+      notifyListeners();
       }
     }
 
