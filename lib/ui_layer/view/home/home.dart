@@ -1,5 +1,11 @@
+import 'dart:async';
+
 import 'package:collab_dev/ui_layer/view/cultural_map/cultural_map.dart';
 import 'package:flutter/material.dart';
+
+import '../../view_model/settings/app_settings_controller.dart';
+import '../../view_model/violation_dashboard_report/violation_dashboard_report_view_model.dart';
+import '../violation_dashboard_report/violation_ranking_page.dart';
 
 import '../../../data_layer/model/repositories/notification/etiquette_notification_repository.dart';
 import '../../../data_layer/model/services/firebase_authentication/firebase_authentication_service.dart';
@@ -26,10 +32,18 @@ class _HomeViewState extends State<HomeView> {
   final FirebaseAuthenticationService _authService =
   FirebaseAuthenticationService();
 
+  final AppSettingsController _settings =
+      AppSettingsController.instance;
+
+  final ViolationDashboardReportViewModel _rankingViewModel =
+  ViolationDashboardReportViewModel();
+
   final TextEditingController _searchController =
   TextEditingController();
 
   bool _isSearching = false;
+
+  Timer? _greetingTimer;
 
   // =========================================================
   // INITIALIZATION
@@ -43,7 +57,27 @@ class _HomeViewState extends State<HomeView> {
       _onViewModelChanged,
     );
 
+    _settings.addListener(
+      _onViewModelChanged,
+    );
+
+    _rankingViewModel.addListener(
+      _onViewModelChanged,
+    );
+
     _viewModel.loadHomeData();
+    _rankingViewModel.loadDashboard();
+
+    // Keep the greeting in sync with the phone's local clock.
+    _greetingTimer =
+        Timer.periodic(
+          const Duration(minutes: 1),
+              (_) {
+            if (mounted) {
+              setState(() {});
+            }
+          },
+        );
   }
 
   void _onViewModelChanged() {
@@ -58,7 +92,18 @@ class _HomeViewState extends State<HomeView> {
       _onViewModelChanged,
     );
 
+    _settings.removeListener(
+      _onViewModelChanged,
+    );
+
+    _rankingViewModel.removeListener(
+      _onViewModelChanged,
+    );
+
+    _greetingTimer?.cancel();
+
     _viewModel.dispose();
+    _rankingViewModel.dispose();
     _searchController.dispose();
 
     super.dispose();
@@ -73,60 +118,102 @@ class _HomeViewState extends State<HomeView> {
     _searchController.text.trim();
 
     if (query.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Please enter a destination first.',
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(
+              _settings.text(
+                en: 'Please enter a destination first.',
+                zh: '请先输入目的地。',
+                ms: 'Sila masukkan destinasi terlebih dahulu.',
+              ),
+            ),
           ),
-        ),
-      );
+        );
 
       return;
     }
+
+    FocusScope.of(context).unfocus();
 
     setState(() {
       _isSearching = true;
     });
 
-    final results =
-    await _viewModel.searchDestination(
-      query,
-    );
-
-    if (!mounted) {
-      return;
-    }
-
-    setState(() {
-      _isSearching = false;
-    });
-
-    if (results.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'No cultural attraction found.',
-          ),
-        ),
+    try {
+      final results =
+      await _viewModel.searchDestination(
+        query,
       );
 
-      return;
-    }
+      if (!mounted) {
+        return;
+      }
 
-    final attraction =
-        results.first;
+      if (results.isEmpty) {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            SnackBar(
+              content: Text(
+                _settings.text(
+                  en: 'No cultural attraction found for "$query".',
+                  zh: '找不到与“$query”相关的文化景点。',
+                  ms: 'Tiada tarikan budaya ditemui untuk "$query".',
+                ),
+              ),
+              behavior:
+              SnackBarBehavior.floating,
+            ),
+          );
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Found: '
-              '${attraction['name'] ?? 'Attraction'}',
+        return;
+      }
+
+      final attraction =
+      Map<String, dynamic>.from(
+        results.first,
+      );
+
+      // Go directly to Cultural Map, centre the map on the matched
+      // attraction, and automatically open that attraction's details.
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) =>
+              CulturalMapView(
+                initialAttraction:
+                attraction,
+              ),
         ),
-      ),
-    );
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
 
-    // Later:
-    // Navigate to attraction etiquette details.
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(
+              _settings.text(
+                en: 'Unable to search right now. Please try again.',
+                zh: '目前无法搜索，请稍后再试。',
+                ms: 'Carian tidak dapat dilakukan sekarang. Sila cuba lagi.',
+              ),
+            ),
+            behavior:
+            SnackBarBehavior.floating,
+          ),
+        );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSearching = false;
+        });
+      }
+    }
   }
 
   // =========================================================
@@ -151,16 +238,27 @@ class _HomeViewState extends State<HomeView> {
     );
   }
 
+
+  void _openViolationRankingPage() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) =>
+        const ViolationRankingPage(),
+      ),
+    );
+  }
+
   // =========================================================
   // BUILD
   // =========================================================
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme =
+        Theme.of(context).colorScheme;
+
     return Scaffold(
-      backgroundColor: const Color(
-        0xFFFFFFFF,
-      ),
+      backgroundColor: colorScheme.surface,
 
       body: SafeArea(
         child: ScrollConfiguration(
@@ -181,10 +279,20 @@ class _HomeViewState extends State<HomeView> {
                 _buildTopSection(),
 
                 const SizedBox(
-                  height: 14,
+                  height: 16,
                 ),
 
                 _buildHeroSection(),
+
+                const SizedBox(
+                  height: 22,
+                ),
+
+                _buildViolationBubbleMap(),
+
+                const SizedBox(
+                  height: 14,
+                ),
               ],
             ),
           ),
@@ -193,6 +301,77 @@ class _HomeViewState extends State<HomeView> {
 
       bottomNavigationBar:
       _buildBottomNavigationBar(),
+    );
+  }
+
+  String _homeDisplayName() {
+    final user =
+        _authService.currentUser;
+
+    final displayName =
+        user?.displayName?.trim() ?? '';
+
+    if (displayName.isNotEmpty) {
+      return displayName;
+    }
+
+    final email =
+        user?.email?.trim() ?? '';
+
+    if (email.contains('@')) {
+      final prefix =
+      email.split('@').first.trim();
+
+      if (prefix.isNotEmpty) {
+        return prefix;
+      }
+    }
+
+    return _settings.text(
+      en: 'Traveller',
+      zh: '旅客',
+      ms: 'Pelancong',
+    );
+  }
+
+  String _timeBasedGreeting() {
+    final hour =
+        DateTime.now().hour;
+
+    final name =
+    _homeDisplayName();
+
+    if (hour >= 5 &&
+        hour < 12) {
+      return _settings.text(
+        en: 'Good morning, $name',
+        zh: '早上好，$name',
+        ms: 'Selamat pagi, $name',
+      );
+    }
+
+    if (hour >= 12 &&
+        hour < 17) {
+      return _settings.text(
+        en: 'Good afternoon, $name',
+        zh: '下午好，$name',
+        ms: 'Selamat tengah hari, $name',
+      );
+    }
+
+    if (hour >= 17 &&
+        hour < 22) {
+      return _settings.text(
+        en: 'Good evening, $name',
+        zh: '晚上好，$name',
+        ms: 'Selamat petang, $name',
+      );
+    }
+
+    return _settings.text(
+      en: 'Good night, $name',
+      zh: '晚安，$name',
+      ms: 'Selamat malam, $name',
     );
   }
 
@@ -210,9 +389,9 @@ class _HomeViewState extends State<HomeView> {
             crossAxisAlignment:
             CrossAxisAlignment.start,
             children: [
-              const Row(
+              Row(
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.location_on,
                     size: 13,
                     color: Color(
@@ -220,13 +399,17 @@ class _HomeViewState extends State<HomeView> {
                     ),
                   ),
 
-                  SizedBox(
+                  const SizedBox(
                     width: 3,
                   ),
 
                   Text(
-                    'Kuala Lumpur, Malaysia',
-                    style: TextStyle(
+                    _settings.text(
+                      en: 'Kuala Lumpur, Malaysia',
+                      zh: '马来西亚 · 吉隆坡',
+                      ms: 'Kuala Lumpur, Malaysia',
+                    ),
+                    style: const TextStyle(
                       color: Color(
                         0xFF0093A3,
                       ),
@@ -243,21 +426,21 @@ class _HomeViewState extends State<HomeView> {
               ),
 
               RichText(
-                text: const TextSpan(
+                text: TextSpan(
                   style: TextStyle(
                     fontSize: 17,
-                    color: Color(
-                      0xFF14213D,
-                    ),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface,
                     fontWeight:
                     FontWeight.w800,
                   ),
                   children: [
                     TextSpan(
                       text:
-                      'Good morning, Jay ',
+                      '${_timeBasedGreeting()} ',
                     ),
-                    TextSpan(
+                    const TextSpan(
                       text: '👋',
                     ),
                   ],
@@ -476,244 +659,173 @@ class _HomeViewState extends State<HomeView> {
   // =========================================================
 
   Widget _buildThinkingBubbleCard() {
+    final colorScheme =
+        Theme.of(context).colorScheme;
+
     return SizedBox(
       height: 430,
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          // Main bubble
           Positioned(
             left: 0,
             right: 0,
             top: 0,
             child: Container(
-              padding:
-              const EdgeInsets
-                  .fromLTRB(
+              padding: const EdgeInsets.fromLTRB(
                 18,
                 18,
                 18,
                 18,
               ),
-              decoration:
-              BoxDecoration(
-                color: const Color(
-                  0xFFFFFFFF,
-                ),
-                borderRadius:
-                BorderRadius.circular(
-                  26,
+              decoration: BoxDecoration(
+                color: colorScheme.surface,
+                borderRadius: BorderRadius.circular(26),
+                border: Border.all(
+                  color: colorScheme.outlineVariant,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black
-                        .withValues(
-                      alpha: 0.08,
+                    color: Colors.black.withValues(
+                      alpha: Theme.of(context).brightness ==
+                          Brightness.dark
+                          ? 0.22
+                          : 0.08,
                     ),
                     blurRadius: 14,
-                    offset:
-                    const Offset(
-                      0,
-                      6,
-                    ),
+                    offset: const Offset(0, 6),
                   ),
                 ],
               ),
               child: Column(
                 crossAxisAlignment:
-                CrossAxisAlignment
-                    .start,
+                CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Where are you thinking of going?',
+                  Text(
+                    _settings.text(
+                      en: 'Where are you thinking of going?',
+                      zh: '你想去哪里？',
+                      ms: 'Anda bercadang hendak pergi ke mana?',
+                    ),
                     style: TextStyle(
                       fontSize: 17,
-                      fontWeight:
-                      FontWeight.w800,
-                      color: Color(
-                        0xFF14213D,
-                      ),
+                      fontWeight: FontWeight.w800,
+                      color: colorScheme.onSurface,
                     ),
                   ),
-
-                  const SizedBox(
-                    height: 6,
-                  ),
-
+                  const SizedBox(height: 6),
                   Text(
-                    "Tell me the destination and I'll give you the\n"
-                        'cultural etiquette.',
+                    _settings.text(
+                      en: "Tell me the destination and I'll give you the cultural etiquette.",
+                      zh: '告诉我目的地，我会为你提供当地的文化礼仪指南。',
+                      ms: 'Beritahu destinasi anda dan saya akan tunjukkan panduan etika budaya.',
+                    ),
                     style: TextStyle(
                       fontSize: 12,
-                      height: 1.35,
-                      color: Colors.black
-                          .withValues(
-                        alpha: 0.45,
-                      ),
+                      height: 1.4,
+                      color: colorScheme.onSurfaceVariant,
                     ),
                   ),
-
-                  const SizedBox(
-                    height: 14,
-                  ),
-
-                  // Search field
+                  const SizedBox(height: 14),
                   Container(
                     height: 50,
-                    padding:
-                    const EdgeInsets
-                        .symmetric(
+                    padding: const EdgeInsets.symmetric(
                       horizontal: 14,
                     ),
-                    decoration:
-                    BoxDecoration(
-                      color:
-                      const Color(
-                        0xFFF4F5F7,
-                      ),
-                      borderRadius:
-                      BorderRadius
-                          .circular(
-                        14,
-                      ),
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(14),
                       border: Border.all(
-                        color:
-                        const Color(
-                          0xFF00A8CC,
-                        ),
+                        color: colorScheme.primary,
                         width: 1.2,
                       ),
                     ),
                     child: Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.search,
-                          color: Color(
-                            0xFF00A8CC,
-                          ),
+                          color: colorScheme.primary,
                           size: 20,
                         ),
-
-                        const SizedBox(
-                          width: 10,
-                        ),
-
+                        const SizedBox(width: 10),
                         Expanded(
                           child: TextField(
-                            controller:
-                            _searchController,
+                            controller: _searchController,
                             textInputAction:
-                            TextInputAction
-                                .search,
-                            onSubmitted:
-                                (_) {
+                            TextInputAction.search,
+                            onSubmitted: (_) {
                               _showEtiquette();
                             },
-                            decoration:
-                            InputDecoration(
-                              hintText:
-                              'e.g. Batu Caves, Masjid Jamek',
-                              hintStyle:
-                              TextStyle(
-                                color: Colors
-                                    .black
-                                    .withValues(
-                                  alpha:
-                                  0.35,
-                                ),
-                                fontSize:
-                                13,
+                            style: TextStyle(
+                              color: colorScheme.onSurface,
+                            ),
+                            decoration: InputDecoration(
+                              hintText: _settings.text(
+                                en: 'e.g. Batu Caves, Masjid Jamek',
+                                zh: '例如：黑风洞、占美清真寺',
+                                ms: 'cth. Batu Caves, Masjid Jamek',
                               ),
-                              border:
-                              InputBorder
-                                  .none,
-                              isCollapsed:
-                              true,
+                              hintStyle: TextStyle(
+                                color:
+                                colorScheme.onSurfaceVariant,
+                                fontSize: 13,
+                              ),
+                              border: InputBorder.none,
+                              isCollapsed: true,
                             ),
                           ),
                         ),
                       ],
                     ),
                   ),
-
-                  const SizedBox(
-                    height: 14,
-                  ),
-
-                  // Search button
+                  const SizedBox(height: 14),
                   SizedBox(
-                    width:
-                    double.infinity,
+                    width: double.infinity,
                     height: 46,
-                    child:
-                    DecoratedBox(
-                      decoration:
-                      BoxDecoration(
-                        borderRadius:
-                        BorderRadius
-                            .circular(
-                          14,
-                        ),
-                        gradient:
-                        const LinearGradient(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(14),
+                        gradient: const LinearGradient(
                           colors: [
-                            Color(
-                              0xFFF6B8A8,
-                            ),
-                            Color(
-                              0xFFF2D26B,
-                            ),
+                            Color(0xFFF6A88F),
+                            Color(0xFFF3CE59),
                           ],
                         ),
                       ),
                       child: TextButton(
-                        onPressed:
-                        _isSearching
+                        onPressed: _isSearching
                             ? null
                             : _showEtiquette,
-                        style: TextButton
-                            .styleFrom(
-                          foregroundColor:
-                          Colors.white,
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.white,
                           disabledForegroundColor:
                           Colors.white,
-                          shape:
-                          RoundedRectangleBorder(
+                          shape: RoundedRectangleBorder(
                             borderRadius:
-                            BorderRadius
-                                .circular(
-                              14,
-                            ),
+                            BorderRadius.circular(14),
                           ),
                         ),
-                        child:
-                        _isSearching
+                        child: _isSearching
                             ? const SizedBox(
-                          width:
-                          18,
-                          height:
-                          18,
+                          width: 18,
+                          height: 18,
                           child:
                           CircularProgressIndicator(
-                            strokeWidth:
-                            2,
-                            color:
-                            Colors
-                                .white,
+                            strokeWidth: 2,
+                            color: Colors.white,
                           ),
                         )
-                            : const Text(
-                          'Show Me the Etiquette →',
-                          style:
-                          TextStyle(
-                            color:
-                            Colors
-                                .white,
+                            : Text(
+                          _settings.text(
+                            en: 'Show Me the Etiquette →',
+                            zh: '查看文化礼仪 →',
+                            ms: 'Tunjukkan Etika →',
+                          ),
+                          style: const TextStyle(
+                            color: Colors.white,
                             fontWeight:
-                            FontWeight
-                                .w700,
-                            fontSize:
-                            14,
+                            FontWeight.w700,
+                            fontSize: 14,
                           ),
                         ),
                       ),
@@ -723,51 +835,30 @@ class _HomeViewState extends State<HomeView> {
               ),
             ),
           ),
-
-          // Thought bubble trail
           Positioned(
             left: 43,
             top: 270,
-            child:
-            _buildThoughtBubbleCircle(
-              24,
-            ),
+            child: _buildThoughtBubbleCircle(24),
           ),
-
           Positioned(
             left: 50,
             top: 310,
-            child:
-            _buildThoughtBubbleCircle(
-              20,
-            ),
+            child: _buildThoughtBubbleCircle(20),
           ),
-
           Positioned(
             left: 58,
             top: 348,
-            child:
-            _buildThoughtBubbleCircle(
-              16,
-            ),
+            child: _buildThoughtBubbleCircle(16),
           ),
-
           Positioned(
             left: 70,
             top: 380,
-            child:
-            _buildThoughtBubbleCircle(
-              12,
-            ),
+            child: _buildThoughtBubbleCircle(12),
           ),
-
           Positioned(
             left: 90,
             top: 410,
-            child:
-            _buildThoughtBubbleCircle(
-              8,
-            ),
+            child: _buildThoughtBubbleCircle(8),
           ),
         ],
       ),
@@ -777,13 +868,14 @@ class _HomeViewState extends State<HomeView> {
   Widget _buildThoughtBubbleCircle(
       double size,
       ) {
+    final colorScheme =
+        Theme.of(context).colorScheme;
+
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: const Color(
-          0xFFFFFFFF,
-        ),
+        color: colorScheme.surface,
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
@@ -801,6 +893,515 @@ class _HomeViewState extends State<HomeView> {
         ],
       ),
     );
+  }
+
+  // =========================================================
+  // TOP 3 VIOLATION RANKING BAR CHART
+  // =========================================================
+
+  Widget _buildViolationBubbleMap() {
+    final colorScheme =
+        Theme.of(context).colorScheme;
+
+    final rows =
+    List<Map<String, dynamic>>.from(
+      _rankingViewModel.rankings,
+    );
+
+    // Keep the actual ranking order based on priority points.
+    rows.sort(
+          (a, b) => _rankingScore(b)
+          .compareTo(_rankingScore(a)),
+    );
+
+    final topThree =
+    rows.take(3).toList();
+
+    return Column(
+      crossAxisAlignment:
+      CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment:
+                CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _settings.text(
+                      en: 'Violation Ranking',
+                      zh: '礼仪违规排名',
+                      ms: 'Kedudukan Pelanggaran',
+                    ),
+                    style: TextStyle(
+                      color:
+                      colorScheme.onSurface,
+                      fontSize: 19,
+                      fontWeight:
+                      FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _settings.text(
+                      en: 'Top 3 approved etiquette violations.',
+                      zh: '获批准次数最高的前三项礼仪违规。',
+                      ms: '3 pelanggaran etika diluluskan teratas.',
+                    ),
+                    style: TextStyle(
+                      color: colorScheme
+                          .onSurfaceVariant,
+                      fontSize: 12.5,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            TextButton(
+              onPressed:
+              _openViolationRankingPage,
+              child: Text(
+                _settings.text(
+                  en: 'View All',
+                  zh: '查看全部',
+                  ms: 'Lihat Semua',
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Material(
+          color: colorScheme.surface,
+          borderRadius:
+          BorderRadius.circular(24),
+          child: InkWell(
+            onTap: topThree.isEmpty
+                ? null
+                : _openViolationRankingPage,
+            borderRadius:
+            BorderRadius.circular(24),
+            child: Container(
+              width: double.infinity,
+              padding:
+              const EdgeInsets.fromLTRB(
+                16,
+                18,
+                16,
+                15,
+              ),
+              decoration: BoxDecoration(
+                borderRadius:
+                BorderRadius.circular(24),
+                border: Border.all(
+                  color:
+                  colorScheme.outlineVariant,
+                ),
+              ),
+              child:
+              _rankingViewModel.isLoading &&
+                  topThree.isEmpty
+                  ? const Center(
+                child: Padding(
+                  padding:
+                  EdgeInsets.all(40),
+                  child:
+                  CircularProgressIndicator(),
+                ),
+              )
+                  : topThree.isEmpty
+                  ? _buildRankingEmptyState()
+                  : _buildRankingBarChart(
+                topThree,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRankingBarChart(
+      List<Map<String, dynamic>> topThree,
+      ) {
+    final colorScheme =
+        Theme.of(context).colorScheme;
+
+    final frequencies = topThree
+        .map(
+          (row) => _rankingFrequency(row),
+    )
+        .toList();
+
+    final maxFrequency =
+    frequencies.isEmpty
+        ? 1
+        : frequencies.reduce(
+          (a, b) => a > b ? a : b,
+    );
+
+    return Column(
+      children: [
+        ...topThree.asMap().entries.map(
+              (entry) {
+            final index = entry.key;
+            final row = entry.value;
+
+            final rank = index + 1;
+            final frequency =
+            _rankingFrequency(row);
+            final score =
+            _rankingScore(row);
+
+            final title =
+            _translatedViolationTitle(
+              row['ruleName']
+                  ?.toString() ??
+                  row['category']
+                      ?.toString() ??
+                  _settings.text(
+                    en: 'Etiquette issue',
+                    zh: '礼仪问题',
+                    ms: 'Isu etika',
+                  ),
+            );
+
+            final progress =
+            maxFrequency <= 0
+                ? 0.0
+                : (frequency /
+                maxFrequency)
+                .clamp(
+              0.0,
+              1.0,
+            );
+
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: index ==
+                    topThree.length - 1
+                    ? 0
+                    : 16,
+              ),
+              child: Row(
+                crossAxisAlignment:
+                CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    alignment:
+                    Alignment.center,
+                    decoration:
+                    BoxDecoration(
+                      color: rank <= 3
+                          ? colorScheme
+                          .primaryContainer
+                          : colorScheme
+                          .surfaceContainerHighest,
+                      borderRadius:
+                      BorderRadius.circular(
+                        12,
+                      ),
+                    ),
+                    child: Text(
+                      '#$rank',
+                      style: TextStyle(
+                        color: rank <= 3
+                            ? colorScheme
+                            .onPrimaryContainer
+                            : colorScheme
+                            .onSurfaceVariant,
+                        fontWeight:
+                        FontWeight.w900,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 11),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment:
+                      CrossAxisAlignment
+                          .start,
+                      children: [
+                        Row(
+                          crossAxisAlignment:
+                          CrossAxisAlignment
+                              .start,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                title,
+                                maxLines: 2,
+                                overflow:
+                                TextOverflow
+                                    .ellipsis,
+                                style:
+                                TextStyle(
+                                  color:
+                                  colorScheme
+                                      .onSurface,
+                                  fontSize: 13,
+                                  height: 1.2,
+                                  fontWeight:
+                                  FontWeight
+                                      .w800,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(
+                              width: 10,
+                            ),
+                            Column(
+                              crossAxisAlignment:
+                              CrossAxisAlignment
+                                  .end,
+                              children: [
+                                Text(
+                                  '$frequency',
+                                  style:
+                                  TextStyle(
+                                    color:
+                                    colorScheme
+                                        .primary,
+                                    fontSize: 20,
+                                    fontWeight:
+                                    FontWeight
+                                        .w900,
+                                    height: 1,
+                                  ),
+                                ),
+                                Text(
+                                  _settings.text(
+                                    en: 'approved',
+                                    zh: '已批准',
+                                    ms: 'diluluskan',
+                                  ),
+                                  style:
+                                  TextStyle(
+                                    color:
+                                    colorScheme
+                                        .onSurfaceVariant,
+                                    fontSize: 9,
+                                    fontWeight:
+                                    FontWeight
+                                        .w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        ClipRRect(
+                          borderRadius:
+                          BorderRadius.circular(
+                            30,
+                          ),
+                          child:
+                          LinearProgressIndicator(
+                            value: progress,
+                            minHeight: 8,
+                            backgroundColor:
+                            colorScheme
+                                .surfaceContainerHighest,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          _settings.text(
+                            en: 'Priority ${score.toStringAsFixed(0)} pts',
+                            zh: '优先级 ${score.toStringAsFixed(0)} 分',
+                            ms: 'Keutamaan ${score.toStringAsFixed(0)} mata',
+                          ),
+                          style: TextStyle(
+                            color: colorScheme
+                                .onSurfaceVariant,
+                            fontSize: 10.5,
+                            fontWeight:
+                            FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+        const SizedBox(height: 15),
+        Divider(
+          height: 1,
+          color: colorScheme.outlineVariant,
+        ),
+        const SizedBox(height: 12),
+        Row(
+          mainAxisAlignment:
+          MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.touch_app_outlined,
+              size: 16,
+              color:
+              colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 5),
+            Flexible(
+              child: Text(
+                _settings.text(
+                  en: 'Tap to view the full ranking',
+                  zh: '点击查看完整排名',
+                  ms: 'Tekan untuk melihat kedudukan penuh',
+                ),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: colorScheme
+                      .onSurfaceVariant,
+                  fontSize: 11.5,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRankingEmptyState() {
+    final colorScheme =
+        Theme.of(context).colorScheme;
+
+    return Center(
+      child: Padding(
+        padding:
+        const EdgeInsets.symmetric(
+          vertical: 42,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.bar_chart_rounded,
+              color: colorScheme.primary,
+              size: 42,
+            ),
+            const SizedBox(height: 10),
+            Text(
+              _settings.text(
+                en: 'No ranking data yet',
+                zh: '暂时没有排名数据',
+                ms: 'Belum ada data kedudukan',
+              ),
+              style: TextStyle(
+                color: colorScheme.onSurface,
+                fontWeight:
+                FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 5),
+            Text(
+              _settings.text(
+                en: 'Approved etiquette violations will appear here.',
+                zh: '获批准的礼仪违规会显示在这里。',
+                ms: 'Pelanggaran etika yang diluluskan akan dipaparkan di sini.',
+              ),
+              textAlign:
+              TextAlign.center,
+              style: TextStyle(
+                color: colorScheme
+                    .onSurfaceVariant,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  int _rankingFrequency(
+      Map<String, dynamic> row,
+      ) {
+    final value = row['frequency'] ?? 0;
+
+    if (value is int) {
+      return value;
+    }
+
+    if (value is num) {
+      return value.toInt();
+    }
+
+    return int.tryParse(
+      value.toString(),
+    ) ??
+        0;
+  }
+
+  double _rankingScore(
+      Map<String, dynamic> row,
+      ) {
+    final value =
+        row['priorityScore'] ??
+            row['score'] ??
+            row['rankingScore'] ??
+            0;
+
+    if (value is num) {
+      return value.toDouble();
+    }
+
+    return double.tryParse(
+      value.toString(),
+    ) ??
+        0;
+  }
+
+  String _translatedViolationTitle(
+      String raw,
+      ) {
+    final normalized =
+    raw.trim().toLowerCase();
+
+    if (normalized.contains('dress')) {
+      return _settings.text(
+        en: 'Dress Code',
+        zh: '着装规范',
+        ms: 'Etika Pakaian',
+      );
+    }
+
+    if (normalized.contains('photo')) {
+      return _settings.text(
+        en: 'Photography',
+        zh: '摄影礼仪',
+        ms: 'Etika Fotografi',
+      );
+    }
+
+    if (normalized.contains('worship') ||
+        normalized.contains('prayer')) {
+      return _settings.text(
+        en: 'Worship Etiquette',
+        zh: '礼拜礼仪',
+        ms: 'Etika Ibadah',
+      );
+    }
+
+    if (normalized.contains('noise') ||
+        normalized.contains('loud')) {
+      return _settings.text(
+        en: 'Noise & Behaviour',
+        zh: '噪音与行为',
+        ms: 'Bunyi & Tingkah Laku',
+      );
+    }
+
+    return raw;
   }
 
   // =========================================================
@@ -827,15 +1428,16 @@ class _HomeViewState extends State<HomeView> {
   // =========================================================
 
   Widget _buildBottomNavigationBar() {
+    final colorScheme =
+        Theme.of(context).colorScheme;
+
     return Container(
       decoration:
-      const BoxDecoration(
-        color: Colors.white,
+      BoxDecoration(
+        color: colorScheme.surface,
         border: Border(
           top: BorderSide(
-            color: Color(
-              0xFFE9E2D7,
-            ),
+            color: colorScheme.outlineVariant,
           ),
         ),
       ),
@@ -851,14 +1453,14 @@ class _HomeViewState extends State<HomeView> {
               _navItem(
                 icon:
                 Icons.home_rounded,
-                label: 'Home',
+                label: _settings.text(en: 'Home', zh: '主页', ms: 'Utama'),
                 selected: true,
               ),
 
               _navItem(
                 icon: Icons
                     .explore_outlined,
-                label: 'Explore',
+                label: _settings.text(en: 'Explore', zh: '探索', ms: 'Teroka'),
                 onTap:
                 _openExplorePage,
               ),
@@ -866,7 +1468,7 @@ class _HomeViewState extends State<HomeView> {
               _navItem(
                 icon: Icons
                     .checkroom_outlined,
-                label: 'Outfit',
+                label: _settings.text(en: 'Outfit', zh: '穿搭', ms: 'Pakaian'),
                 onTap:
                 _openOutfitPage,
               ),
@@ -875,7 +1477,7 @@ class _HomeViewState extends State<HomeView> {
 
                 icon: Icons.person_outline,
 
-                label: 'Profile',
+                label: _settings.text(en: 'Profile', zh: '我的', ms: 'Profil'),
 
                 onTap: (){
 
@@ -908,14 +1510,13 @@ class _HomeViewState extends State<HomeView> {
     bool selected = false,
     VoidCallback? onTap,
   }) {
+    final colorScheme =
+        Theme.of(context).colorScheme;
+
     final color =
     selected
-        ? const Color(
-      0xFF2864DE,
-    )
-        : const Color(
-      0xFF1F3157,
-    );
+        ? colorScheme.primary
+        : colorScheme.onSurfaceVariant;
 
     return InkWell(
       onTap: onTap,

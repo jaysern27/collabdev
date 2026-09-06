@@ -2,7 +2,6 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-import 'user_etiquette_report_page.dart';
 import 'all_reports_page.dart';
 import 'approved_reports_page.dart';
 import '../../view_model/violation_dashboard_report/violation_dashboard_report_view_model.dart';
@@ -18,7 +17,7 @@ class ViolationDashboardReportView extends StatefulWidget {
 class _ViolationDashboardReportViewState
     extends State<ViolationDashboardReportView> {
   final ViolationDashboardReportViewModel _viewModel =
-  ViolationDashboardReportViewModel();
+      ViolationDashboardReportViewModel();
 
   @override
   void initState() {
@@ -59,9 +58,9 @@ class _ViolationDashboardReportViewState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFFFFFF),
+      backgroundColor: const Color(0xFFFFF9ED),
       appBar: AppBar(
-        backgroundColor: const Color(0xFFFFFFFF),
+        backgroundColor: const Color(0xFFFFF9ED),
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         titleSpacing: 4,
@@ -87,116 +86,53 @@ class _ViolationDashboardReportViewState
           ],
         ),
         actions: [
-
-          IconButton(
-
-            tooltip: 'Submit etiquette report',
-
-
-            icon:
-
-            const Icon(
-              Icons.add_a_photo_outlined,
-            ),
-
-
-
-            onPressed: () {
-
-
-              Navigator.push(
-
-
-                context,
-
-
-                MaterialPageRoute(
-
-
-                  builder: (context) =>
-
-                  const UserEtiquetteReportPage(),
-
-
-                ),
-
-
-              );
-
-
-            },
-
-
-          ),
-
-
-
           IconButton(
             tooltip: 'Refresh ranking',
-
             onPressed: _viewModel.isRefreshingRanking
                 ? null
                 : _viewModel.refreshRanking,
-
-
             icon: _viewModel.isRefreshingRanking
-
                 ? const SizedBox(
-
-              width: 19,
-
-              height: 19,
-
-              child: CircularProgressIndicator(
-                  strokeWidth: 2
-              ),
-
-            )
-
-                :
-
-            const Icon(
-                Icons.refresh_rounded
-            ),
-
+                    width: 19,
+                    height: 19,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.refresh_rounded),
           ),
-
-
           const SizedBox(width: 8),
-
         ],
       ),
       body: RefreshIndicator(
         onRefresh: _viewModel.loadDashboard,
         child: _viewModel.isLoading && _viewModel.rankings.isEmpty
             ? ListView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          children: const [
-            SizedBox(height: 260),
-            Center(child: CircularProgressIndicator()),
-          ],
-        )
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: const [
+                  SizedBox(height: 260),
+                  Center(child: CircularProgressIndicator()),
+                ],
+              )
             : ListView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
-          children: [
-            _buildFilterCard(),
-            const SizedBox(height: 14),
-            if (_viewModel.insufficientData) ...[
-              _buildDataNotice(),
-              const SizedBox(height: 14),
-            ],
-            _buildMetrics(),
-            const SizedBox(height: 14),
-            _buildRankingCard(),
-            const SizedBox(height: 14),
-            _buildTrendCard(),
-            const SizedBox(height: 14),
-            _buildLocationsCard(),
-            const SizedBox(height: 14),
-            _buildFormulaCard(),
-          ],
-        ),
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
+                children: [
+                  _buildFilterCard(),
+                  const SizedBox(height: 14),
+                  if (_viewModel.insufficientData) ...[
+                    _buildDataNotice(),
+                    const SizedBox(height: 14),
+                  ],
+                  _buildMetrics(),
+                  const SizedBox(height: 14),
+                  _buildRankingCard(),
+                  const SizedBox(height: 14),
+                  _buildTrendCard(),
+                  const SizedBox(height: 14),
+                  _buildLocationsCard(),
+                  const SizedBox(height: 14),
+                  _buildFormulaCard(),
+                ],
+              ),
       ),
     );
   }
@@ -205,7 +141,7 @@ class _ViolationDashboardReportViewState
     final options = <DropdownMenuItem<String>>[
       const DropdownMenuItem(value: 'all', child: Text('All attractions')),
       ..._viewModel.attractions.map(
-            (attraction) => DropdownMenuItem(
+        (attraction) => DropdownMenuItem(
           value: attraction['id']?.toString(),
           child: Text(
             attraction['name']?.toString() ?? 'Attraction',
@@ -304,54 +240,34 @@ class _ViolationDashboardReportViewState
             _metric(
               width: width,
               icon: Icons.description_outlined,
-              label: 'All reports',
+              label: 'All violations',
               value: _viewModel.totalReports.toString(),
-              subtitle: '${_viewModel.pendingReports} pending',
-
+              subtitle: '${_viewModel.pendingReports} pending violations',
               onTap: () {
-
                 Navigator.push(
-
                   context,
-
                   MaterialPageRoute(
-
-                    builder: (context) =>
-                    const AllReportsPage(),
-
+                    builder: (context) => const AllReportsPage(),
                   ),
-
                 );
-
               },
-
             ),
             _metric(
               width: width,
               icon: Icons.verified_outlined,
-              label: 'Approved',
+              label: 'Approved violations',
               value: _viewModel.approvedReports.toString(),
               subtitle:
-              '${_viewModel.rejectedReports} rejected • '
+                  '${_viewModel.rejectedReports} rejected • '
                   '${_viewModel.verificationRate.toStringAsFixed(0)}% verification rate',
-
               onTap: () {
-
                 Navigator.push(
-
                   context,
-
                   MaterialPageRoute(
-
-                    builder: (context) =>
-                    const ApprovedReportsPage(),
-
+                    builder: (context) => const ApprovedReportsPage(),
                   ),
-
                 );
-
               },
-
             ),
             _metric(
               width: width,
@@ -365,12 +281,16 @@ class _ViolationDashboardReportViewState
             _metric(
               width: width,
               icon: Icons.warning_amber_rounded,
-              label: 'Top score',
+              label: 'Top violation count',
               value: _viewModel.topViolation == null
                   ? '—'
-                  : _score(_viewModel.topViolation!).toStringAsFixed(0),
-              subtitle: _viewModel.topViolation?['category']?.toString() ??
-                  'No ranked violations yet',
+                  : _int(
+                      _viewModel.topViolation!['frequency'],
+                    ).toString(),
+              subtitle: _viewModel.topViolation == null
+                  ? 'No ranked violations yet'
+                  : 'Priority '
+                      '${_score(_viewModel.topViolation!).toStringAsFixed(0)} points',
             ),
           ],
         );
@@ -398,7 +318,7 @@ class _ViolationDashboardReportViewState
           else
             ..._viewModel.rankings.take(8).toList().asMap().entries.map(
                   (entry) => _rankingRow(entry.key, entry.value),
-            ),
+                ),
         ],
       ),
     );
@@ -409,6 +329,14 @@ class _ViolationDashboardReportViewState
     final frequency = _int(row['frequency']);
     final severity = _double(row['severity']);
     final confidence = _double(row['verificationConfidence']);
+
+    final topScore = _viewModel.rankings.isEmpty
+        ? 0.0
+        : _score(_viewModel.rankings.first);
+
+    final progressValue = topScore <= 0
+        ? 0.0
+        : (score / topScore).clamp(0.0, 1.0);
 
     return Padding(
       padding: EdgeInsets.only(bottom: index == _viewModel.rankings.length - 1 ? 0 : 12),
@@ -454,13 +382,26 @@ class _ViolationDashboardReportViewState
                         ),
                       ),
                     ),
-                    Text(
-                      score.toStringAsFixed(0),
-                      style: const TextStyle(
-                        color: Color(0xFF146BD9),
-                        fontSize: 16,
-                        fontWeight: FontWeight.w900,
-                      ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          '$frequency',
+                          style: const TextStyle(
+                            color: Color(0xFF146BD9),
+                            fontSize: 16,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        const Text(
+                          'approved',
+                          style: TextStyle(
+                            color: Color(0xFF7B849B),
+                            fontSize: 9,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -468,14 +409,16 @@ class _ViolationDashboardReportViewState
                 ClipRRect(
                   borderRadius: BorderRadius.circular(20),
                   child: LinearProgressIndicator(
-                    value: (score / 100).clamp(0.0, 1.0),
+                    value: progressValue,
                     minHeight: 6,
                     backgroundColor: const Color(0xFFE9EEF7),
                   ),
                 ),
                 const SizedBox(height: 5),
                 Text(
-                  '$frequency reports  •  severity ${severity.toStringAsFixed(1)}/5  •  confidence ${(confidence * 100).toStringAsFixed(0)}%',
+                  'Priority ${score.toStringAsFixed(0)} points'
+                  '  •  severity ${severity.toStringAsFixed(1)}/5'
+                  '  •  confidence ${(confidence * 100).toStringAsFixed(0)}%',
                   style: const TextStyle(
                     color: Color(0xFF667085),
                     fontSize: 10.5,
@@ -519,13 +462,13 @@ class _ViolationDashboardReportViewState
             width: double.infinity,
             child: _viewModel.trend.isEmpty
                 ? _emptyState(
-              Icons.query_stats,
-              'No trend data yet',
-              'Trend points will appear after approved reports are available.',
-            )
+                    Icons.query_stats,
+                    'No trend data yet',
+                    'Trend points will appear after approved reports are available.',
+                  )
                 : CustomPaint(
-              painter: _TrendChartPainter(_viewModel.trend),
-            ),
+                    painter: _TrendChartPainter(_viewModel.trend),
+                  ),
           ),
           const SizedBox(height: 9),
           Row(
@@ -533,16 +476,16 @@ class _ViolationDashboardReportViewState
             children: _viewModel.trend
                 .map(
                   (item) => Expanded(
-                child: Text(
-                  item['label']?.toString() ?? '',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: Color(0xFF7B849B),
-                    fontSize: 9.5,
+                    child: Text(
+                      item['label']?.toString() ?? '',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Color(0xFF7B849B),
+                        fontSize: 9.5,
+                      ),
+                    ),
                   ),
-                ),
-              ),
-            )
+                )
                 .toList(),
           ),
         ],
@@ -570,37 +513,37 @@ class _ViolationDashboardReportViewState
           else
             ..._viewModel.affectedLocations.take(5).toList().asMap().entries.map(
                   (entry) => ListTile(
-                contentPadding: EdgeInsets.zero,
-                dense: true,
-                leading: CircleAvatar(
-                  radius: 17,
-                  backgroundColor: const Color(0xFFDDFDF5),
-                  child: Text(
-                    '${entry.key + 1}',
-                    style: const TextStyle(
-                      color: Color(0xFF008E83),
-                      fontWeight: FontWeight.w800,
+                    contentPadding: EdgeInsets.zero,
+                    dense: true,
+                    leading: CircleAvatar(
+                      radius: 17,
+                      backgroundColor: const Color(0xFFDDFDF5),
+                      child: Text(
+                        '${entry.key + 1}',
+                        style: const TextStyle(
+                          color: Color(0xFF008E83),
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                    title: Text(
+                      entry.value['name']?.toString() ?? 'Attraction',
+                      style: const TextStyle(
+                        color: Color(0xFF10204A),
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12.5,
+                      ),
+                    ),
+                    trailing: Text(
+                      '${_int(entry.value['count'])} reports',
+                      style: const TextStyle(
+                        color: Color(0xFF667085),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
-                title: Text(
-                  entry.value['name']?.toString() ?? 'Attraction',
-                  style: const TextStyle(
-                    color: Color(0xFF10204A),
-                    fontWeight: FontWeight.w700,
-                    fontSize: 12.5,
-                  ),
-                ),
-                trailing: Text(
-                  '${_int(entry.value['count'])} reports',
-                  style: const TextStyle(
-                    color: Color(0xFF667085),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
         ],
       ),
     );
@@ -623,7 +566,7 @@ class _ViolationDashboardReportViewState
               Icon(Icons.calculate_outlined, color: Colors.white, size: 20),
               SizedBox(width: 7),
               Text(
-                'Priority Score Formula',
+                'Cumulative Priority Points',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 14,
@@ -634,7 +577,7 @@ class _ViolationDashboardReportViewState
           ),
           SizedBox(height: 8),
           Text(
-            '50% Frequency  +  30% Severity  +  20% Verification Confidence',
+            '5 points per approved occurrence  +  up to 30 Severity  +  up to 20 Verification',
             style: TextStyle(
               color: Colors.white,
               fontSize: 12,
@@ -644,7 +587,7 @@ class _ViolationDashboardReportViewState
           ),
           SizedBox(height: 5),
           Text(
-            'Only Admin-approved reports contribute to the ranking. Stored server rankings are preferred; the app can show a read-only prototype preview when the Cloud Function is not configured.',
+            'Only Admin-approved violations contribute. The points are not capped at 100: with maximum severity and confidence, 10 occurrences = 100 points, 11 = 105, 12 = 110, and so on.',
             style: TextStyle(
               color: Color(0xFFEAF7FF),
               fontSize: 10.5,
@@ -665,12 +608,10 @@ class _ViolationDashboardReportViewState
     VoidCallback? onTap,
   }) {
     return SizedBox(
-        width: width,
-        child: GestureDetector(
-
-          onTap: onTap,
-
-          child: _card(
+      width: width,
+      child: GestureDetector(
+        onTap: onTap,
+        child: _card(
         padding: const EdgeInsets.all(13),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -707,8 +648,8 @@ class _ViolationDashboardReportViewState
             ),
           ],
         ),
-          ),
-        ),
+      ),
+      ),
     );
   }
 
@@ -808,7 +749,7 @@ class _ViolationDashboardReportViewState
       labelText: label,
       prefixIcon: Icon(icon, size: 19),
       filled: true,
-      fillColor: const Color(0xFFFFFFFF),
+      fillColor: const Color(0xFFFFFCF5),
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
