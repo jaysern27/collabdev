@@ -1,9 +1,11 @@
+import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:image_picker/image_picker.dart';
 
 class EditProfilePage extends StatefulWidget {
@@ -24,9 +26,6 @@ class _EditProfilePageState
   final FirebaseFirestore _firestore =
       FirebaseFirestore.instance;
 
-  final FirebaseStorage _storage =
-      FirebaseStorage.instance;
-
   final ImagePicker _imagePicker =
   ImagePicker();
 
@@ -41,7 +40,7 @@ class _EditProfilePageState
   bool _loading = true;
   bool _saving = false;
 
-  String? _existingPhotoUrl;
+  String? _existingPhotoBase64;
   XFile? _selectedPhoto;
 
   static const Color _primary =
@@ -101,14 +100,14 @@ class _EditProfilePageState
               '';
 
       setState(() {
-        _existingPhotoUrl =
-        data?['photoUrl']
+        _existingPhotoBase64 =
+        data?['photoBase64']
             ?.toString()
             .trim()
             .isNotEmpty ==
             true
-            ? data!['photoUrl'].toString()
-            : user.photoURL;
+            ? data!['photoBase64'].toString()
+            : null;
 
         _loading = false;
       });
@@ -121,8 +120,8 @@ class _EditProfilePageState
         _nameController.text =
             user.displayName ?? '';
 
-        _existingPhotoUrl =
-            user.photoURL;
+        _existingPhotoBase64 =
+        null;
 
         _loading = false;
       });
@@ -156,32 +155,34 @@ class _EditProfilePageState
     }
   }
 
-  Future<String?> _uploadPhoto(
-      String uid,
-      ) async {
-    final XFile? image =
-        _selectedPhoto;
+  Future<String?> _convertPhotoToBase64() async {
+    final XFile? image = _selectedPhoto;
 
     if (image == null) {
-      return _existingPhotoUrl;
+      return _existingPhotoBase64;
     }
 
-    final Reference reference =
-    _storage
-        .ref()
-        .child(
-      'profile_images/$uid/profile.jpg',
+    final Uint8List? compressedBytes =
+    await FlutterImageCompress.compressWithFile(
+      image.path,
+      minWidth: 500,
+      minHeight: 500,
+      quality: 35,
+      format: CompressFormat.jpeg,
     );
 
-    await reference.putFile(
-      File(image.path),
-      SettableMetadata(
-        contentType: 'image/jpeg',
-      ),
-    );
+    if (compressedBytes == null) {
+      throw Exception("Image compression failed.");
+    }
 
-    return await reference
-        .getDownloadURL();
+    final String base64Image =
+    base64Encode(compressedBytes);
+
+    if (base64Image.length > 900000) {
+      throw Exception("Image size is too large.");
+    }
+
+    return base64Image;
   }
 
   Future<void> _saveProfile() async {
@@ -221,21 +222,14 @@ class _EditProfilePageState
     });
 
     try {
-      final String? photoUrl =
-      await _uploadPhoto(
-        user.uid,
-      );
+      final String? photoBase64 =
+      await _convertPhotoToBase64();
 
       await user.updateDisplayName(
         name,
       );
 
-      if (photoUrl != null &&
-          photoUrl.isNotEmpty) {
-        await user.updatePhotoURL(
-          photoUrl,
-        );
-      }
+
 
       await _firestore
           .collection('users')
@@ -245,8 +239,8 @@ class _EditProfilePageState
           'name': name,
           'email': user.email,
           'phone': phone,
-          'photoUrl':
-          photoUrl ?? '',
+          'photoBase64':
+          photoBase64 ?? '',
           'updatedAt':
           DateTime.now()
               .toIso8601String(),
@@ -311,10 +305,10 @@ class _EditProfilePageState
       );
     }
 
-    if (_existingPhotoUrl != null &&
-        _existingPhotoUrl!.isNotEmpty) {
-      return NetworkImage(
-        _existingPhotoUrl!,
+    if (_existingPhotoBase64 != null &&
+        _existingPhotoBase64!.isNotEmpty) {
+      return MemoryImage(
+        base64Decode(_existingPhotoBase64!),
       );
     }
 

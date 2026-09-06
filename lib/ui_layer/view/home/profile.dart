@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
@@ -34,6 +36,7 @@ class _ProfileViewState
   String profileName = '';
   String profilePhone = '';
   String profilePhotoUrl = '';
+  String profilePhotoBase64 = '';
 
   @override
   void initState() {
@@ -71,6 +74,7 @@ class _ProfileViewState
       );
       profilePhone = '';
       profilePhotoUrl = '';
+      profilePhotoBase64 = '';
 
       if (mounted) {
         setState(() {
@@ -114,6 +118,12 @@ class _ProfileViewState
                 .trim() ??
                 '';
 
+        final photoBase64 =
+            data['photoBase64']
+                ?.toString()
+                .trim() ??
+                '';
+
         if (firestoreName.isNotEmpty) {
           profileName = firestoreName;
         }
@@ -122,6 +132,10 @@ class _ProfileViewState
 
         if (photoUrl.isNotEmpty) {
           profilePhotoUrl = photoUrl;
+        }
+
+        if (photoBase64.isNotEmpty) {
+          profilePhotoBase64 = photoBase64;
         }
       }
     } catch (_) {
@@ -652,6 +666,8 @@ class _ProfileViewState
               profilePhone,
               photoUrl:
               profilePhotoUrl,
+              photoBase64:
+              profilePhotoBase64,
               signedIn:
               user != null,
             ),
@@ -709,6 +725,7 @@ class _ProfileViewState
     required String email,
     required String phone,
     required String photoUrl,
+    required String photoBase64,
     required bool signedIn,
   }) {
     final colorScheme =
@@ -738,6 +755,8 @@ class _ProfileViewState
               _buildAvatar(
                 photoUrl:
                 photoUrl,
+                photoBase64:
+                photoBase64,
                 displayName:
                 displayName,
                 signedIn:
@@ -849,6 +868,7 @@ class _ProfileViewState
 
   Widget _buildAvatar({
     required String photoUrl,
+    required String photoBase64,
     required String displayName,
     required bool signedIn,
   }) {
@@ -885,7 +905,33 @@ class _ProfileViewState
           ),
           clipBehavior:
           Clip.antiAlias,
-          child: photoUrl.isNotEmpty
+          child: photoBase64.isNotEmpty
+              ? Image.memory(
+            base64Decode(photoBase64),
+            fit:
+            BoxFit.cover,
+            errorBuilder:
+                (
+                context,
+                error,
+                stackTrace,
+                ) {
+              return Center(
+                child: Text(
+                  initial,
+                  style: TextStyle(
+                    color:
+                    colorScheme
+                        .onPrimaryContainer,
+                    fontSize: 28,
+                    fontWeight:
+                    FontWeight.w800,
+                  ),
+                ),
+              );
+            },
+          )
+              : photoUrl.isNotEmpty
               ? Image.network(
             photoUrl,
             fit:
