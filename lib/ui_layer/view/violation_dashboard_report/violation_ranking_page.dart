@@ -312,13 +312,19 @@ class _ViolationRankingPageState
                 Row(
                   children: [
                     Expanded(
-                      child: Text(
-                        title,
-                        style: TextStyle(
-                          color: colorScheme.onSurface,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 15,
-                        ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: TextStyle(
+                              color: colorScheme.onSurface,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 15,
+                            ),
+                          ),
+
+                        ],
                       ),
                     ),
                     Column(
@@ -353,6 +359,15 @@ class _ViolationRankingPageState
                       ],
                     ),
                   ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Location: ${row['attractionName'] ?? row['attractionId'] ?? 'Unknown attraction'}',
+                  style: TextStyle(
+                    color: colorScheme.onSurfaceVariant,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 ClipRRect(

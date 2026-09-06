@@ -1133,23 +1133,34 @@ class _HomeViewState extends State<HomeView> {
                               .start,
                           children: [
                             Expanded(
-                              child: Text(
-                                title,
-                                maxLines: 2,
-                                overflow:
-                                TextOverflow
-                                    .ellipsis,
-                                style:
-                                TextStyle(
-                                  color:
-                                  colorScheme
-                                      .onSurface,
-                                  fontSize: 13,
-                                  height: 1.2,
-                                  fontWeight:
-                                  FontWeight
-                                      .w800,
-                                ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+
+                                  Text(
+                                    title,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: colorScheme.onSurface,
+                                      fontSize: 13,
+                                      height: 1.2,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+
+                                  const SizedBox(height: 4),
+
+                                  Text(
+                                    'Location: ${row['attractionName'] ?? row['attractionId'] ?? 'Unknown attraction'}',
+                                    style: TextStyle(
+                                      color: colorScheme.onSurfaceVariant,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+
+                                ],
                               ),
                             ),
                             const SizedBox(
