@@ -17,7 +17,7 @@ class RankingReportRepository {
     FirestoreService? firestoreService,
     CloudFunctionsService? cloudFunctionsService,
   })  : _firestoreService =
-            firestoreService ?? FirestoreService(),
+      firestoreService ?? FirestoreService(),
         _cloudFunctionsService =
             cloudFunctionsService ?? CloudFunctionsService();
 
@@ -53,7 +53,7 @@ class RankingReportRepository {
         // A newly submitted report is NOT trusted for ranking yet.
         // Admin approval changes this to 1.0.
         'verificationConfidence':
-            verificationConfidence.clamp(0.0, 1.0),
+        verificationConfidence.clamp(0.0, 1.0),
 
         'status': 'pending',
         'createdAt': DateTime.now().toIso8601String(),
@@ -64,27 +64,27 @@ class RankingReportRepository {
   }
 
   Future<List<Map<String, dynamic>>> getReportsByUser(
-    String userId,
-  ) async {
+      String userId,
+      ) async {
     final reports = await _getAllReports();
 
     return reports
         .where(
           (report) => report['userId'] == userId,
-        )
+    )
         .toList();
   }
 
   Future<List<Map<String, dynamic>>> getReportsByAttraction(
-    String attractionId,
-  ) async {
+      String attractionId,
+      ) async {
     final reports = await _getAllReports();
 
     return reports
         .where(
           (report) =>
-              report['attractionId'] == attractionId,
-        )
+      report['attractionId'] == attractionId,
+    )
         .toList();
   }
 
@@ -94,9 +94,9 @@ class RankingReportRepository {
     return reports
         .where(
           (report) =>
-              _normaliseStatus(report['status']) ==
-              'pending',
-        )
+      _normaliseStatus(report['status']) ==
+          'pending',
+    )
         .toList();
   }
 
@@ -112,11 +112,11 @@ class RankingReportRepository {
   /// IMPORTANT:
   /// A report contributes to ranking ONLY after the Admin approves it.
   ///
-  /// If one approved report contains 3 selected DON’T rules, each of the
+  /// If one approved report contains 3 selected DONâ€™T rules, each of the
   /// 3 unique violations contributes +1 to its own ranking frequency.
   Future<void> approveReport(
-    String reportId,
-  ) async {
+      String reportId,
+      ) async {
     await _firestoreService.updateDocument(
       collection: _reportCollection,
       documentId: reportId,
@@ -148,8 +148,8 @@ class RankingReportRepository {
 
   /// Rejected reports never contribute to ranking.
   Future<void> rejectReport(
-    String reportId,
-  ) async {
+      String reportId,
+      ) async {
     await _firestoreService.updateDocument(
       collection: _reportCollection,
       documentId: reportId,
@@ -175,8 +175,8 @@ class RankingReportRepository {
   // ---------------------------------------------------------------------------
 
   Future<List<Map<String, dynamic>>> getRankingByAttraction(
-    String attractionId,
-  ) async {
+      String attractionId,
+      ) async {
     final reports = await _getAllReports();
 
     // Prefer a live calculation from approved reports so newly approved
@@ -185,8 +185,8 @@ class RankingReportRepository {
       reports
           .where(
             (report) =>
-                report['attractionId'] == attractionId,
-          )
+        report['attractionId'] == attractionId,
+      )
           .toList(),
       groupByAttraction: true,
     );
@@ -222,17 +222,17 @@ class RankingReportRepository {
   /// This method always returns all current attraction rules, including rules
   /// that have never been reported.
   Future<Map<String, List<Map<String, dynamic>>>>
-      getEtiquetteGuideRankingByAttraction(
-    String attractionId,
-  ) async {
+  getEtiquetteGuideRankingByAttraction(
+      String attractionId,
+      ) async {
     final attractionSnapshot =
-        await FirebaseFirestore.instance
-            .collection(_attractionCollection)
-            .doc(attractionId)
-            .get();
+    await FirebaseFirestore.instance
+        .collection(_attractionCollection)
+        .doc(attractionId)
+        .get();
 
     final attractionData =
-        attractionSnapshot.data();
+    attractionSnapshot.data();
 
     if (!attractionSnapshot.exists ||
         attractionData == null) {
@@ -243,47 +243,47 @@ class RankingReportRepository {
     }
 
     final dos =
-        _toStringList(
+    _toStringList(
       attractionData['dos'],
     );
 
     final donts =
-        _toStringList(
+    _toStringList(
       attractionData['donts'],
     );
 
     final doDefinitions =
-        _toMapList(
+    _toMapList(
       attractionData['doRankingRules'],
     );
 
     final dontDefinitions =
-        _toMapList(
+    _toMapList(
       attractionData['rankingRules'],
     );
 
     final liveDontRankings =
-        await getRankingByAttraction(
+    await getRankingByAttraction(
       attractionId,
     );
 
     final liveByRuleId =
-        <String, Map<String, dynamic>>{};
+    <String, Map<String, dynamic>>{};
 
     final liveByName =
-        <String, Map<String, dynamic>>{};
+    <String, Map<String, dynamic>>{};
 
     for (final ranking
-        in liveDontRankings) {
+    in liveDontRankings) {
       final ruleId =
-          (ranking['ruleId'] ?? '')
-              .toString()
-              .trim();
+      (ranking['ruleId'] ?? '')
+          .toString()
+          .trim();
 
       final ruleName =
-          (ranking['ruleName'] ?? '')
-              .toString()
-              .trim();
+      (ranking['ruleName'] ?? '')
+          .toString()
+          .trim();
 
       if (ruleId.isNotEmpty) {
         liveByRuleId[ruleId] =
@@ -292,43 +292,45 @@ class RankingReportRepository {
 
       if (ruleName.isNotEmpty) {
         liveByName[
-                ruleName.toLowerCase()] =
+        ruleName.toLowerCase()] =
             ranking;
       }
     }
 
     final rankedDos =
-        <Map<String, dynamic>>[];
+    <Map<String, dynamic>>[];
 
     for (var i = 0;
-        i < dos.length;
-        i++) {
+    i < dos.length;
+    i++) {
       final ruleName =
-          dos[i];
+      dos[i];
 
       final definition =
-          _matchingRuleDefinition(
+      _matchingRuleDefinition(
         definitions: doDefinitions,
         ruleName: ruleName,
       );
 
       final defaultRank =
-          _positiveInt(
+      _positiveInt(
         definition?['defaultRank'],
         fallback: i + 1,
       );
 
       rankedDos.add({
         'ruleId':
-            (definition?['ruleId'] ?? '')
-                    .toString()
-                    .trim()
-                    .isNotEmpty
-                ? definition!['ruleId']
-                    .toString()
-                    .trim()
-                : _slug(ruleName),
+        (definition?['ruleId'] ?? '')
+            .toString()
+            .trim()
+            .isNotEmpty
+            ? definition!['ruleId']
+            .toString()
+            .trim()
+            : _slug(ruleName),
         'ruleName': ruleName,
+        'ruleNameZh': (definition?['ruleNameZh'] ?? '').toString().trim(),
+        'ruleNameMs': (definition?['ruleNameMs'] ?? '').toString().trim(),
         'defaultRank': defaultRank,
         'rank': defaultRank,
         'frequency': 0,
@@ -338,7 +340,7 @@ class RankingReportRepository {
     }
 
     rankedDos.sort(
-      (a, b) =>
+          (a, b) =>
           _positiveInt(
             a['defaultRank'],
             fallback: 9999,
@@ -351,39 +353,39 @@ class RankingReportRepository {
     );
 
     for (var i = 0;
-        i < rankedDos.length;
-        i++) {
+    i < rankedDos.length;
+    i++) {
       rankedDos[i]['rank'] =
           i + 1;
     }
 
     final rankedDonts =
-        <Map<String, dynamic>>[];
+    <Map<String, dynamic>>[];
 
     for (var i = 0;
-        i < donts.length;
-        i++) {
+    i < donts.length;
+    i++) {
       final ruleName =
-          donts[i];
+      donts[i];
 
       final definition =
-          _matchingRuleDefinition(
+      _matchingRuleDefinition(
         definitions: dontDefinitions,
         ruleName: ruleName,
       );
 
       final ruleId =
-          (definition?['ruleId'] ?? '')
-                  .toString()
-                  .trim()
-                  .isNotEmpty
-              ? definition!['ruleId']
-                  .toString()
-                  .trim()
-              : _slug(ruleName);
+      (definition?['ruleId'] ?? '')
+          .toString()
+          .trim()
+          .isNotEmpty
+          ? definition!['ruleId']
+          .toString()
+          .trim()
+          : _slug(ruleName);
 
       final defaultRank =
-          _positiveInt(
+      _positiveInt(
         definition?['defaultRank'],
         fallback: i + 1,
       );
@@ -391,10 +393,10 @@ class RankingReportRepository {
       final live =
           liveByRuleId[ruleId] ??
               liveByName[
-                  ruleName.toLowerCase()];
+              ruleName.toLowerCase()];
 
       final frequency =
-          _positiveInt(
+      _positiveInt(
         live?['frequency'],
         fallback: 0,
         allowZero: true,
@@ -403,26 +405,28 @@ class RankingReportRepository {
       rankedDonts.add({
         'ruleId': ruleId,
         'ruleName': ruleName,
+        'ruleNameZh': (definition?['ruleNameZh'] ?? '').toString().trim(),
+        'ruleNameMs': (definition?['ruleNameMs'] ?? '').toString().trim(),
         'category':
-            definition?['category'] ??
-                live?['category'] ??
-                _categoryForRule(
-                  ruleName,
-                ),
+        definition?['category'] ??
+            live?['category'] ??
+            _categoryForRule(
+              ruleName,
+            ),
         'defaultRank': defaultRank,
         'dynamicRank':
-            live?['rank'],
+        live?['rank'],
         'frequency': frequency,
         'severity':
-            live?['severity'] ?? 0.0,
+        live?['severity'] ?? 0.0,
         'verificationConfidence':
-            live?[
-                    'verificationConfidence'] ??
-                0.0,
+        live?[
+        'verificationConfidence'] ??
+            0.0,
         'priorityScore':
-            live?['priorityScore'] ?? 0.0,
+        live?['priorityScore'] ?? 0.0,
         'hasApprovedReports':
-            frequency > 0,
+        frequency > 0,
         'source': frequency > 0
             ? 'approved-report-ranking'
             : 'default-dont-ranking',
@@ -430,7 +434,7 @@ class RankingReportRepository {
     }
 
     rankedDonts.sort(
-      (a, b) {
+          (a, b) {
         final aHasData =
             a['hasApprovedReports'] ==
                 true;
@@ -448,19 +452,19 @@ class RankingReportRepository {
         // ranking produced by the current ranking formula.
         if (aHasData && bHasData) {
           final aDynamicRank =
-              _positiveInt(
+          _positiveInt(
             a['dynamicRank'],
             fallback: 9999,
           );
 
           final bDynamicRank =
-              _positiveInt(
+          _positiveInt(
             b['dynamicRank'],
             fallback: 9999,
           );
 
           final byDynamicRank =
-              aDynamicRank.compareTo(
+          aDynamicRank.compareTo(
             bDynamicRank,
           );
 
@@ -469,13 +473,13 @@ class RankingReportRepository {
           }
 
           final byScore =
-              _toDouble(
-                b['priorityScore'],
-              ).compareTo(
-                _toDouble(
-                  a['priorityScore'],
-                ),
-              );
+          _toDouble(
+            b['priorityScore'],
+          ).compareTo(
+            _toDouble(
+              a['priorityScore'],
+            ),
+          );
 
           if (byScore != 0) {
             return byScore;
@@ -497,8 +501,8 @@ class RankingReportRepository {
     );
 
     for (var i = 0;
-        i < rankedDonts.length;
-        i++) {
+    i < rankedDonts.length;
+    i++) {
       rankedDonts[i]['rank'] =
           i + 1;
     }
@@ -526,56 +530,61 @@ class RankingReportRepository {
     final attractions = await _getAttractionNames();
 
     final scopedReports =
-        attractionId == null || attractionId == 'all'
-            ? reports
-            : reports
-                .where(
-                  (report) =>
-                      report['attractionId'] ==
-                      attractionId,
-                )
-                .toList();
+    attractionId == null || attractionId == 'all'
+        ? reports
+        : reports
+        .where(
+          (report) =>
+      report['attractionId'] ==
+          attractionId,
+    )
+        .toList();
 
     final approved = scopedReports
         .where(
           (report) =>
-              _normaliseStatus(report['status']) ==
-              'approved',
-        )
+      _normaliseStatus(report['status']) ==
+          'approved',
+    )
         .toList();
 
     final rejected = scopedReports
         .where(
           (report) =>
-              _normaliseStatus(report['status']) ==
-              'rejected',
-        )
+      _normaliseStatus(report['status']) ==
+          'rejected',
+    )
         .toList();
 
     final pending = scopedReports
         .where(
           (report) =>
-              _normaliseStatus(report['status']) ==
-              'pending',
-        )
+      _normaliseStatus(report['status']) ==
+          'pending',
+    )
         .toList();
 
     List<Map<String, dynamic>> rankings =
-        _calculateRankings(
+    _calculateRankings(
       scopedReports,
       groupByAttraction:
-          attractionId != null && attractionId != 'all',
+      attractionId != null && attractionId != 'all',
     );
 
     // Only use stored ranking documents when there is no live approved data.
     if (rankings.isEmpty) {
       rankings = await _getStoredRankings(
         attractionId:
-            attractionId != null && attractionId != 'all'
-                ? attractionId
-                : null,
+        attractionId != null && attractionId != 'all'
+            ? attractionId
+            : null,
       );
     }
+
+    // Add the existing trilingual rule labels from the attraction's
+    // rankingRules. This changes display metadata only; ranking order,
+    // frequency, scores and the canonical English ruleName are untouched.
+    await _enrichRankingTranslations(rankings);
 
     final locationCounts = <String, int>{};
 
@@ -589,53 +598,53 @@ class RankingReportRepository {
     }
 
     final affectedLocations =
-        locationCounts.entries
-            .map(
-              (entry) => {
-                'attractionId': entry.key,
-                'name':
-                    attractions[entry.key] ??
-                        entry.key,
-                'count': entry.value,
-              },
-            )
-            .toList()
-          ..sort(
+    locationCounts.entries
+        .map(
+          (entry) => {
+        'attractionId': entry.key,
+        'name':
+        attractions[entry.key] ??
+            entry.key,
+        'count': entry.value,
+      },
+    )
+        .toList()
+      ..sort(
             (a, b) =>
-                (b['count'] as int).compareTo(
+            (b['count'] as int).compareTo(
               a['count'] as int,
             ),
-          );
+      );
 
     // A report can contain several selected DON'T rules.
     // Dashboard counters should therefore represent the number of individual
     // violation items, not only the number of Firestore report documents.
     final totalViolationCount =
-        scopedReports.fold<int>(
+    scopedReports.fold<int>(
       0,
-      (total, report) =>
-          total + _extractViolations(report).length,
+          (total, report) =>
+      total + _extractViolations(report).length,
     );
 
     final approvedViolationCount =
-        approved.fold<int>(
+    approved.fold<int>(
       0,
-      (total, report) =>
-          total + _extractViolations(report).length,
+          (total, report) =>
+      total + _extractViolations(report).length,
     );
 
     final rejectedViolationCount =
-        rejected.fold<int>(
+    rejected.fold<int>(
       0,
-      (total, report) =>
-          total + _extractViolations(report).length,
+          (total, report) =>
+      total + _extractViolations(report).length,
     );
 
     final pendingViolationCount =
-        pending.fold<int>(
+    pending.fold<int>(
       0,
-      (total, report) =>
-          total + _extractViolations(report).length,
+          (total, report) =>
+      total + _extractViolations(report).length,
     );
 
     final evaluatedViolationCount =
@@ -643,11 +652,11 @@ class RankingReportRepository {
             rejectedViolationCount;
 
     final violationVerificationRate =
-        evaluatedViolationCount == 0
-            ? 0.0
-            : (approvedViolationCount /
-                    evaluatedViolationCount) *
-                100.0;
+    evaluatedViolationCount == 0
+        ? 0.0
+        : (approvedViolationCount /
+        evaluatedViolationCount) *
+        100.0;
 
     return {
       'rankings': rankings,
@@ -664,30 +673,30 @@ class RankingReportRepository {
 
       // Dashboard counters use individual violations.
       'totalViolationCount':
-          totalViolationCount,
+      totalViolationCount,
       'approvedViolationCount':
-          approvedViolationCount,
+      approvedViolationCount,
       'rejectedViolationCount':
-          rejectedViolationCount,
+      rejectedViolationCount,
       'pendingViolationCount':
-          pendingViolationCount,
+      pendingViolationCount,
 
       'verificationRate':
-          violationVerificationRate,
+      violationVerificationRate,
       'affectedLocations': affectedLocations,
       'attractions': attractions.entries
           .map(
             (entry) => {
-              'id': entry.key,
-              'name': entry.value,
-            },
-          )
+          'id': entry.key,
+          'name': entry.value,
+        },
+      )
           .toList(),
 
       // Ranking confidence is more meaningful based on the number of
       // approved individual violations, not only report documents.
       'insufficientData':
-          approvedViolationCount < 3,
+      approvedViolationCount < 3,
     };
   }
 
@@ -701,7 +710,7 @@ class RankingReportRepository {
     try {
       await _cloudFunctionsService.callFunction(
         functionName:
-            'recalculateEtiquetteRankings',
+        'recalculateEtiquetteRankings',
         data: {
           if (attractionId != null &&
               attractionId != 'all')
@@ -725,25 +734,25 @@ class RankingReportRepository {
     // ranking widgets update automatically.
     return _firestoreService
         .watchCollection(
-          collection: _reportCollection,
-        )
+      collection: _reportCollection,
+    )
         .map(
           (snapshot) {
-            final reports = snapshot.docs
-                .map(
-                  (doc) => {
-                    'id': doc.id,
-                    ...doc.data(),
-                  },
-                )
-                .toList();
-
-            return _calculateRankings(
-              reports,
-              groupByAttraction: false,
-            );
+        final reports = snapshot.docs
+            .map(
+              (doc) => {
+            'id': doc.id,
+            ...doc.data(),
           },
+        )
+            .toList();
+
+        return _calculateRankings(
+          reports,
+          groupByAttraction: false,
         );
+      },
+    );
   }
 
   // ---------------------------------------------------------------------------
@@ -783,7 +792,7 @@ class RankingReportRepository {
       }
 
       final WriteBatch deleteBatch =
-          firestore.batch();
+      firestore.batch();
 
       for (final doc in snapshot.docs) {
         deleteBatch.delete(doc.reference);
@@ -801,20 +810,20 @@ class RankingReportRepository {
     }
 
     WriteBatch writeBatch =
-        firestore.batch();
+    firestore.batch();
 
     var writesInBatch = 0;
 
     for (final ranking in rankings) {
       final ruleId =
-          (ranking['ruleId'] ?? '')
-              .toString()
-              .trim();
+      (ranking['ruleId'] ?? '')
+          .toString()
+          .trim();
 
       final ruleName =
-          (ranking['ruleName'] ?? 'Etiquette issue')
-              .toString()
-              .trim();
+      (ranking['ruleName'] ?? 'Etiquette issue')
+          .toString()
+          .trim();
 
       final documentId =
           'global_${_slug(
@@ -822,13 +831,13 @@ class RankingReportRepository {
       )}';
 
       final documentData =
-          Map<String, dynamic>.from(ranking);
+      Map<String, dynamic>.from(ranking);
 
       documentData['updatedAt'] =
           FieldValue.serverTimestamp();
 
       documentData['source'] =
-          'approved-report-live-sync';
+      'approved-report-live-sync';
 
 
       writeBatch.set(
@@ -858,64 +867,261 @@ class RankingReportRepository {
   // ---------------------------------------------------------------------------
 
   Future<List<Map<String, dynamic>>>
-      _getAllReports() async {
+  _getAllReports() async {
     final snapshot =
-        await _firestoreService.getCollection(
+    await _firestoreService.getCollection(
       collection: _reportCollection,
     );
 
     return snapshot.docs
         .map(
           (doc) => {
-            'id': doc.id,
-            ...doc.data(),
-          },
-        )
+        'id': doc.id,
+        ...doc.data(),
+      },
+    )
         .toList();
   }
 
   Future<Map<String, String>>
-      _getAttractionNames() async {
+  _getAttractionNames() async {
     try {
       final snapshot =
-          await _firestoreService.getCollection(
+      await _firestoreService.getCollection(
         collection: _attractionCollection,
       );
 
       return {
         for (final doc in snapshot.docs)
           doc.id:
-              (doc.data()['name'] ?? doc.id)
-                  .toString(),
+          (doc.data()['name'] ?? doc.id)
+              .toString(),
       };
     } catch (_) {
       return {};
     }
   }
 
+  Future<void> _enrichRankingTranslations(
+      List<Map<String, dynamic>> rankings,
+      ) async {
+    if (rankings.isEmpty) {
+      return;
+    }
+
+    // Cache attraction documents during this enrichment pass so a ranking
+    // list never reads the same attraction more than once.
+    final attractionCache =
+    <String, Map<String, dynamic>?>{};
+
+    for (final ranking in rankings) {
+      var currentZh =
+      (ranking['ruleNameZh'] ?? '')
+          .toString()
+          .trim();
+
+      var currentMs =
+      (ranking['ruleNameMs'] ?? '')
+          .toString()
+          .trim();
+
+      if (currentZh.isNotEmpty &&
+          currentMs.isNotEmpty) {
+        continue;
+      }
+
+      final ruleId =
+      (ranking['ruleId'] ?? '')
+          .toString()
+          .trim();
+
+      final ruleName =
+      (ranking['ruleName'] ?? '')
+          .toString()
+          .trim();
+
+      if (ruleId.isEmpty &&
+          ruleName.isEmpty) {
+        continue;
+      }
+
+      final candidateAttractionIds =
+      <String>{};
+
+      final rawAttractionIds =
+      ranking['attractionIds'];
+
+      if (rawAttractionIds is Iterable) {
+        for (final rawId
+        in rawAttractionIds) {
+          final id =
+          rawId.toString().trim();
+
+          if (id.isNotEmpty &&
+              id != 'all' &&
+              id != 'unknown') {
+            candidateAttractionIds.add(id);
+          }
+        }
+      }
+
+      final singleAttractionId =
+      (ranking['attractionId'] ?? '')
+          .toString()
+          .trim();
+
+      if (singleAttractionId.isNotEmpty &&
+          singleAttractionId != 'all' &&
+          singleAttractionId != 'unknown') {
+        candidateAttractionIds.add(
+          singleAttractionId,
+        );
+      }
+
+      for (final attractionId
+      in candidateAttractionIds) {
+        Map<String, dynamic>?
+        attractionData;
+
+        if (attractionCache
+            .containsKey(attractionId)) {
+          attractionData =
+          attractionCache[attractionId];
+        } else {
+          try {
+            final attractionDoc =
+            await _firestoreService
+                .getDocument(
+              collection:
+              _attractionCollection,
+              documentId:
+              attractionId,
+            );
+
+            final data =
+            attractionDoc.exists
+                ? attractionDoc.data()
+                : null;
+
+            attractionData =
+            data == null
+                ? null
+                : Map<String, dynamic>.from(
+              data,
+            );
+
+            attractionCache[attractionId] =
+                attractionData;
+          } catch (_) {
+            attractionCache[attractionId] =
+            null;
+          }
+        }
+
+        if (attractionData == null) {
+          continue;
+        }
+
+        // Violation rankings are based on DON'T rules. Include DO definitions
+        // as a harmless compatibility fallback for any older stored row.
+        final definitions =
+        <Map<String, dynamic>>[
+          ..._toMapList(
+            attractionData[
+            'rankingRules'],
+          ),
+          ..._toMapList(
+            attractionData[
+            'doRankingRules'],
+          ),
+        ];
+
+        Map<String, dynamic>? definition;
+
+        if (ruleId.isNotEmpty) {
+          for (final candidate
+          in definitions) {
+            final candidateRuleId =
+            (candidate['ruleId'] ?? '')
+                .toString()
+                .trim();
+
+            if (candidateRuleId.isNotEmpty &&
+                candidateRuleId == ruleId) {
+              definition = candidate;
+              break;
+            }
+          }
+        }
+
+        if (definition == null &&
+            ruleName.isNotEmpty) {
+          definition =
+              _matchingRuleDefinition(
+                definitions: definitions,
+                ruleName: ruleName,
+              );
+        }
+
+        if (definition == null) {
+          continue;
+        }
+
+        final translatedZh =
+        (definition['ruleNameZh'] ?? '')
+            .toString()
+            .trim();
+
+        final translatedMs =
+        (definition['ruleNameMs'] ?? '')
+            .toString()
+            .trim();
+
+        if (currentZh.isEmpty &&
+            translatedZh.isNotEmpty) {
+          ranking['ruleNameZh'] =
+              translatedZh;
+          currentZh = translatedZh;
+        }
+
+        if (currentMs.isEmpty &&
+            translatedMs.isNotEmpty) {
+          ranking['ruleNameMs'] =
+              translatedMs;
+          currentMs = translatedMs;
+        }
+
+        if (currentZh.isNotEmpty &&
+            currentMs.isNotEmpty) {
+          break;
+        }
+      }
+    }
+  }
+
   Future<List<Map<String, dynamic>>>
-      _getStoredRankings({
+  _getStoredRankings({
     String? attractionId,
   }) async {
     try {
       final snapshot =
-          await _firestoreService.getCollection(
+      await _firestoreService.getCollection(
         collection: _rankingCollection,
       );
 
       final rankings = snapshot.docs
           .map(
             (doc) => {
-              'id': doc.id,
-              ...doc.data(),
-            },
-          )
+          'id': doc.id,
+          ...doc.data(),
+        },
+      )
           .where(
             (ranking) =>
-                attractionId == null ||
-                ranking['attractionId'] ==
-                    attractionId,
-          )
+        attractionId == null ||
+            ranking['attractionId'] ==
+                attractionId,
+      )
           .toList();
 
       // GitHub latest compatibility:
@@ -924,10 +1130,10 @@ class RankingReportRepository {
       await _resolveRuleNames(rankings);
 
       rankings.sort(
-        (a, b) =>
+            (a, b) =>
             _score(b).compareTo(
-          _score(a),
-        ),
+              _score(a),
+            ),
       );
 
       return rankings;
@@ -937,8 +1143,8 @@ class RankingReportRepository {
   }
 
   Future<void> _resolveRuleNames(
-    List<Map<String, dynamic>> rankings,
-  ) async {
+      List<Map<String, dynamic>> rankings,
+      ) async {
     for (final ranking in rankings) {
       if (ranking['ruleName'] != null ||
           ranking['category'] != null) {
@@ -946,7 +1152,7 @@ class RankingReportRepository {
       }
 
       final ruleId =
-          ranking['ruleId']?.toString();
+      ranking['ruleId']?.toString();
 
       if (ruleId == null ||
           ruleId.isEmpty) {
@@ -955,7 +1161,7 @@ class RankingReportRepository {
 
       try {
         final ruleDoc =
-            await _firestoreService.getDocument(
+        await _firestoreService.getDocument(
           collection: _ruleCollection,
           documentId: ruleId,
         );
@@ -965,14 +1171,14 @@ class RankingReportRepository {
         }
 
         final ruleData =
-            ruleDoc.data();
+        ruleDoc.data();
 
         ranking['ruleName'] =
             ruleData?['title'] ??
                 ruleData?['description'];
 
         ranking['category'] =
-            ruleData?['ruleCategory'];
+        ruleData?['ruleCategory'];
       } catch (_) {
         // Keep the existing ranking row if rule lookup is unavailable.
       }
@@ -984,15 +1190,15 @@ class RankingReportRepository {
   // ---------------------------------------------------------------------------
 
   List<Map<String, dynamic>> _calculateRankings(
-    List<Map<String, dynamic>> reports, {
-    required bool groupByAttraction,
-  }) {
+      List<Map<String, dynamic>> reports, {
+        required bool groupByAttraction,
+      }) {
     final approved = reports
         .where(
           (report) =>
-              _normaliseStatus(report['status']) ==
-              'approved',
-        )
+      _normaliseStatus(report['status']) ==
+          'approved',
+    )
         .toList();
 
     if (approved.isEmpty) {
@@ -1001,35 +1207,35 @@ class RankingReportRepository {
 
     // Each item represents ONE verified violation from ONE approved report.
     final violationEvents =
-        <Map<String, dynamic>>[];
+    <Map<String, dynamic>>[];
 
     for (final report in approved) {
       final violations =
-          _extractViolations(report);
+      _extractViolations(report);
 
       for (final violation in violations) {
         violationEvents.add({
           'reportId': report['id'],
           'attractionId':
-              report['attractionId']?.toString() ??
-                  'unknown',
+          report['attractionId']?.toString() ??
+              'unknown',
           'attractionName':
-              report['attractionName']?.toString(),
+          report['attractionName']?.toString(),
           'ruleId':
-              violation['ruleId']?.toString() ??
-                  '',
+          violation['ruleId']?.toString() ??
+              '',
           'ruleName':
-              violation['ruleName']?.toString() ??
-                  'Etiquette issue',
+          violation['ruleName']?.toString() ??
+              'Etiquette issue',
           'category':
-              violation['category']?.toString() ??
-                  'Other',
+          violation['category']?.toString() ??
+              'Other',
           'severity': _toDouble(
             report['severity'],
             fallback: 3.0,
           ).clamp(1, 5),
           'verificationConfidence':
-              _toDouble(
+          _toDouble(
             report['verificationConfidence'],
             fallback: 1.0,
           ).clamp(0.0, 1.0),
@@ -1042,7 +1248,7 @@ class RankingReportRepository {
     }
 
     final groups =
-        <String, List<Map<String, dynamic>>>{};
+    <String, List<Map<String, dynamic>>>{};
 
     for (final event in violationEvents) {
       final attractionId =
@@ -1066,15 +1272,15 @@ class RankingReportRepository {
 
       groups
           .putIfAbsent(
-            key,
+        key,
             () => <Map<String, dynamic>>[],
-          )
+      )
           .add(event);
     }
 
     final rows =
-        groups.entries.map(
-      (entry) {
+    groups.entries.map(
+          (entry) {
         final sample =
             entry.value.first;
 
@@ -1083,15 +1289,15 @@ class RankingReportRepository {
 
         final avgSeverity =
             entry.value
-                    .map(
-                      (event) => _toDouble(
-                        event['severity'],
-                        fallback: 3.0,
-                      ).clamp(1, 5),
-                    )
-                    .reduce(
-                      (a, b) => a + b,
-                    ) /
+                .map(
+                  (event) => _toDouble(
+                event['severity'],
+                fallback: 3.0,
+              ).clamp(1, 5),
+            )
+                .reduce(
+                  (a, b) => a + b,
+            ) /
                 frequency;
 
         final severityScore =
@@ -1099,16 +1305,16 @@ class RankingReportRepository {
 
         final avgConfidence =
             entry.value
-                    .map(
-                      (event) => _toDouble(
-                        event[
-                            'verificationConfidence'],
-                        fallback: 1.0,
-                      ).clamp(0.0, 1.0),
-                    )
-                    .reduce(
-                      (a, b) => a + b,
-                    ) /
+                .map(
+                  (event) => _toDouble(
+                event[
+                'verificationConfidence'],
+                fallback: 1.0,
+              ).clamp(0.0, 1.0),
+            )
+                .reduce(
+                  (a, b) => a + b,
+            ) /
                 frequency;
 
         // CUMULATIVE PRIORITY POINTS
@@ -1143,74 +1349,74 @@ class RankingReportRepository {
                 confidencePoints;
 
         final attractionIds =
-            entry.value
-                .map(
-                  (event) =>
-                      event['attractionId']
-                          ?.toString() ??
-                      'unknown',
-                )
-                .toSet()
-                .toList();
+        entry.value
+            .map(
+              (event) =>
+          event['attractionId']
+              ?.toString() ??
+              'unknown',
+        )
+            .toSet()
+            .toList();
 
         return <String, dynamic>{
           'attractionId':
-              groupByAttraction
-                  ? sample['attractionId']
-                          ?.toString() ??
-                      'unknown'
-                  : 'all',
+          groupByAttraction
+              ? sample['attractionId']
+              ?.toString() ??
+              'unknown'
+              : 'all',
 
           'attractionIds':
-              attractionIds,
+          attractionIds,
 
           'category':
-              sample['category']?.toString() ??
-                  'Other',
+          sample['category']?.toString() ??
+              'Other',
 
           'ruleId':
-              sample['ruleId']?.toString() ??
-                  _slug(
-                    sample['ruleName']
-                            ?.toString() ??
-                        'Etiquette issue',
-                  ),
+          sample['ruleId']?.toString() ??
+              _slug(
+                sample['ruleName']
+                    ?.toString() ??
+                    'Etiquette issue',
+              ),
 
           'ruleName':
-              sample['ruleName']?.toString() ??
-                  'Etiquette issue',
+          sample['ruleName']?.toString() ??
+              'Etiquette issue',
 
           'frequency':
-              frequency,
+          frequency,
 
           'severity':
-              avgSeverity,
+          avgSeverity,
 
           'verificationConfidence':
-              avgConfidence,
+          avgConfidence,
 
           'priorityScore':
-              priorityScore,
+          priorityScore,
 
           'insufficientData':
-              frequency < 3,
+          frequency < 3,
 
           'source':
-              'approved-multi-violation-preview',
+          'approved-multi-violation-preview',
         };
       },
     ).toList();
 
     rows.sort(
-      (a, b) =>
+          (a, b) =>
           _score(b).compareTo(
-        _score(a),
-      ),
+            _score(a),
+          ),
     );
 
     for (var i = 0;
-        i < rows.length;
-        i++) {
+    i < rows.length;
+    i++) {
       rows[i]['rank'] = i + 1;
     }
 
@@ -1232,15 +1438,15 @@ class RankingReportRepository {
   /// OLD fallback:
   /// selectedDontRule / ruleName / category / description
   List<Map<String, dynamic>> _extractViolations(
-    Map<String, dynamic> report,
-  ) {
+      Map<String, dynamic> report,
+      ) {
     final result =
-        <Map<String, dynamic>>[];
+    <Map<String, dynamic>>[];
 
     final seen = <String>{};
 
     final rawViolations =
-        report['violations'];
+    report['violations'];
 
     if (rawViolations is List) {
       for (final raw in rawViolations) {
@@ -1249,35 +1455,35 @@ class RankingReportRepository {
         }
 
         final item =
-            Map<String, dynamic>.from(raw);
+        Map<String, dynamic>.from(raw);
 
         final ruleName =
-            (item['ruleName'] ??
-                    item['name'] ??
-                    '')
-                .toString()
-                .trim();
+        (item['ruleName'] ??
+            item['name'] ??
+            '')
+            .toString()
+            .trim();
 
         if (ruleName.isEmpty) {
           continue;
         }
 
         final category =
-            (item['category'] ??
-                    report['category'] ??
-                    'Other')
-                .toString()
-                .trim();
+        (item['category'] ??
+            report['category'] ??
+            'Other')
+            .toString()
+            .trim();
 
         final rawRuleId =
-            (item['ruleId'] ?? '')
-                .toString()
-                .trim();
+        (item['ruleId'] ?? '')
+            .toString()
+            .trim();
 
         final ruleId =
-            rawRuleId.isNotEmpty
-                ? rawRuleId
-                : _slug(ruleName);
+        rawRuleId.isNotEmpty
+            ? rawRuleId
+            : _slug(ruleName);
 
         final uniqueKey =
             '$ruleId::$category';
@@ -1287,9 +1493,9 @@ class RankingReportRepository {
             'ruleId': ruleId,
             'ruleName': ruleName,
             'category':
-                category.isEmpty
-                    ? 'Other'
-                    : category,
+            category.isEmpty
+                ? 'Other'
+                : category,
           });
         }
       }
@@ -1301,27 +1507,27 @@ class RankingReportRepository {
 
     // Newer compatibility format when only selectedDontRules was saved.
     final selectedDontRules =
-        report['selectedDontRules'];
+    report['selectedDontRules'];
 
     if (selectedDontRules is List) {
       for (final rawRule
-          in selectedDontRules) {
+      in selectedDontRules) {
         final ruleName =
-            rawRule.toString().trim();
+        rawRule.toString().trim();
 
         if (ruleName.isEmpty) {
           continue;
         }
 
         final category =
-            _categoryForRule(
+        _categoryForRule(
           ruleName,
           fallback:
-              report['category']?.toString(),
+          report['category']?.toString(),
         );
 
         final ruleId =
-            _slug(ruleName);
+        _slug(ruleName);
 
         final uniqueKey =
             '$ruleId::$category';
@@ -1342,41 +1548,41 @@ class RankingReportRepository {
 
     // Old single-violation report fallback.
     final singleRule =
-        (report['selectedDontRule'] ??
-                report['ruleName'] ??
-                report['description'] ??
-                report['category'] ??
-                '')
-            .toString()
-            .trim();
+    (report['selectedDontRule'] ??
+        report['ruleName'] ??
+        report['description'] ??
+        report['category'] ??
+        '')
+        .toString()
+        .trim();
 
     if (singleRule.isEmpty) {
       return [];
     }
 
     final category =
-        (report['category'] ?? 'Other')
-            .toString()
-            .trim();
+    (report['category'] ?? 'Other')
+        .toString()
+        .trim();
 
     return [
       {
         'ruleId': _slug(singleRule),
         'ruleName': singleRule,
         'category':
-            category.isEmpty
-                ? 'Other'
-                : category,
+        category.isEmpty
+            ? 'Other'
+            : category,
       },
     ];
   }
 
   static String _categoryForRule(
-    String rule, {
-    String? fallback,
-  }) {
+      String rule, {
+        String? fallback,
+      }) {
     final text =
-        rule.toLowerCase();
+    rule.toLowerCase();
 
     if (text.contains('wear') ||
         text.contains('dress') ||
@@ -1435,21 +1641,21 @@ class RankingReportRepository {
   // ---------------------------------------------------------------------------
 
   List<Map<String, dynamic>> _buildTrend(
-    List<Map<String, dynamic>> approved, {
-    required String period,
-  }) {
+      List<Map<String, dynamic>> approved, {
+        required String period,
+      }) {
     final monthly =
         period == 'month';
 
     final now =
-        DateTime.now();
+    DateTime.now();
 
     final buckets =
-        <Map<String, dynamic>>[];
+    <Map<String, dynamic>>[];
 
     for (var offset = 5;
-        offset >= 0;
-        offset--) {
+    offset >= 0;
+    offset--) {
       late DateTime start;
       late DateTime end;
       late String label;
@@ -1479,46 +1685,46 @@ class RankingReportRepository {
         );
 
         final monday =
-            today.subtract(
+        today.subtract(
           Duration(
             days:
-                today.weekday - 1,
+            today.weekday - 1,
           ),
         );
 
         start =
             monday.subtract(
-          Duration(
-            days: 7 * offset,
-          ),
-        );
+              Duration(
+                days: 7 * offset,
+              ),
+            );
 
         end =
             start.add(
-          const Duration(
-            days: 7,
-          ),
-        );
+              const Duration(
+                days: 7,
+              ),
+            );
 
         label =
-            '${start.day}/${start.month}';
+        '${start.day}/${start.month}';
       }
 
       // Trend still counts approved REPORTS, not individual rules.
       // This keeps the dashboard's report trend meaning clear.
       final count =
           approved.where(
-        (report) {
-          final date =
+                (report) {
+              final date =
               _parseDate(
-            report['createdAt'],
-          );
+                report['createdAt'],
+              );
 
-          return date != null &&
-              !date.isBefore(start) &&
-              date.isBefore(end);
-        },
-      ).length;
+              return date != null &&
+                  !date.isBefore(start) &&
+                  date.isBefore(end);
+            },
+          ).length;
 
       buckets.add({
         'label': label,
@@ -1530,8 +1736,8 @@ class RankingReportRepository {
   }
 
   static List<String> _toStringList(
-    dynamic value,
-  ) {
+      dynamic value,
+      ) {
     if (value is! List) {
       return <String>[];
     }
@@ -1539,17 +1745,17 @@ class RankingReportRepository {
     return value
         .map(
           (item) =>
-              item.toString().trim(),
-        )
+          item.toString().trim(),
+    )
         .where(
           (item) => item.isNotEmpty,
-        )
+    )
         .toList();
   }
 
   static List<Map<String, dynamic>> _toMapList(
-    dynamic value,
-  ) {
+      dynamic value,
+      ) {
     if (value is! List) {
       return <Map<String, dynamic>>[];
     }
@@ -1558,10 +1764,10 @@ class RankingReportRepository {
         .whereType<Map>()
         .map(
           (item) =>
-              Map<String, dynamic>.from(
-            item,
-          ),
-        )
+      Map<String, dynamic>.from(
+        item,
+      ),
+    )
         .toList();
   }
 
@@ -1570,15 +1776,15 @@ class RankingReportRepository {
     required String ruleName,
   }) {
     final target =
-        ruleName.trim().toLowerCase();
+    ruleName.trim().toLowerCase();
 
     for (final definition
-        in definitions) {
+    in definitions) {
       final candidate =
-          (definition['ruleName'] ?? '')
-              .toString()
-              .trim()
-              .toLowerCase();
+      (definition['ruleName'] ?? '')
+          .toString()
+          .trim()
+          .toLowerCase();
 
       if (candidate == target) {
         return definition;
@@ -1589,16 +1795,16 @@ class RankingReportRepository {
   }
 
   static int _positiveInt(
-    dynamic value, {
-    required int fallback,
-    bool allowZero = false,
-  }) {
+      dynamic value, {
+        required int fallback,
+        bool allowZero = false,
+      }) {
     final parsed =
-        value is num
-            ? value.toInt()
-            : int.tryParse(
-                value?.toString() ?? '',
-              );
+    value is num
+        ? value.toInt()
+        : int.tryParse(
+      value?.toString() ?? '',
+    );
 
     if (parsed == null) {
       return fallback;
@@ -1620,8 +1826,8 @@ class RankingReportRepository {
   // ---------------------------------------------------------------------------
 
   static String _monthLabel(
-    int month,
-  ) {
+      int month,
+      ) {
     const labels = [
       'Jan',
       'Feb',
@@ -1641,8 +1847,8 @@ class RankingReportRepository {
   }
 
   static DateTime? _parseDate(
-    dynamic value,
-  ) {
+      dynamic value,
+      ) {
     if (value == null) {
       return null;
     }
@@ -1665,52 +1871,52 @@ class RankingReportRepository {
   }
 
   static String _normaliseStatus(
-    dynamic value,
-  ) {
+      dynamic value,
+      ) {
     return value
-            ?.toString()
-            .trim()
-            .toLowerCase() ??
+        ?.toString()
+        .trim()
+        .toLowerCase() ??
         '';
   }
 
   static double _toDouble(
-    dynamic value, {
-    double fallback = 0,
-  }) {
+      dynamic value, {
+        double fallback = 0,
+      }) {
     if (value is num) {
       return value.toDouble();
     }
 
     return double.tryParse(
-          value?.toString() ?? '',
-        ) ??
+      value?.toString() ?? '',
+    ) ??
         fallback;
   }
 
   static double _score(
-    Map<String, dynamic> row,
-  ) {
+      Map<String, dynamic> row,
+      ) {
     return _toDouble(
       row['priorityScore'],
     );
   }
 
   static String _slug(
-    String value,
-  ) {
+      String value,
+      ) {
     final clean =
-        value
-            .trim()
-            .toLowerCase()
-            .replaceAll(
-              RegExp(r'[^a-z0-9]+'),
-              '_',
-            )
-            .replaceAll(
-              RegExp(r'^_+|_+$'),
-              '',
-            );
+    value
+        .trim()
+        .toLowerCase()
+        .replaceAll(
+      RegExp(r'[^a-z0-9]+'),
+      '_',
+    )
+        .replaceAll(
+      RegExp(r'^_+|_+$'),
+      '',
+    );
 
     return clean.isEmpty
         ? 'etiquette_issue'
