@@ -176,7 +176,68 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   String _cleanError(Object error) {
-    return error.toString().replaceFirst('Exception: ', '');
+    // FirebaseAuthenticationService converts FirebaseAuthException
+    // into a normal Exception containing Firebase's message.
+    // Show a simple, user-friendly message instead of the technical
+    // Firebase error text.
+    final raw = error.toString().replaceFirst('Exception: ', '').trim();
+    final message = raw.toLowerCase();
+
+    if (message.contains('invalid-email') ||
+        message.contains('badly formatted') ||
+        message.contains('invalid email')) {
+      return _t(
+        en: 'Invalid email address.',
+        zh: '电子邮箱地址无效。',
+        ms: 'Alamat e-mel tidak sah.',
+      );
+    }
+
+    if (message.contains('invalid-credential') ||
+        message.contains('invalid credential') ||
+        message.contains('auth credential') ||
+        message.contains('wrong-password') ||
+        message.contains('incorrect password') ||
+        message.contains('password is invalid')) {
+      return _t(
+        en: 'Invalid password.',
+        zh: '密码错误。',
+        ms: 'Kata laluan tidak sah.',
+      );
+    }
+
+    if (message.contains('user-not-found') ||
+        message.contains('no user record')) {
+      return _t(
+        en: 'Account not found.',
+        zh: '找不到账户。',
+        ms: 'Akaun tidak ditemui.',
+      );
+    }
+
+    if (message.contains('too-many-requests')) {
+      return _t(
+        en: 'Too many attempts. Please try again later.',
+        zh: '尝试次数过多，请稍后再试。',
+        ms: 'Terlalu banyak percubaan. Sila cuba lagi kemudian.',
+      );
+    }
+
+    if (message.contains('network-request-failed') ||
+        message.contains('network error')) {
+      return _t(
+        en: 'Network error. Please check your connection.',
+        zh: '网络错误，请检查您的网络连接。',
+        ms: 'Ralat rangkaian. Sila semak sambungan anda.',
+      );
+    }
+
+    // Never expose raw Firebase error messages to the user.
+    return _t(
+      en: 'Unable to sign in. Please check your email and password.',
+      zh: '无法登录，请检查您的电子邮箱和密码。',
+      ms: 'Tidak dapat log masuk. Sila semak e-mel dan kata laluan anda.',
+    );
   }
 
   @override
