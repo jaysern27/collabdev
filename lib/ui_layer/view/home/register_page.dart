@@ -29,7 +29,6 @@ class _RegisterPageState extends State<RegisterPage> {
   bool acceptedGuidelines = false;
 
   static const Color _primary = Color(0xFF2F6FED);
-  static const Color _background = Color(0xFFFFFFFF);
 
   @override
   void dispose() {
@@ -131,7 +130,7 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
@@ -154,31 +153,33 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   Widget _buildIntro() {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           colors: [
-            Color(0xFFDCE9FD),
-            Color(0xFFE6F7F4),
+            colorScheme.primaryContainer,
+            colorScheme.secondaryContainer,
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(24),
       ),
-      child: const Row(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           CircleAvatar(
             radius: 25,
-            backgroundColor: Colors.white,
+            backgroundColor: colorScheme.surface,
             child: Icon(
               Icons.volunteer_activism_outlined,
-              color: _primary,
+              color: colorScheme.primary,
             ),
           ),
-          SizedBox(width: 14),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -188,14 +189,14 @@ class _RegisterPageState extends State<RegisterPage> {
                   style: TextStyle(
                     fontWeight: FontWeight.w800,
                     fontSize: 20,
-                    color: Color(0xFF14213D),
+                    color: colorScheme.onSurface,
                   ),
                 ),
-                SizedBox(height: 5),
+                const SizedBox(height: 5),
                 Text(
                   'Create your CultureGuide account to save etiquette guidance, check appropriate outfits and submit etiquette reports.',
                   style: TextStyle(
-                    color: Color(0xFF64748B),
+                    color: colorScheme.onSurfaceVariant,
                     height: 1.45,
                   ),
                 ),
@@ -208,13 +209,15 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   Widget _buildRegisterCard() {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Container(
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: const Color(0xFFE3EDFC),
+          color: colorScheme.outlineVariant,
         ),
         boxShadow: const [
           BoxShadow(
@@ -345,11 +348,11 @@ class _RegisterPageState extends State<RegisterPage> {
             ),
           ),
           const SizedBox(height: 14),
-          const Text(
+          Text(
             'Administrator accounts cannot be registered here.',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: Color(0xFF64748B),
+              color: colorScheme.onSurfaceVariant,
               fontSize: 12.5,
             ),
           ),
@@ -363,22 +366,24 @@ class _RegisterPageState extends State<RegisterPage> {
     required IconData icon,
     Widget? suffix,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return InputDecoration(
       labelText: label,
       prefixIcon: Icon(icon),
       suffixIcon: suffix,
       filled: true,
-      fillColor: const Color(0xFFF3F8FE),
+      fillColor: colorScheme.surfaceContainerHighest,
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(
-          color: Color(0xFFDCE9FD),
+        borderSide: BorderSide(
+          color: colorScheme.outlineVariant,
         ),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(
-          color: _primary,
+        borderSide: BorderSide(
+          color: colorScheme.primary,
           width: 1.7,
         ),
       ),

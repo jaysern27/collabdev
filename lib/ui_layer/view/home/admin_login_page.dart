@@ -97,8 +97,10 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
@@ -114,22 +116,22 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
               const SizedBox(height: 24),
               _buildLoginCard(),
               const SizedBox(height: 18),
-              const Row(
+              Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
                     Icons.lock_outline_rounded,
                     size: 16,
-                    color: AppColors.muted,
+                    color: colorScheme.onSurfaceVariant,
                   ),
-                  SizedBox(width: 7),
+                  const SizedBox(width: 7),
                   Flexible(
                     child: Text(
                       'Administrator accounts are managed internally.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 12.5,
-                        color: AppColors.muted,
+                        color: colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ),
@@ -198,24 +200,26 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
   }
 
   Widget _buildLoginCard() {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Container(
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: AppColors.cardBorder,
+          color: colorScheme.outlineVariant,
         ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text(
+          Text(
             'Sign in as Admin',
             style: TextStyle(
               fontSize: 21,
               fontWeight: FontWeight.w800,
-              color: AppColors.heading,
+              color: colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 18),
@@ -305,22 +309,24 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
     required IconData icon,
     Widget? suffix,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return InputDecoration(
       labelText: label,
       prefixIcon: Icon(icon),
       suffixIcon: suffix,
       filled: true,
-      fillColor: AppColors.tintFaint,
+      fillColor: colorScheme.surfaceContainerHighest,
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(
-          color: AppColors.cardBorder,
+        borderSide: BorderSide(
+          color: colorScheme.outlineVariant,
         ),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(
-          color: AppColors.primary,
+        borderSide: BorderSide(
+          color: colorScheme.primary,
           width: 1.7,
         ),
       ),

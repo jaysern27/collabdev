@@ -29,7 +29,6 @@ class _LoginPageState extends State<LoginPage> {
 
   static const Color _primary = Color(0xFF2F6FED);
   static const Color _deepPurple = Color(0xFF163E85);
-  static const Color _background = Color(0xFFFFFFFF);
 
   @override
   void dispose() {
@@ -133,7 +132,7 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(22, 18, 22, 28),
@@ -176,6 +175,8 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Widget _buildBrandHeader() {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Column(
       children: [
         Container(
@@ -208,24 +209,24 @@ class _LoginPageState extends State<LoginPage> {
 
         const SizedBox(height: 16),
 
-        const Text(
+        Text(
           'CultureGuide',
           style: TextStyle(
             fontSize: 30,
             fontWeight: FontWeight.w800,
             letterSpacing: -0.7,
-            color: Color(0xFF14213D),
+            color: colorScheme.onSurface,
           ),
         ),
 
         const SizedBox(height: 6),
 
-        const Text(
+        Text(
           'Explore Malaysia. Respect every culture.',
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 14,
-            color: Color(0xFF64748B),
+            color: colorScheme.onSurfaceVariant,
             height: 1.4,
           ),
         ),
@@ -234,13 +235,15 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Widget _buildLoginCard() {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Container(
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: const Color(0xFFE3EDFC),
+          color: colorScheme.outlineVariant,
         ),
         boxShadow: const [
           BoxShadow(
@@ -253,21 +256,21 @@ class _LoginPageState extends State<LoginPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text(
+          Text(
             'Welcome back',
             style: TextStyle(
               fontSize: 23,
               fontWeight: FontWeight.w800,
-              color: Color(0xFF14213D),
+              color: colorScheme.onSurface,
             ),
           ),
 
           const SizedBox(height: 5),
 
-          const Text(
+          Text(
             'Sign in to access your etiquette tools, reports and saved cultural guidance.',
             style: TextStyle(
-              color: Color(0xFF64748B),
+              color: colorScheme.onSurfaceVariant,
               height: 1.45,
             ),
           ),
@@ -365,8 +368,8 @@ class _LoginPageState extends State<LoginPage> {
                   textAlign: TextAlign.right,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFF64748B),
+                  style: TextStyle(
+                    color: colorScheme.onSurfaceVariant,
                   ),
                 ),
               ),
@@ -411,8 +414,10 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Widget _buildAdminEntry() {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Material(
-      color: const Color(0xFFF3F8FE),
+      color: colorScheme.surfaceContainerHighest,
       borderRadius: BorderRadius.circular(18),
       child: InkWell(
         borderRadius: BorderRadius.circular(18),
@@ -445,7 +450,7 @@ class _LoginPageState extends State<LoginPage> {
 
               const SizedBox(width: 13),
 
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -453,27 +458,27 @@ class _LoginPageState extends State<LoginPage> {
                       'Administrator Login',
                       style: TextStyle(
                         fontWeight: FontWeight.w800,
-                        color: Color(0xFF14213D),
+                        color: colorScheme.onSurface,
                       ),
                     ),
 
-                    SizedBox(height: 3),
+                    const SizedBox(height: 3),
 
                     Text(
                       'Review etiquette reports and ranking data',
                       style: TextStyle(
                         fontSize: 12.5,
-                        color: Color(0xFF64748B),
+                        color: colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
                 ),
               ),
 
-              const Icon(
+              Icon(
                 Icons.arrow_forward_ios_rounded,
                 size: 17,
-                color: _deepPurple,
+                color: colorScheme.primary,
               ),
             ],
           ),
@@ -487,26 +492,28 @@ class _LoginPageState extends State<LoginPage> {
     required IconData icon,
     Widget? suffix,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return InputDecoration(
       labelText: label,
       prefixIcon: Icon(icon),
       suffixIcon: suffix,
       filled: true,
-      fillColor: const Color(0xFFF3F8FE),
+      fillColor: colorScheme.surfaceContainerHighest,
       contentPadding: const EdgeInsets.symmetric(
         horizontal: 16,
         vertical: 17,
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(
-          color: Color(0xFFDCE9FD),
+        borderSide: BorderSide(
+          color: colorScheme.outlineVariant,
         ),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(
-          color: _primary,
+        borderSide: BorderSide(
+          color: colorScheme.primary,
           width: 1.7,
         ),
       ),
