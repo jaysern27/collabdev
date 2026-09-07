@@ -8,6 +8,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../view_model/settings/app_settings_controller.dart';
+
 class EditProfilePage extends StatefulWidget {
   const EditProfilePage({
     super.key,
@@ -28,6 +30,9 @@ class _EditProfilePageState
 
   final ImagePicker _imagePicker =
   ImagePicker();
+
+  final AppSettingsController _settings =
+      AppSettingsController.instance;
 
   final TextEditingController
   _nameController =
@@ -52,11 +57,19 @@ class _EditProfilePageState
   @override
   void initState() {
     super.initState();
+    _settings.addListener(_onSettingsChanged);
     _loadProfile();
+  }
+
+  void _onSettingsChanged() {
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   @override
   void dispose() {
+    _settings.removeListener(_onSettingsChanged);
     _nameController.dispose();
     _phoneController.dispose();
     super.dispose();
@@ -127,7 +140,11 @@ class _EditProfilePageState
       });
 
       _showMessage(
-        'Profile details could not be fully loaded.',
+        _settings.text(
+          en: 'Profile details could not be fully loaded.',
+          zh: '无法完整加载个人资料。',
+          ms: 'Maklumat profil tidak dapat dimuatkan sepenuhnya.',
+        ),
       );
     }
   }
@@ -150,7 +167,11 @@ class _EditProfilePageState
       });
     } catch (_) {
       _showMessage(
-        'Unable to open the photo gallery.',
+        _settings.text(
+          en: 'Unable to open the photo gallery.',
+          zh: '无法打开照片图库。',
+          ms: 'Tidak dapat membuka galeri foto.',
+        ),
       );
     }
   }
@@ -191,7 +212,11 @@ class _EditProfilePageState
 
     if (user == null) {
       _showMessage(
-        'Please sign in again.',
+        _settings.text(
+          en: 'Please sign in again.',
+          zh: '请重新登录。',
+          ms: 'Sila log masuk semula.',
+        ),
       );
       return;
     }
@@ -204,7 +229,11 @@ class _EditProfilePageState
 
     if (name.isEmpty) {
       _showMessage(
-        'Please enter your full name.',
+        _settings.text(
+          en: 'Please enter your full name.',
+          zh: '请输入您的全名。',
+          ms: 'Sila masukkan nama penuh anda.',
+        ),
       );
       return;
     }
@@ -212,7 +241,11 @@ class _EditProfilePageState
     if (phone.isNotEmpty &&
         phone.length < 8) {
       _showMessage(
-        'Please enter a valid phone number.',
+        _settings.text(
+          en: 'Please enter a valid phone number.',
+          zh: '请输入有效的电话号码。',
+          ms: 'Sila masukkan nombor telefon yang sah.',
+        ),
       );
       return;
     }
@@ -261,12 +294,19 @@ class _EditProfilePageState
     } on FirebaseException catch (e) {
       _showMessage(
         e.message ??
-            'Unable to save profile.',
+            _settings.text(
+              en: 'Unable to save profile.',
+              zh: '无法保存个人资料。',
+              ms: 'Tidak dapat menyimpan profil.',
+            ),
       );
     } catch (e) {
       _showMessage(
-        'Unable to save profile. '
-            'Please try again.',
+        _settings.text(
+          en: 'Unable to save profile. Please try again.',
+          zh: '无法保存个人资料，请再试一次。',
+          ms: 'Tidak dapat menyimpan profil. Sila cuba lagi.',
+        ),
       );
     } finally {
       if (mounted) {
@@ -327,8 +367,12 @@ class _EditProfilePageState
       _background,
       appBar: AppBar(
         title:
-        const Text(
-          'Edit Profile',
+        Text(
+          _settings.text(
+            en: 'Edit Profile',
+            zh: '编辑个人资料',
+            ms: 'Edit Profil',
+          ),
           style:
           TextStyle(
             fontWeight:
@@ -415,8 +459,12 @@ class _EditProfilePageState
                       2.3,
                     ),
                   )
-                      : const Text(
-                    'Save Profile',
+                      : Text(
+                    _settings.text(
+                      en: 'Save Profile',
+                      zh: '保存个人资料',
+                      ms: 'Simpan Profil',
+                    ),
                     style:
                     TextStyle(
                       fontWeight:
@@ -547,8 +595,12 @@ class _EditProfilePageState
             Icons.photo_library_outlined,
           ),
           label:
-          const Text(
-            'Choose Profile Photo',
+          Text(
+            _settings.text(
+              en: 'Choose Profile Photo',
+              zh: '选择个人资料照片',
+              ms: 'Pilih Foto Profil',
+            ),
           ),
         ),
       ],
@@ -584,8 +636,12 @@ class _EditProfilePageState
         crossAxisAlignment:
         CrossAxisAlignment.stretch,
         children: [
-          const Text(
-            'Personal Details',
+          Text(
+            _settings.text(
+              en: 'Personal Details',
+              zh: '个人资料',
+              ms: 'Maklumat Peribadi',
+            ),
             style:
             TextStyle(
               fontSize:
@@ -611,7 +667,11 @@ class _EditProfilePageState
             decoration:
             _inputDecoration(
               label:
-              'Full Name',
+              _settings.text(
+                en: 'Full Name',
+                zh: '全名',
+                ms: 'Nama Penuh',
+              ),
               icon:
               Icons.person_outline_rounded,
             ),
@@ -629,7 +689,11 @@ class _EditProfilePageState
             decoration:
             _inputDecoration(
               label:
-              'Phone Number',
+              _settings.text(
+                en: 'Phone Number',
+                zh: '电话号码',
+                ms: 'Nombor Telefon',
+              ),
               icon:
               Icons.phone_outlined,
             ),
@@ -649,12 +713,20 @@ class _EditProfilePageState
             decoration:
             _inputDecoration(
               label:
-              'Email Address',
+              _settings.text(
+                en: 'Email Address',
+                zh: '电子邮件地址',
+                ms: 'Alamat E-mel',
+              ),
               icon:
               Icons.mail_outline_rounded,
             ).copyWith(
               helperText:
-              'Email is managed by your login account.',
+              _settings.text(
+                en: 'Email is managed by your login account.',
+                zh: '电子邮件由您的登录账户管理。',
+                ms: 'E-mel diuruskan oleh akaun log masuk anda.',
+              ),
             ),
           ),
         ],
@@ -680,7 +752,7 @@ class _EditProfilePageState
         ),
       ),
       child:
-      const Row(
+      Row(
         crossAxisAlignment:
         CrossAxisAlignment.start,
         children: [
@@ -698,8 +770,13 @@ class _EditProfilePageState
           Expanded(
             child:
             Text(
-              'Your profile information is used for your CultureGuide account. '
-                  'Your phone number is not shown on public etiquette reports.',
+              _settings.text(
+                en: 'Your profile information is used for your CultureGuide account. '
+                    'Your phone number is not shown on public etiquette reports.',
+                zh: '您的个人资料信息用于您的 CultureGuide 账户。您的电话号码不会显示在公开的礼仪报告中。',
+                ms: 'Maklumat profil anda digunakan untuk akaun CultureGuide anda. '
+                    'Nombor telefon anda tidak dipaparkan pada laporan etika awam.',
+              ),
               style:
               TextStyle(
                 color:

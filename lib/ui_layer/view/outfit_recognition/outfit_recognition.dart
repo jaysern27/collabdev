@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../view_model/outfit_recognition/outfit_recognition_view_model.dart';
+import '../../view_model/settings/app_settings_controller.dart';
 
 class OutfitRecognitionView extends StatefulWidget {
   const OutfitRecognitionView({super.key});
@@ -15,11 +16,15 @@ class _OutfitRecognitionViewState
   final OutfitRecognitionViewModel _viewModel =
   OutfitRecognitionViewModel();
 
+  final AppSettingsController _settings =
+      AppSettingsController.instance;
+
   @override
   void initState() {
     super.initState();
 
     _viewModel.addListener(_onViewModelChanged);
+    _settings.addListener(_onSettingsChanged);
 
     _initializeModule();
   }
@@ -47,11 +52,18 @@ class _OutfitRecognitionViewState
     }
   }
 
+  void _onSettingsChanged() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
   @override
   void dispose() {
     _viewModel.removeListener(
       _onViewModelChanged,
     );
+    _settings.removeListener(_onSettingsChanged);
 
     _viewModel.dispose();
 
@@ -92,8 +104,12 @@ class _OutfitRecognitionViewState
         ),
         elevation: 0,
         centerTitle: true,
-        title: const Text(
-          'Check Your Outfit',
+        title: Text(
+          _settings.text(
+            en: 'Check Your Outfit',
+            zh: '检查您的穿搭',
+            ms: 'Periksa Pakaian Anda',
+          ),
           style: TextStyle(
             fontWeight: FontWeight.bold,
           ),
@@ -137,7 +153,7 @@ class _OutfitRecognitionViewState
                 const SizedBox(
                   height: 18,
                 ),
-                const Center(
+                Center(
                   child: Column(
                     children: [
                       CircularProgressIndicator(),
@@ -147,7 +163,7 @@ class _OutfitRecognitionViewState
                       ),
 
                       Text(
-                        'Analysing your outfit...',
+                        _settings.text(en: 'Analysing your outfit...', zh: '正在分析您的穿搭……', ms: 'Menganalisis pakaian anda...'),
                       ),
                     ],
                   ),
@@ -205,7 +221,7 @@ class _OutfitRecognitionViewState
           22,
         ),
       ),
-      child: const Column(
+      child: Column(
         crossAxisAlignment:
         CrossAxisAlignment.start,
         children: [
@@ -220,7 +236,11 @@ class _OutfitRecognitionViewState
           ),
 
           Text(
-            'Dress with confidence',
+            _settings.text(
+              en: 'Dress with confidence',
+              zh: '自信地穿着',
+              ms: 'Berpakaian dengan yakin',
+            ),
             style: TextStyle(
               color: Colors.white,
               fontSize: 21,
@@ -233,9 +253,11 @@ class _OutfitRecognitionViewState
           ),
 
           Text(
-            'Upload or take a photo of your outfit. '
-                'CultureGuide will analyse visible clothing '
-                'attributes and provide an advisory result.',
+            _settings.text(
+              en: 'Upload or take a photo of your outfit. CultureGuide will analyse visible clothing attributes and provide an advisory result.',
+              zh: '上传或拍摄您的穿搭照片。CultureGuide 会分析可见的服装特征，并提供参考结果。',
+              ms: 'Muat naik atau ambil foto pakaian anda. CultureGuide akan menganalisis ciri pakaian yang kelihatan dan memberikan hasil sebagai panduan.',
+            ),
             style: TextStyle(
               color: Colors.white,
               height: 1.4,
@@ -283,13 +305,17 @@ class _OutfitRecognitionViewState
             width: 4,
           ),
 
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment:
               CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Photo Analysis Consent',
+                  _settings.text(
+                    en: 'Photo Analysis Consent',
+                    zh: '照片分析同意',
+                    ms: 'Persetujuan Analisis Foto',
+                  ),
                   style: TextStyle(
                     fontWeight:
                     FontWeight.bold,
@@ -302,9 +328,14 @@ class _OutfitRecognitionViewState
                 ),
 
                 Text(
-                  'I consent to local AI analysis of my '
-                      'outfit photo. The image will not be '
-                      'uploaded or stored by default.',
+                  _settings.text(
+                    en: 'I consent to local AI analysis of my '
+                        'outfit photo. The image will not be '
+                        'uploaded or stored by default.',
+                    zh: '我同意使用本地 AI 分析我的穿搭照片。图片默认不会上传或储存。',
+                    ms: 'Saya bersetuju dengan analisis AI tempatan terhadap foto pakaian saya. '
+                        'Imej tidak akan dimuat naik atau disimpan secara lalai.',
+                  ),
                   style: TextStyle(
                     fontSize: 12,
                     height: 1.4,
@@ -326,8 +357,12 @@ class _OutfitRecognitionViewState
       crossAxisAlignment:
       CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Your Outfit',
+        Text(
+          _settings.text(
+            en: 'Your Outfit',
+            zh: '您的穿搭',
+            ms: 'Pakaian Anda',
+          ),
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -361,8 +396,12 @@ class _OutfitRecognitionViewState
                 icon: const Icon(
                   Icons.camera_alt_outlined,
                 ),
-                label: const Text(
-                  'Take Photo',
+                label: Text(
+                  _settings.text(
+                    en: 'Take Photo',
+                    zh: '拍照',
+                    ms: 'Ambil Foto',
+                  ),
                 ),
                 style:
                 OutlinedButton.styleFrom(
@@ -403,8 +442,12 @@ class _OutfitRecognitionViewState
                 icon: const Icon(
                   Icons.photo_library_outlined,
                 ),
-                label: const Text(
-                  'Upload Photo',
+                label: Text(
+                  _settings.text(
+                    en: 'Upload Photo',
+                    zh: '上传照片',
+                    ms: 'Muat Naik Foto',
+                  ),
                 ),
                 style:
                 ElevatedButton.styleFrom(
@@ -458,7 +501,7 @@ class _OutfitRecognitionViewState
           ),
         ),
       ),
-      child: const Column(
+      child: Column(
         mainAxisAlignment:
         MainAxisAlignment.center,
         children: [
@@ -475,7 +518,11 @@ class _OutfitRecognitionViewState
           ),
 
           Text(
-            'No outfit photo selected',
+            _settings.text(
+              en: 'No outfit photo selected',
+              zh: '尚未选择穿搭照片',
+              ms: 'Tiada foto pakaian dipilih',
+            ),
             style: TextStyle(
               fontWeight: FontWeight.bold,
             ),
@@ -490,8 +537,11 @@ class _OutfitRecognitionViewState
               horizontal: 20,
             ),
             child: Text(
-              'Make sure your full outfit, head, shoulders, '
-                  'arms and legs are clearly visible.',
+              _settings.text(
+                en: 'Make sure your full outfit, head, shoulders, arms and legs are clearly visible.',
+                zh: '请确保您的完整穿搭、头部、肩膀、手臂和腿部清晰可见。',
+                ms: 'Pastikan keseluruhan pakaian, kepala, bahu, lengan dan kaki anda kelihatan dengan jelas.',
+              ),
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: Color(
@@ -559,8 +609,8 @@ class _OutfitRecognitionViewState
         ),
         label: Text(
           _viewModel.isModelReady
-              ? 'Analyse Outfit'
-              : 'Loading AI Models...',
+              ? _settings.text(en: 'Analyse Outfit', zh: '分析穿搭', ms: 'Analisis Pakaian')
+              : _settings.text(en: 'Loading AI Models...', zh: '正在加载 AI 模型……', ms: 'Memuatkan Model AI...'),
         ),
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(
@@ -619,7 +669,7 @@ class _OutfitRecognitionViewState
         crossAxisAlignment:
         CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
               Icon(
                 Icons.auto_awesome,
@@ -634,7 +684,7 @@ class _OutfitRecognitionViewState
               ),
 
               Text(
-                'Outfit Analysis',
+                _settings.text(en: 'Outfit Analysis', zh: '穿搭分析', ms: 'Analisis Pakaian'),
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight:
@@ -653,7 +703,7 @@ class _OutfitRecognitionViewState
 
           if (sleeve != null)
             _buildAttributeResult(
-              title: 'Sleeve Coverage',
+              title: _settings.text(en: 'Sleeve Coverage', zh: '袖子覆盖程度', ms: 'Liputan Lengan'),
               value:
               _formatSleevePrediction(
                 sleeve.value,
@@ -673,7 +723,7 @@ class _OutfitRecognitionViewState
           if (lowerBody != null)
             _buildAttributeResult(
               title:
-              'Lower-Body Length',
+              _settings.text(en: 'Lower-Body Length', zh: '下装长度', ms: 'Panjang Bahagian Bawah'),
               value:
               _formatLowerBodyPrediction(
                 lowerBody.value,
@@ -693,7 +743,7 @@ class _OutfitRecognitionViewState
           if (shoulder != null)
             _buildAttributeResult(
               title:
-              'Shoulder Coverage',
+              _settings.text(en: 'Shoulder Coverage', zh: '肩部覆盖程度', ms: 'Liputan Bahu'),
               value:
               _formatShoulderPrediction(
                 shoulder.value,
@@ -713,7 +763,7 @@ class _OutfitRecognitionViewState
           if (headwear != null)
             _buildAttributeResult(
               title:
-              'Headwear Detection',
+              _settings.text(en: 'Headwear Detection', zh: '头饰检测', ms: 'Pengesanan Penutup Kepala'),
               value:
               _formatHeadwearPrediction(
                 headwear.value,
@@ -741,11 +791,18 @@ class _OutfitRecognitionViewState
                 14,
               ),
             ),
-            child: const Text(
-              'AI results show the highest-scoring prediction '
-                  'from each clothing classifier.\n\n'
-                  'The confidence percentage shows how strongly '
-                  'the model preferred that result.',
+            child: Text(
+              _settings.text(
+                en: 'AI results show the highest-scoring prediction '
+                    'from each clothing classifier.\n\n'
+                    'The confidence percentage shows how strongly '
+                    'the model preferred that result.',
+                zh: 'AI 结果显示每个服装分类器得分最高的预测。\n\n'
+                    '置信度百分比表示模型对该结果的偏好程度。',
+                ms: 'Hasil AI menunjukkan ramalan dengan skor tertinggi '
+                    'daripada setiap pengelas pakaian.\n\n'
+                    'Peratus keyakinan menunjukkan sejauh mana model memilih keputusan tersebut.',
+              ),
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 12,
@@ -782,14 +839,18 @@ class _OutfitRecognitionViewState
             ),
           ),
         ),
-        child: const Column(
+        child: Column(
           children: [
             CircularProgressIndicator(),
             SizedBox(
               height: 12,
             ),
             Text(
-              'Finding nearby places that match your outfit...',
+              _settings.text(
+                en: 'Finding nearby places that match your outfit...',
+                zh: '正在寻找与您的穿搭相符的附近地点……',
+                ms: 'Mencari tempat berdekatan yang sesuai dengan pakaian anda...',
+              ),
               textAlign: TextAlign.center,
             ),
           ],
@@ -829,7 +890,7 @@ class _OutfitRecognitionViewState
         crossAxisAlignment:
         CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
               Icon(
                 Icons.place_outlined,
@@ -843,7 +904,7 @@ class _OutfitRecognitionViewState
               ),
               Expanded(
                 child: Text(
-                  'Places That Match Your Outfit',
+                  _settings.text(en: 'Places That Match Your Outfit', zh: '与您的穿搭相符的地点', ms: 'Tempat Yang Sesuai Dengan Pakaian Anda'),
                   style: TextStyle(
                     fontSize: 19,
                     fontWeight:
@@ -863,8 +924,11 @@ class _OutfitRecognitionViewState
 
           Text(
             message ??
-                'Nearby cultural attractions are checked against '
-                    'your detected outfit.',
+                _settings.text(
+                  en: 'Nearby cultural attractions are checked against your detected outfit.',
+                  zh: '附近的文化景点会根据您检测到的穿搭进行匹配。',
+                  ms: 'Tarikan budaya berdekatan disemak berdasarkan pakaian yang dikesan.',
+                ),
             style: const TextStyle(
               fontSize: 13,
               height: 1.4,
@@ -892,7 +956,7 @@ class _OutfitRecognitionViewState
                   12,
                 ),
               ),
-              child: const Row(
+              child: Row(
                 crossAxisAlignment:
                 CrossAxisAlignment.start,
                 children: [
@@ -908,8 +972,11 @@ class _OutfitRecognitionViewState
                   ),
                   Expanded(
                     child: Text(
-                      'Current GPS location was unavailable, so '
-                          'the Kuala Lumpur pilot area was used.',
+                      _settings.text(
+                        en: 'Current GPS location was unavailable, so the Kuala Lumpur pilot area was used.',
+                        zh: '无法获取当前 GPS 位置，因此使用了吉隆坡试点区域。',
+                        ms: 'Lokasi GPS semasa tidak tersedia, jadi kawasan perintis Kuala Lumpur digunakan.',
+                      ),
                       style: TextStyle(
                         fontSize: 12,
                         height: 1.4,
@@ -959,8 +1026,8 @@ class _OutfitRecognitionViewState
               icon: const Icon(
                 Icons.refresh,
               ),
-              label: const Text(
-                'Refresh Nearby Matches',
+              label: Text(
+                _settings.text(en: 'Refresh Nearby Matches', zh: '刷新附近匹配', ms: 'Muat Semula Padanan Berdekatan'),
               ),
               style: OutlinedButton.styleFrom(
                 foregroundColor: const Color(
@@ -988,24 +1055,24 @@ class _OutfitRecognitionViewState
       Map<String, dynamic> attraction,
       ) {
     final name =
-        attraction['name']
-            ?.toString()
-            .trim();
+    attraction['name']
+        ?.toString()
+        .trim();
 
     final category =
-        attraction['category']
-            ?.toString()
-            .trim();
+    attraction['category']
+        ?.toString()
+        .trim();
 
     final distanceText =
-        attraction['distanceText']
-            ?.toString()
-            .trim();
+    attraction['distanceText']
+        ?.toString()
+        .trim();
 
     final address =
-        attraction['address']
-            ?.toString()
-            .trim();
+    attraction['address']
+        ?.toString()
+        .trim();
 
     return Row(
       crossAxisAlignment:
@@ -1041,7 +1108,7 @@ class _OutfitRecognitionViewState
             children: [
               Text(
                 name == null || name.isEmpty
-                    ? 'Cultural Attraction'
+                    ? _settings.text(en: 'Cultural Attraction', zh: '文化景点', ms: 'Tarikan Budaya')
                     : name,
                 style: const TextStyle(
                   fontSize: 16,
@@ -1125,7 +1192,7 @@ class _OutfitRecognitionViewState
                 height: 7,
               ),
 
-              const Row(
+              Row(
                 children: [
                   Icon(
                     Icons.check_circle_outline,
@@ -1139,8 +1206,11 @@ class _OutfitRecognitionViewState
                   ),
                   Expanded(
                     child: Text(
-                      'Your outfit matches this destination\'s '
-                          'structured dress-code rules.',
+                      _settings.text(
+                        en: 'Your outfit matches this destination\'s structured dress-code rules.',
+                        zh: '您的穿搭符合此目的地的规定着装要求。',
+                        ms: 'Pakaian anda mematuhi peraturan kod pakaian berstruktur destinasi ini.',
+                      ),
                       style: TextStyle(
                         fontSize: 12,
                         height: 1.35,
@@ -1234,8 +1304,11 @@ class _OutfitRecognitionViewState
               ),
 
               Text(
-                'Confidence: '
-                    '${(confidence * 100).toStringAsFixed(1)}%',
+                _settings.text(
+                  en: 'Confidence: ${(confidence * 100).toStringAsFixed(1)}%',
+                  zh: '置信度：${(confidence * 100).toStringAsFixed(1)}%',
+                  ms: 'Keyakinan: ${(confidence * 100).toStringAsFixed(1)}%',
+                ),
                 style: const TextStyle(
                   fontSize: 12,
                   color: Color(
@@ -1291,13 +1364,13 @@ class _OutfitRecognitionViewState
       ) {
     switch (value) {
       case 'long':
-        return 'Long';
+        return _settings.text(en: 'Long', zh: '长', ms: 'Panjang');
 
       case 'short':
-        return 'Short';
+        return _settings.text(en: 'Short', zh: '短', ms: 'Pendek');
 
       case 'sleeveless':
-        return 'Sleeveless';
+        return _settings.text(en: 'Sleeveless', zh: '无袖', ms: 'Tanpa Lengan');
 
       default:
         return value;
@@ -1309,13 +1382,13 @@ class _OutfitRecognitionViewState
       ) {
     switch (value) {
       case 'short':
-        return 'Short';
+        return _settings.text(en: 'Short', zh: '短', ms: 'Pendek');
 
       case 'medium':
-        return 'Medium';
+        return _settings.text(en: 'Medium', zh: '中等', ms: 'Sederhana');
 
       case 'long':
-        return 'Long';
+        return _settings.text(en: 'Long', zh: '长', ms: 'Panjang');
 
       default:
         return value;
@@ -1327,10 +1400,10 @@ class _OutfitRecognitionViewState
       ) {
     switch (value) {
       case 'covered':
-        return 'Covered';
+        return _settings.text(en: 'Covered', zh: '有覆盖', ms: 'Dilindungi');
 
       case 'uncovered':
-        return 'Uncovered';
+        return _settings.text(en: 'Uncovered', zh: '未覆盖', ms: 'Tidak Dilindungi');
 
       default:
         return value;
@@ -1342,10 +1415,10 @@ class _OutfitRecognitionViewState
       ) {
     switch (value) {
       case 'headwear':
-        return 'Headwear Detected';
+        return _settings.text(en: 'Headwear Detected', zh: '检测到头饰', ms: 'Penutup Kepala Dikesan');
 
       case 'no_headwear':
-        return 'No Headwear Detected';
+        return _settings.text(en: 'No Headwear Detected', zh: '未检测到头饰', ms: 'Tiada Penutup Kepala Dikesan');
 
       default:
         return value;
