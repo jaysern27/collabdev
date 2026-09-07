@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../data_layer/model/services/firebase_authentication/firebase_authentication_service.dart';
 import '../../../data_layer/model/services/firebase_authentication/user_role_service.dart';
+import '../../view_model/settings/app_settings_controller.dart';
 
 import 'login_page.dart';
 
@@ -25,12 +26,27 @@ class _RegisterPageState extends State<RegisterPage> {
   FirebaseAuthenticationService();
   final UserRoleService roleService = UserRoleService();
 
+  final AppSettingsController _settings =
+      AppSettingsController.instance;
+
   bool loading = false;
   bool obscurePassword = true;
   bool obscureConfirmPassword = true;
   bool acceptedGuidelines = false;
 
   static const Color _primary = Color(0xFF2F6FED);
+
+  String _t({
+    required String en,
+    required String zh,
+    required String ms,
+  }) {
+    return _settings.text(
+      en: en,
+      zh: zh,
+      ms: ms,
+    );
+  }
 
   @override
   void dispose() {
@@ -43,7 +59,11 @@ class _RegisterPageState extends State<RegisterPage> {
 
   String? _validateName(String? value) {
     if (value == null || value.trim().isEmpty) {
-      return 'Please enter your full name.';
+      return _t(
+        en: 'Please enter your full name.',
+        zh: '请输入您的姓名。',
+        ms: 'Sila masukkan nama penuh anda.',
+      );
     }
 
     return null;
@@ -53,7 +73,11 @@ class _RegisterPageState extends State<RegisterPage> {
     final email = value?.trim() ?? '';
 
     if (email.isEmpty) {
-      return 'Please enter your email address.';
+      return _t(
+        en: 'Please enter your email address.',
+        zh: '请输入您的电子邮箱。',
+        ms: 'Sila masukkan alamat e-mel anda.',
+      );
     }
 
     final emailPattern = RegExp(
@@ -61,7 +85,11 @@ class _RegisterPageState extends State<RegisterPage> {
     );
 
     if (!emailPattern.hasMatch(email)) {
-      return 'Enter a valid email, for example name@email.com.';
+      return _t(
+        en: 'Enter a valid email, for example name@email.com.',
+        zh: '请输入有效的电子邮箱，例如 name@email.com。',
+        ms: 'Masukkan e-mel yang sah, contohnya name@email.com.',
+      );
     }
 
     return null;
@@ -71,27 +99,51 @@ class _RegisterPageState extends State<RegisterPage> {
     final password = value ?? '';
 
     if (password.isEmpty) {
-      return 'Please enter a password.';
+      return _t(
+        en: 'Please enter a password.',
+        zh: '请输入密码。',
+        ms: 'Sila masukkan kata laluan.',
+      );
     }
 
     if (password.length < 8) {
-      return 'Password must be at least 8 characters.';
+      return _t(
+        en: 'Password must be at least 8 characters.',
+        zh: '密码必须至少包含 8 个字符。',
+        ms: 'Kata laluan mestilah sekurang-kurangnya 8 aksara.',
+      );
     }
 
     if (!RegExp(r'[A-Z]').hasMatch(password)) {
-      return 'Password must contain at least one uppercase letter.';
+      return _t(
+        en: 'Password must contain at least one uppercase letter.',
+        zh: '密码必须至少包含一个大写字母。',
+        ms: 'Kata laluan mesti mengandungi sekurang-kurangnya satu huruf besar.',
+      );
     }
 
     if (!RegExp(r'[a-z]').hasMatch(password)) {
-      return 'Password must contain at least one lowercase letter.';
+      return _t(
+        en: 'Password must contain at least one lowercase letter.',
+        zh: '密码必须至少包含一个小写字母。',
+        ms: 'Kata laluan mesti mengandungi sekurang-kurangnya satu huruf kecil.',
+      );
     }
 
     if (!RegExp(r'[0-9]').hasMatch(password)) {
-      return 'Password must contain at least one number.';
+      return _t(
+        en: 'Password must contain at least one number.',
+        zh: '密码必须至少包含一个数字。',
+        ms: 'Kata laluan mesti mengandungi sekurang-kurangnya satu nombor.',
+      );
     }
 
     if (!RegExp(r'[!@#$%^&*(),.?":{}|<>_\-+=/\\]').hasMatch(password)) {
-      return 'Password must contain at least one special character.';
+      return _t(
+        en: 'Password must contain at least one special character.',
+        zh: '密码必须至少包含一个特殊字符。',
+        ms: 'Kata laluan mesti mengandungi sekurang-kurangnya satu aksara khas.',
+      );
     }
 
     return null;
@@ -99,11 +151,19 @@ class _RegisterPageState extends State<RegisterPage> {
 
   String? _validateConfirmPassword(String? value) {
     if (value == null || value.isEmpty) {
-      return 'Please confirm your password.';
+      return _t(
+        en: 'Please confirm your password.',
+        zh: '请确认您的密码。',
+        ms: 'Sila sahkan kata laluan anda.',
+      );
     }
 
     if (value != passwordController.text) {
-      return 'Passwords do not match.';
+      return _t(
+        en: 'Passwords do not match.',
+        zh: '两次输入的密码不一致。',
+        ms: 'Kata laluan tidak sepadan.',
+      );
     }
 
     return null;
@@ -118,7 +178,11 @@ class _RegisterPageState extends State<RegisterPage> {
 
     if (!acceptedGuidelines) {
       _showMessage(
-        'Please confirm that you will use CultureGuide respectfully.',
+        _t(
+          en: 'Please confirm that you will use CultureGuide respectfully.',
+          zh: '请确认您会以尊重文化的方式使用 CultureGuide。',
+          ms: 'Sila sahkan bahawa anda akan menggunakan CultureGuide dengan penuh hormat.',
+        ),
       );
       return;
     }
@@ -138,7 +202,13 @@ class _RegisterPageState extends State<RegisterPage> {
       final user = result.user;
 
       if (user == null) {
-        throw Exception('Unable to create account.');
+        throw Exception(
+          _t(
+            en: 'Unable to create account.',
+            zh: '无法创建账户。',
+            ms: 'Tidak dapat mencipta akaun.',
+          ),
+        );
       }
 
       await user.updateDisplayName(name);
@@ -155,7 +225,13 @@ class _RegisterPageState extends State<RegisterPage> {
 
       if (!mounted) return;
 
-      _showMessage('Account created successfully. Please sign in.');
+      _showMessage(
+        _t(
+          en: 'Account created successfully. Please sign in.',
+          zh: '账户创建成功。请登录。',
+          ms: 'Akaun berjaya dicipta. Sila log masuk.',
+        ),
+      );
 
       Navigator.pushAndRemoveUntil(
         context,
@@ -195,7 +271,17 @@ class _RegisterPageState extends State<RegisterPage> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
-        title: const Text('Create Account'),
+        title: Text(
+          _t(
+            en: 'Create Account',
+            zh: '创建账户',
+            ms: 'Cipta Akaun',
+          ),
+        ),
+        actions: [
+          _buildLanguageMenu(),
+          const SizedBox(width: 8),
+        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -213,6 +299,40 @@ class _RegisterPageState extends State<RegisterPage> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildLanguageMenu() {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return PopupMenuButton<AppLanguage>(
+      initialValue: _settings.language,
+      tooltip: _t(
+        en: 'Change language',
+        zh: '更改语言',
+        ms: 'Tukar bahasa',
+      ),
+      onSelected: (language) {
+        _settings.setLanguage(language);
+      },
+      itemBuilder: (context) => const [
+        PopupMenuItem(
+          value: AppLanguage.english,
+          child: Text('English'),
+        ),
+        PopupMenuItem(
+          value: AppLanguage.chinese,
+          child: Text('中文'),
+        ),
+        PopupMenuItem(
+          value: AppLanguage.malay,
+          child: Text('Bahasa Melayu'),
+        ),
+      ],
+      icon: Icon(
+        Icons.language_rounded,
+        color: colorScheme.primary,
       ),
     );
   }
@@ -250,7 +370,11 @@ class _RegisterPageState extends State<RegisterPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Travel with respect',
+                  _t(
+                    en: 'Travel with respect',
+                    zh: '尊重文化，文明出行',
+                    ms: 'Mengembara dengan hormat',
+                  ),
                   style: TextStyle(
                     fontWeight: FontWeight.w800,
                     fontSize: 20,
@@ -259,8 +383,11 @@ class _RegisterPageState extends State<RegisterPage> {
                 ),
                 const SizedBox(height: 5),
                 Text(
-                  'Create your CultureGuide account to save etiquette guidance, '
-                      'check appropriate outfits and submit etiquette reports.',
+                  _t(
+                    en: 'Create your CultureGuide account to save etiquette guidance, check appropriate outfits and submit etiquette reports.',
+                    zh: '创建 CultureGuide 账户，以保存礼仪指南、检查合适的穿搭并提交礼仪报告。',
+                    ms: 'Cipta akaun CultureGuide untuk menyimpan panduan etika, menyemak pakaian yang sesuai dan menghantar laporan etika.',
+                  ),
                   style: TextStyle(
                     color: colorScheme.onSurfaceVariant,
                     height: 1.45,
@@ -302,7 +429,11 @@ class _RegisterPageState extends State<RegisterPage> {
             textInputAction: TextInputAction.next,
             validator: _validateName,
             decoration: _inputDecoration(
-              label: 'Full name',
+              label: _t(
+                en: 'Full name',
+                zh: '姓名',
+                ms: 'Nama penuh',
+              ),
               icon: Icons.person_outline_rounded,
             ),
           ),
@@ -314,9 +445,17 @@ class _RegisterPageState extends State<RegisterPage> {
             autocorrect: false,
             validator: _validateEmail,
             decoration: _inputDecoration(
-              label: 'Email address',
+              label: _t(
+                en: 'Email address',
+                zh: '电子邮箱',
+                ms: 'Alamat e-mel',
+              ),
               icon: Icons.mail_outline_rounded,
-              helperText: 'Example: name@email.com',
+              helperText: _t(
+                en: 'Example: name@email.com',
+                zh: '示例：name@email.com',
+                ms: 'Contoh: name@email.com',
+              ),
             ),
           ),
           const SizedBox(height: 14),
@@ -333,11 +472,29 @@ class _RegisterPageState extends State<RegisterPage> {
               }
             },
             decoration: _inputDecoration(
-              label: 'Password',
+              label: _t(
+                en: 'Password',
+                zh: '密码',
+                ms: 'Kata laluan',
+              ),
               icon: Icons.lock_outline_rounded,
-              helperText:
-              '8+ characters • uppercase • lowercase • number • special character',
+              helperText: _t(
+                en: '8+ characters • uppercase • lowercase • number • special character',
+                zh: '至少 8 个字符 • 大写字母 • 小写字母 • 数字 • 特殊字符',
+                ms: '8+ aksara • huruf besar • huruf kecil • nombor • aksara khas',
+              ),
               suffix: IconButton(
+                tooltip: obscurePassword
+                    ? _t(
+                  en: 'Show password',
+                  zh: '显示密码',
+                  ms: 'Tunjukkan kata laluan',
+                )
+                    : _t(
+                  en: 'Hide password',
+                  zh: '隐藏密码',
+                  ms: 'Sembunyikan kata laluan',
+                ),
                 onPressed: () {
                   setState(() {
                     obscurePassword = !obscurePassword;
@@ -363,9 +520,24 @@ class _RegisterPageState extends State<RegisterPage> {
               if (!loading) register();
             },
             decoration: _inputDecoration(
-              label: 'Confirm password',
+              label: _t(
+                en: 'Confirm password',
+                zh: '确认密码',
+                ms: 'Sahkan kata laluan',
+              ),
               icon: Icons.verified_user_outlined,
               suffix: IconButton(
+                tooltip: obscureConfirmPassword
+                    ? _t(
+                  en: 'Show password',
+                  zh: '显示密码',
+                  ms: 'Tunjukkan kata laluan',
+                )
+                    : _t(
+                  en: 'Hide password',
+                  zh: '隐藏密码',
+                  ms: 'Sembunyikan kata laluan',
+                ),
                 onPressed: () {
                   setState(() {
                     obscureConfirmPassword = !obscureConfirmPassword;
@@ -392,9 +564,13 @@ class _RegisterPageState extends State<RegisterPage> {
             controlAffinity: ListTileControlAffinity.leading,
             contentPadding: EdgeInsets.zero,
             dense: true,
-            title: const Text(
-              'I will use cultural and etiquette information respectfully.',
-              style: TextStyle(
+            title: Text(
+              _t(
+                en: 'I will use cultural and etiquette information respectfully.',
+                zh: '我会以尊重文化的方式使用文化和礼仪信息。',
+                ms: 'Saya akan menggunakan maklumat budaya dan etika dengan penuh hormat.',
+              ),
+              style: const TextStyle(
                 fontSize: 13.5,
                 height: 1.35,
               ),
@@ -421,9 +597,13 @@ class _RegisterPageState extends State<RegisterPage> {
                   strokeWidth: 2.3,
                 ),
               )
-                  : const Text(
-                'Create User Account',
-                style: TextStyle(
+                  : Text(
+                _t(
+                  en: 'Create User Account',
+                  zh: '创建用户账户',
+                  ms: 'Cipta Akaun Pengguna',
+                ),
+                style: const TextStyle(
                   fontWeight: FontWeight.w700,
                   fontSize: 15.5,
                 ),
@@ -432,7 +612,11 @@ class _RegisterPageState extends State<RegisterPage> {
           ),
           const SizedBox(height: 14),
           Text(
-            'Administrator accounts cannot be registered here.',
+            _t(
+              en: 'Administrator accounts cannot be registered here.',
+              zh: '管理员账户无法在此注册。',
+              ms: 'Akaun pentadbir tidak boleh didaftarkan di sini.',
+            ),
             textAlign: TextAlign.center,
             style: TextStyle(
               color: colorScheme.onSurfaceVariant,

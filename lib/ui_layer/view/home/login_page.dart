@@ -1,8 +1,9 @@
-  import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 import '../../../data_layer/model/services/firebase_authentication/firebase_authentication_service.dart';
 import '../../../data_layer/model/services/firebase_authentication/user_role_service.dart';
 import '../../../data_layer/model/services/geofence_alert_monitor/geofence_alert_monitor_service.dart';
+import '../../view_model/settings/app_settings_controller.dart';
 
 import 'admin_login_page.dart';
 import 'home.dart';
@@ -24,11 +25,26 @@ class _LoginPageState extends State<LoginPage> {
 
   final UserRoleService roleService = UserRoleService();
 
+  final AppSettingsController _settings =
+      AppSettingsController.instance;
+
   bool loading = false;
   bool obscurePassword = true;
 
   static const Color _primary = Color(0xFF2F6FED);
   static const Color _deepPurple = Color(0xFF163E85);
+
+  String _t({
+    required String en,
+    required String zh,
+    required String ms,
+  }) {
+    return _settings.text(
+      en: en,
+      zh: zh,
+      ms: ms,
+    );
+  }
 
   @override
   void dispose() {
@@ -42,7 +58,13 @@ class _LoginPageState extends State<LoginPage> {
     final password = passwordController.text;
 
     if (email.isEmpty || password.isEmpty) {
-      _showMessage('Please enter your email and password.');
+      _showMessage(
+        _t(
+          en: 'Please enter your email and password.',
+          zh: '请输入您的电子邮箱和密码。',
+          ms: 'Sila masukkan e-mel dan kata laluan anda.',
+        ),
+      );
       return;
     }
 
@@ -57,20 +79,36 @@ class _LoginPageState extends State<LoginPage> {
       final uid = result.user?.uid;
 
       if (uid == null) {
-        throw Exception('Unable to read user account.');
+        throw Exception(
+          _t(
+            en: 'Unable to read user account.',
+            zh: '无法读取用户账户。',
+            ms: 'Tidak dapat membaca akaun pengguna.',
+          ),
+        );
       }
 
       final role = await roleService.getUserRole(uid);
 
       if (role == null) {
         await authService.logout();
-        throw Exception('User role not found.');
+        throw Exception(
+          _t(
+            en: 'User role not found.',
+            zh: '找不到用户角色。',
+            ms: 'Peranan pengguna tidak ditemui.',
+          ),
+        );
       }
 
       if (role != 'user') {
         await authService.logout();
         throw Exception(
-          'This is an administrator account. Please use Admin Login.',
+          _t(
+            en: 'This is an administrator account. Please use Admin Login.',
+            zh: '这是管理员账户。请使用管理员登录。',
+            ms: 'Ini ialah akaun pentadbir. Sila gunakan Log Masuk Pentadbir.',
+          ),
         );
       }
 
@@ -100,13 +138,25 @@ class _LoginPageState extends State<LoginPage> {
     final email = emailController.text.trim();
 
     if (email.isEmpty) {
-      _showMessage('Enter your email first, then tap Forgot Password.');
+      _showMessage(
+        _t(
+          en: 'Enter your email first, then tap Forgot Password.',
+          zh: '请先输入电子邮箱，然后点击“忘记密码”。',
+          ms: 'Masukkan e-mel anda dahulu, kemudian tekan Lupa Kata Laluan.',
+        ),
+      );
       return;
     }
 
     try {
       await authService.sendPasswordResetEmail(email: email);
-      _showMessage('Password reset email sent to $email.');
+      _showMessage(
+        _t(
+          en: 'Password reset email sent to $email.',
+          zh: '密码重置邮件已发送至 $email。',
+          ms: 'E-mel tetapan semula kata laluan telah dihantar ke $email.',
+        ),
+      );
     } catch (e) {
       _showMessage(_cleanError(e));
     }
@@ -135,11 +185,13 @@ class _LoginPageState extends State<LoginPage> {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(22, 18, 22, 28),
+          padding: const EdgeInsets.fromLTRB(22, 12, 22, 28),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SizedBox(height: 12),
+              _buildLanguageSelector(),
+
+              const SizedBox(height: 8),
 
               _buildBrandHeader(),
 
@@ -165,7 +217,83 @@ class _LoginPageState extends State<LoginPage> {
                   );
                 },
                 icon: const Icon(Icons.explore_outlined),
-                label: const Text('Continue as Guest'),
+                label: Text(
+                  _t(
+                    en: 'Continue as Guest',
+                    zh: '以访客身份继续',
+                    ms: 'Teruskan sebagai Tetamu',
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLanguageSelector() {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Align(
+      alignment: Alignment.centerRight,
+      child: PopupMenuButton<AppLanguage>(
+        initialValue: _settings.language,
+        tooltip: _t(
+          en: 'Change language',
+          zh: '更改语言',
+          ms: 'Tukar bahasa',
+        ),
+        onSelected: (language) {
+          _settings.setLanguage(language);
+        },
+        itemBuilder: (context) => const [
+          PopupMenuItem(
+            value: AppLanguage.english,
+            child: Text('English'),
+          ),
+          PopupMenuItem(
+            value: AppLanguage.chinese,
+            child: Text('中文'),
+          ),
+          PopupMenuItem(
+            value: AppLanguage.malay,
+            child: Text('Bahasa Melayu'),
+          ),
+        ],
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 8,
+          ),
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: colorScheme.outlineVariant,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.language_rounded,
+                size: 18,
+                color: colorScheme.primary,
+              ),
+              const SizedBox(width: 7),
+              Text(
+                _settings.languageName,
+                style: TextStyle(
+                  color: colorScheme.onSurface,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 12.5,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Icon(
+                Icons.arrow_drop_down_rounded,
+                color: colorScheme.onSurfaceVariant,
               ),
             ],
           ),
@@ -222,7 +350,11 @@ class _LoginPageState extends State<LoginPage> {
         const SizedBox(height: 6),
 
         Text(
-          'Explore Malaysia. Respect every culture.',
+          _t(
+            en: 'Explore Malaysia. Respect every culture.',
+            zh: '探索马来西亚，尊重每一种文化。',
+            ms: 'Terokai Malaysia. Hormati setiap budaya.',
+          ),
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 14,
@@ -257,7 +389,11 @@ class _LoginPageState extends State<LoginPage> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'Welcome back',
+            _t(
+              en: 'Welcome back',
+              zh: '欢迎回来',
+              ms: 'Selamat kembali',
+            ),
             style: TextStyle(
               fontSize: 23,
               fontWeight: FontWeight.w800,
@@ -268,7 +404,11 @@ class _LoginPageState extends State<LoginPage> {
           const SizedBox(height: 5),
 
           Text(
-            'Sign in to access your etiquette tools, reports and saved cultural guidance.',
+            _t(
+              en: 'Sign in to access your etiquette tools, reports and saved cultural guidance.',
+              zh: '登录以使用礼仪工具、报告和已保存的文化指南。',
+              ms: 'Log masuk untuk mengakses alat etika, laporan dan panduan budaya yang disimpan.',
+            ),
             style: TextStyle(
               color: colorScheme.onSurfaceVariant,
               height: 1.45,
@@ -282,7 +422,11 @@ class _LoginPageState extends State<LoginPage> {
             keyboardType: TextInputType.emailAddress,
             textInputAction: TextInputAction.next,
             decoration: _inputDecoration(
-              label: 'Email address',
+              label: _t(
+                en: 'Email address',
+                zh: '电子邮箱',
+                ms: 'Alamat e-mel',
+              ),
               icon: Icons.mail_outline_rounded,
             ),
           ),
@@ -297,9 +441,24 @@ class _LoginPageState extends State<LoginPage> {
               if (!loading) login();
             },
             decoration: _inputDecoration(
-              label: 'Password',
+              label: _t(
+                en: 'Password',
+                zh: '密码',
+                ms: 'Kata laluan',
+              ),
               icon: Icons.lock_outline_rounded,
               suffix: IconButton(
+                tooltip: obscurePassword
+                    ? _t(
+                  en: 'Show password',
+                  zh: '显示密码',
+                  ms: 'Tunjukkan kata laluan',
+                )
+                    : _t(
+                  en: 'Hide password',
+                  zh: '隐藏密码',
+                  ms: 'Sembunyikan kata laluan',
+                ),
                 onPressed: () {
                   setState(() {
                     obscurePassword = !obscurePassword;
@@ -318,7 +477,13 @@ class _LoginPageState extends State<LoginPage> {
             alignment: Alignment.centerRight,
             child: TextButton(
               onPressed: loading ? null : forgotPassword,
-              child: const Text('Forgot Password?'),
+              child: Text(
+                _t(
+                  en: 'Forgot Password?',
+                  zh: '忘记密码？',
+                  ms: 'Lupa Kata Laluan?',
+                ),
+              ),
             ),
           ),
 
@@ -344,9 +509,13 @@ class _LoginPageState extends State<LoginPage> {
                   color: Colors.white,
                 ),
               )
-                  : const Text(
-                'Sign In',
-                style: TextStyle(
+                  : Text(
+                _t(
+                  en: 'Sign In',
+                  zh: '登录',
+                  ms: 'Log Masuk',
+                ),
+                style: const TextStyle(
                   fontWeight: FontWeight.w700,
                   fontSize: 16,
                 ),
@@ -356,53 +525,48 @@ class _LoginPageState extends State<LoginPage> {
 
           const SizedBox(height: 18),
 
-          // FIXED OVERFLOW SECTION
-          // Flexible prevents "RIGHT OVERFLOWED BY ..." errors.
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
+          Wrap(
+            alignment: WrapAlignment.center,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 2,
             children: [
-              Flexible(
-                child: Text(
-                  'New to CultureGuide?',
-                  textAlign: TextAlign.right,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
+              Text(
+                _t(
+                  en: 'New to CultureGuide?',
+                  zh: '第一次使用 CultureGuide？',
+                  ms: 'Baharu di CultureGuide?',
+                ),
+                style: TextStyle(
+                  color: colorScheme.onSurfaceVariant,
                 ),
               ),
-
-              const SizedBox(width: 4),
-
-              Flexible(
-                child: TextButton(
-                  onPressed: loading
-                      ? null
-                      : () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const RegisterPage(),
-                      ),
-                    );
-                  },
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 4,
-                      vertical: 8,
+              TextButton(
+                onPressed: loading
+                    ? null
+                    : () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const RegisterPage(),
                     ),
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  );
+                },
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 8,
                   ),
-                  child: const Text(
-                    'Create Account',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                    ),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: Text(
+                  _t(
+                    en: 'Create Account',
+                    zh: '创建账户',
+                    ms: 'Cipta Akaun',
+                  ),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
@@ -455,7 +619,11 @@ class _LoginPageState extends State<LoginPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Administrator Login',
+                      _t(
+                        en: 'Administrator Login',
+                        zh: '管理员登录',
+                        ms: 'Log Masuk Pentadbir',
+                      ),
                       style: TextStyle(
                         fontWeight: FontWeight.w800,
                         color: colorScheme.onSurface,
@@ -465,7 +633,11 @@ class _LoginPageState extends State<LoginPage> {
                     const SizedBox(height: 3),
 
                     Text(
-                      'Review etiquette reports and ranking data',
+                      _t(
+                        en: 'Review etiquette reports and ranking data',
+                        zh: '查看礼仪报告和排名数据',
+                        ms: 'Semak laporan etika dan data kedudukan',
+                      ),
                       style: TextStyle(
                         fontSize: 12.5,
                         color: colorScheme.onSurfaceVariant,
