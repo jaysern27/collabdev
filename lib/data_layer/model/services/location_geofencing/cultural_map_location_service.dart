@@ -122,6 +122,11 @@ class CulturalMapLocationService {
   }
 
   /// Human-readable distance for the UI.
+  ///
+  /// This is straight-line ("as the crow flies") distance, not driving
+  /// distance — the "Direct Distance" label shown alongside this value
+  /// makes that distinction, so Google Maps' longer road distance for
+  /// the same place is expected, not a bug.
   String formatDistance(
       double distanceKm,
       ) {

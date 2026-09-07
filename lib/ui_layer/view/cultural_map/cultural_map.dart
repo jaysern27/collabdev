@@ -6,13 +6,16 @@ import '../../../external_data_sources/google_maps/google_maps_data_source.dart'
 import '../../../data_layer/model/repositories/ranking_report/ranking_report_repository.dart';
 import '../../view_model/cultural_map/cultural_map_view_model.dart';
 import '../../view_model/settings/app_settings_controller.dart';
+import '../saved_places/saved_places_page.dart';
 
 class CulturalMapView extends StatefulWidget {
   final Map<String, dynamic>? initialAttraction;
+  final String? initialQuery;
 
   const CulturalMapView({
     super.key,
     this.initialAttraction,
+    this.initialQuery,
   });
 
   @override
@@ -64,6 +67,16 @@ class _CulturalMapViewState
 
         if (widget.initialAttraction != null) {
           await _focusInitialAttractionIfReady();
+        } else if (widget.initialQuery != null &&
+            widget.initialQuery!.trim().isNotEmpty) {
+          // Set the search state now; the camera is fitted to the
+          // matching markers once onMapCreated fires below, since
+          // _mapController is not ready yet at this point.
+          _searchController.text = widget.initialQuery!;
+
+          _viewModel.setSearchQuery(
+            widget.initialQuery!,
+          );
         } else {
           await _moveMapToCurrentArea();
         }
@@ -215,6 +228,109 @@ class _CulturalMapViewState
       longitude:
       _viewModel.currentLongitude,
       zoom: 13,
+    );
+  }
+
+  // ============================================================
+  // FIT MAP TO SEARCH RESULTS
+  //
+  // Search results can be spread across the whole country, so pan
+  // and zoom the camera to fit every matching marker on screen
+  // instead of leaving them scattered outside the current view.
+  // ============================================================
+
+  Future<void> _fitMapToVisibleAttractions() async {
+    final controller =
+        _mapController;
+
+    if (controller == null) {
+      return;
+    }
+
+    final points = <LatLng>[];
+
+    for (final attraction
+    in _viewModel.visibleAttractions) {
+      final latitude =
+      _viewModel.attractionLatitude(
+        attraction,
+      );
+
+      final longitude =
+      _viewModel.attractionLongitude(
+        attraction,
+      );
+
+      if (latitude != null &&
+          longitude != null) {
+        points.add(
+          LatLng(
+            latitude,
+            longitude,
+          ),
+        );
+      }
+    }
+
+    if (points.isEmpty) {
+      return;
+    }
+
+    if (points.length == 1) {
+      await controller.animateCamera(
+        CameraUpdate.newLatLngZoom(
+          points.first,
+          15,
+        ),
+      );
+
+      return;
+    }
+
+    var minLatitude =
+        points.first.latitude;
+
+    var maxLatitude =
+        points.first.latitude;
+
+    var minLongitude =
+        points.first.longitude;
+
+    var maxLongitude =
+        points.first.longitude;
+
+    for (final point in points) {
+      minLatitude = point.latitude < minLatitude
+          ? point.latitude
+          : minLatitude;
+
+      maxLatitude = point.latitude > maxLatitude
+          ? point.latitude
+          : maxLatitude;
+
+      minLongitude = point.longitude < minLongitude
+          ? point.longitude
+          : minLongitude;
+
+      maxLongitude = point.longitude > maxLongitude
+          ? point.longitude
+          : maxLongitude;
+    }
+
+    await controller.animateCamera(
+      CameraUpdate.newLatLngBounds(
+        LatLngBounds(
+          southwest: LatLng(
+            minLatitude,
+            minLongitude,
+          ),
+          northeast: LatLng(
+            maxLatitude,
+            maxLongitude,
+          ),
+        ),
+        60,
+      ),
     );
   }
 
@@ -444,6 +560,31 @@ class _CulturalMapViewState
   }
 
   // ============================================================
+  // SAVED PLACES
+  // ============================================================
+
+  Future<void> _openSavedPlacesPage() async {
+    if (!_viewModel.isLoggedIn) {
+      await _showSignInRequiredDialog(
+        'Please sign in to view your saved places.',
+      );
+
+      return;
+    }
+
+    if (!mounted) {
+      return;
+    }
+
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) =>
+        const SavedPlacesPage(),
+      ),
+    );
+  }
+
+  // ============================================================
   // FAVOURITE
   // ============================================================
 
@@ -485,63 +626,6 @@ class _CulturalMapViewState
         : 'Saved to favourites.'
         : _viewModel.errorMessage ??
         'Unable to update favourite.';
-
-    if (!success) {
-      _viewModel.clearError();
-    }
-
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content:
-          Text(message),
-        ),
-      );
-  }
-
-  // ============================================================
-  // VISIT LIST
-  // ============================================================
-
-  Future<void> _toggleVisitList(
-      Map<String, dynamic> attraction,
-      ) async {
-    if (!_viewModel.isLoggedIn) {
-      await _showSignInRequiredDialog(
-        'Please sign in to use the visit list.',
-      );
-
-      return;
-    }
-
-    final attractionId =
-        attraction['id']
-            ?.toString()
-            .trim() ??
-            '';
-
-    final wasInVisitList =
-    _viewModel.isInVisitList(
-      attractionId,
-    );
-
-    final success =
-    await _viewModel.toggleVisitList(
-      attraction,
-    );
-
-    if (!mounted) {
-      return;
-    }
-
-    final message =
-    success
-        ? wasInVisitList
-        ? 'Removed from visit list.'
-        : 'Added to visit list.'
-        : _viewModel.errorMessage ??
-        'Unable to update visit list.';
 
     if (!success) {
       _viewModel.clearError();
@@ -776,12 +860,6 @@ class _CulturalMapViewState
                       attractionId,
                     );
 
-            final isInVisitList =
-                attractionId.isNotEmpty &&
-                    _viewModel.isInVisitList(
-                      attractionId,
-                    );
-
             return DraggableScrollableSheet(
               expand: false,
               initialChildSize: 0.92,
@@ -942,9 +1020,9 @@ class _CulturalMapViewState
                                       child:
                                       _buildMetric(
                                         _t(
-                                          en: 'Distance',
-                                          zh: '距离',
-                                          ms: 'Jarak',
+                                          en: 'Direct Distance',
+                                          zh: '直线距离',
+                                          ms: 'Jarak Lurus',
                                         ),
                                         _viewModel
                                             .distanceTextFor(
@@ -1567,7 +1645,7 @@ class _CulturalMapViewState
                                     Expanded(
                                       child:
                                       Text(
-                                        'Sign in to save this attraction to your Favourites or Visit List.',
+                                        'Sign in to save this attraction to your Favourites.',
                                       ),
                                     ),
                                   ],
@@ -1609,50 +1687,6 @@ class _CulturalMapViewState
                                     en: 'Save to Favourites',
                                     zh: '保存到收藏',
                                     ms: 'Simpan ke Kegemaran',
-                                  ),
-                                ),
-                              ),
-                            ),
-
-                            const SizedBox(
-                              height: 10,
-                            ),
-
-                            // ============================================
-                            // VISIT LIST
-                            // ============================================
-
-                            SizedBox(
-                              width:
-                              double.infinity,
-                              child:
-                              OutlinedButton.icon(
-                                onPressed:
-                                _viewModel.isSavingAttraction
-                                    ? null
-                                    : () async {
-                                  await _toggleVisitList(
-                                    attraction,
-                                  );
-                                },
-                                icon:
-                                Icon(
-                                  isInVisitList
-                                      ? Icons.bookmark_added
-                                      : Icons.bookmark_add_outlined,
-                                ),
-                                label:
-                                Text(
-                                  isInVisitList
-                                      ? _t(
-                                    en: 'Remove from Visit List',
-                                    zh: '从参观清单移除',
-                                    ms: 'Alih Keluar daripada Senarai Lawatan',
-                                  )
-                                      : _t(
-                                    en: 'Add to Visit List',
-                                    zh: '添加到参观清单',
-                                    ms: 'Tambah ke Senarai Lawatan',
                                   ),
                                 ),
                               ),
@@ -2088,6 +2122,17 @@ class _CulturalMapViewState
               actions: [
                 IconButton(
                   tooltip: _t(
+                    en: 'Saved places',
+                    zh: '已保存的地点',
+                    ms: 'Tempat disimpan',
+                  ),
+                  onPressed: _openSavedPlacesPage,
+                  icon: const Icon(
+                    Icons.favorite_rounded,
+                  ),
+                ),
+                IconButton(
+                  tooltip: _t(
                     en: 'Refresh attractions',
                     zh: '刷新景点',
                     ms: 'Muat semula tarikan',
@@ -2123,6 +2168,9 @@ class _CulturalMapViewState
 
                       if (widget.initialAttraction != null) {
                         await _focusInitialAttractionIfReady();
+                      } else if (widget.initialQuery != null &&
+                          widget.initialQuery!.trim().isNotEmpty) {
+                        await _fitMapToVisibleAttractions();
                       } else {
                         await _moveMapToCurrentArea();
                       }
@@ -2244,6 +2292,12 @@ class _CulturalMapViewState
         onChanged: (value) {
           viewModel.setSearchQuery(value);
           setState(() {});
+
+          if (value.trim().isEmpty) {
+            _moveMapToCurrentArea();
+          } else {
+            _fitMapToVisibleAttractions();
+          }
         },
         decoration: InputDecoration(
           hintText: _t(
@@ -2273,6 +2327,7 @@ class _CulturalMapViewState
               _searchController.clear();
               viewModel.clearSearch();
               setState(() {});
+              _moveMapToCurrentArea();
             },
             icon: const Icon(Icons.close_rounded),
           ),
@@ -2616,10 +2671,6 @@ class _CulturalMapViewState
         attractionId.isNotEmpty &&
             viewModel.isFavourite(attractionId);
 
-    final isInVisitList =
-        attractionId.isNotEmpty &&
-            viewModel.isInVisitList(attractionId);
-
     final category =
     viewModel.attractionCategory(attraction);
 
@@ -2741,32 +2792,49 @@ class _CulturalMapViewState
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 4),
               Column(
                 children: [
+                  IconButton(
+                    tooltip: isFavourite
+                        ? _t(
+                      en: 'Remove from Favourites',
+                      zh: '从收藏中移除',
+                      ms: 'Alih Keluar daripada Kegemaran',
+                    )
+                        : _t(
+                      en: 'Save to Favourites',
+                      zh: '保存到收藏',
+                      ms: 'Simpan ke Kegemaran',
+                    ),
+                    padding: EdgeInsets.zero,
+                    constraints:
+                    const BoxConstraints(
+                      minWidth: 36,
+                      minHeight: 36,
+                    ),
+                    visualDensity:
+                    VisualDensity.compact,
+                    onPressed: () =>
+                        _toggleFavourite(
+                          attraction,
+                        ),
+                    icon: Icon(
+                      isFavourite
+                          ? Icons.favorite_rounded
+                          : Icons.favorite_border_rounded,
+                      color: isFavourite
+                          ? colorScheme.error
+                          : colorScheme.onSurfaceVariant,
+                      size: 21,
+                    ),
+                  ),
                   Icon(
-                    Icons.info_outline_rounded,
+                    Icons.chevron_right_rounded,
                     color:
                     colorScheme.onSurfaceVariant,
-                    size: 21,
+                    size: 20,
                   ),
-                  const SizedBox(height: 12),
-                  if (isFavourite)
-                    Icon(
-                      Icons.favorite_rounded,
-                      color: colorScheme.error,
-                      size: 18,
-                    ),
-                  if (isInVisitList)
-                    Padding(
-                      padding:
-                      const EdgeInsets.only(top: 7),
-                      child: Icon(
-                        Icons.bookmark_rounded,
-                        color: colorScheme.primary,
-                        size: 18,
-                      ),
-                    ),
                 ],
               ),
             ],

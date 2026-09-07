@@ -52,7 +52,6 @@ class CulturalMapViewModel extends ChangeNotifier {
   Map<String, dynamic>? _selectedAttraction;
 
   Set<String> _favouriteIds = <String>{};
-  Set<String> _visitListIds = <String>{};
 
   // ============================================================
   // GETTERS
@@ -94,11 +93,6 @@ class CulturalMapViewModel extends ChangeNotifier {
   Set<String> get favouriteIds =>
       Set.unmodifiable(
         _favouriteIds,
-      );
-
-  Set<String> get visitListIds =>
-      Set.unmodifiable(
-        _visitListIds,
       );
 
   List<String> get availableCategories =>
@@ -394,9 +388,6 @@ class CulturalMapViewModel extends ChangeNotifier {
       _favouriteIds =
       <String>{};
 
-      _visitListIds =
-      <String>{};
-
       notifyListeners();
 
       return;
@@ -406,10 +397,6 @@ class CulturalMapViewModel extends ChangeNotifier {
       _favouriteIds =
       await _savedRepository
           .getFavouriteIds();
-
-      _visitListIds =
-      await _savedRepository
-          .getVisitListIds();
 
       notifyListeners();
     } catch (_) {
@@ -424,15 +411,6 @@ class CulturalMapViewModel extends ChangeNotifier {
       String attractionId,
       ) {
     return _favouriteIds
-        .contains(
-      attractionId,
-    );
-  }
-
-  bool isInVisitList(
-      String attractionId,
-      ) {
-    return _visitListIds
         .contains(
       attractionId,
     );
@@ -500,77 +478,6 @@ class CulturalMapViewModel extends ChangeNotifier {
     } catch (_) {
       _errorMessage =
       'Unable to update favourite.';
-
-      return false;
-    } finally {
-      _isSavingAttraction = false;
-
-      notifyListeners();
-    }
-  }
-
-  Future<bool> toggleVisitList(
-      Map<String, dynamic> attraction,
-      ) async {
-    final attractionId =
-        attraction['id']
-            ?.toString()
-            .trim() ??
-            '';
-
-    if (!_savedRepository.isLoggedIn) {
-      _errorMessage =
-      'Please sign in to use the visit list.';
-
-      notifyListeners();
-
-      return false;
-    }
-
-    if (attractionId.isEmpty) {
-      _errorMessage =
-      'Attraction ID is missing.';
-
-      notifyListeners();
-
-      return false;
-    }
-
-    _isSavingAttraction = true;
-
-    _errorMessage = null;
-
-    notifyListeners();
-
-    try {
-      if (_visitListIds
-          .contains(attractionId)) {
-        await _savedRepository
-            .removeFromVisitList(
-          attractionId:
-          attractionId,
-        );
-
-        _visitListIds
-            .remove(
-          attractionId,
-        );
-      } else {
-        await _savedRepository
-            .addToVisitList(
-          attraction: attraction,
-        );
-
-        _visitListIds
-            .add(
-          attractionId,
-        );
-      }
-
-      return true;
-    } catch (_) {
-      _errorMessage =
-      'Unable to update visit list.';
 
       return false;
     } finally {
@@ -936,42 +843,48 @@ class CulturalMapViewModel extends ChangeNotifier {
 
     // ============================================================
     // FILTER BY SELECTED AREA
+    //
+    // Only applied while browsing (no active search). A search
+    // should surface every matching attraction nationwide, not
+    // just ones within the nearby radius.
     // ============================================================
 
-    result = result.where(
-          (attraction) {
-        final latitude =
-        _toDouble(
-          attraction[
-          'latitude'],
-        );
+    if (_searchQuery.trim().isEmpty) {
+      result = result.where(
+            (attraction) {
+          final latitude =
+          _toDouble(
+            attraction[
+            'latitude'],
+          );
 
-        final longitude =
-        _toDouble(
-          attraction[
-          'longitude'],
-        );
+          final longitude =
+          _toDouble(
+            attraction[
+            'longitude'],
+          );
 
-        if (latitude == null ||
-            longitude == null) {
-          return false;
-        }
+          if (latitude == null ||
+              longitude == null) {
+            return false;
+          }
 
-        return _locationService
-            .isWithinRadius(
-          userLatitude:
-          _currentLatitude,
-          userLongitude:
-          _currentLongitude,
-          attractionLatitude:
-          latitude,
-          attractionLongitude:
-          longitude,
-          radiusKm:
-          selectedAreaRadiusKm,
-        );
-      },
-    ).toList();
+          return _locationService
+              .isWithinRadius(
+            userLatitude:
+            _currentLatitude,
+            userLongitude:
+            _currentLongitude,
+            attractionLatitude:
+            latitude,
+            attractionLongitude:
+            longitude,
+            radiusKm:
+            selectedAreaRadiusKm,
+          );
+        },
+      ).toList();
+    }
 
     // ============================================================
     // CATEGORY FILTER
