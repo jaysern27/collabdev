@@ -16,7 +16,7 @@ class ViolationRankingPage extends StatefulWidget {
 class _ViolationRankingPageState
     extends State<ViolationRankingPage> {
   final ViolationDashboardReportViewModel _viewModel =
-      ViolationDashboardReportViewModel();
+  ViolationDashboardReportViewModel();
 
   final AppSettingsController _settings =
       AppSettingsController.instance;
@@ -46,13 +46,13 @@ class _ViolationRankingPageState
 
   String _localizedRuleName(Map<String, dynamic> row) {
     final english =
-        (row['ruleName'] ?? row['category'] ?? '')
-            .toString()
-            .trim();
+    (row['ruleName'] ?? row['category'] ?? '')
+        .toString()
+        .trim();
     final chinese =
-        (row['ruleNameZh'] ?? '').toString().trim();
+    (row['ruleNameZh'] ?? '').toString().trim();
     final malay =
-        (row['ruleNameMs'] ?? '').toString().trim();
+    (row['ruleNameMs'] ?? '').toString().trim();
 
     switch (_settings.language) {
       case AppLanguage.chinese:
@@ -111,15 +111,15 @@ class _ViolationRankingPageState
                 : _viewModel.refreshRanking,
             icon: _viewModel.isRefreshingRanking
                 ? const SizedBox(
-                    width: 19,
-                    height: 19,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                    ),
-                  )
+              width: 19,
+              height: 19,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+              ),
+            )
                 : const Icon(
-                    Icons.refresh_rounded,
-                  ),
+              Icons.refresh_rounded,
+            ),
           ),
           const SizedBox(width: 6),
         ],
@@ -127,51 +127,51 @@ class _ViolationRankingPageState
       body: RefreshIndicator(
         onRefresh: _viewModel.loadDashboard,
         child: _viewModel.isLoading &&
-                _viewModel.rankings.isEmpty
+            _viewModel.rankings.isEmpty
             ? ListView(
-                physics:
-                    const AlwaysScrollableScrollPhysics(),
-                children: const [
-                  SizedBox(height: 260),
-                  Center(
-                    child: CircularProgressIndicator(),
-                  ),
-                ],
-              )
+          physics:
+          const AlwaysScrollableScrollPhysics(),
+          children: const [
+            SizedBox(height: 260),
+            Center(
+              child: CircularProgressIndicator(),
+            ),
+          ],
+        )
             : ListView(
-                physics:
-                    const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(
-                  16,
-                  10,
-                  16,
-                  28,
+          physics:
+          const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(
+            16,
+            10,
+            16,
+            28,
+          ),
+          children: [
+            _buildIntroCard(context),
+            const SizedBox(height: 14),
+            if (_viewModel.rankings.isEmpty)
+              _buildEmptyState(context)
+            else
+              ..._viewModel.rankings
+                  .asMap()
+                  .entries
+                  .map(
+                    (entry) => _rankingCard(
+                  context,
+                  entry.key,
+                  entry.value,
                 ),
-                children: [
-                  _buildIntroCard(context),
-                  const SizedBox(height: 14),
-                  if (_viewModel.rankings.isEmpty)
-                    _buildEmptyState(context)
-                  else
-                    ..._viewModel.rankings
-                        .asMap()
-                        .entries
-                        .map(
-                          (entry) => _rankingCard(
-                            context,
-                            entry.key,
-                            entry.value,
-                          ),
-                        ),
-                ],
               ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildIntroCard(
-    BuildContext context,
-  ) {
+      BuildContext context,
+      ) {
     final colorScheme =
         Theme.of(context).colorScheme;
 
@@ -198,7 +198,7 @@ class _ViolationRankingPageState
           Expanded(
             child: Column(
               crossAxisAlignment:
-                  CrossAxisAlignment.start,
+              CrossAxisAlignment.start,
               children: [
                 Text(
                   _settings.text(
@@ -235,10 +235,10 @@ class _ViolationRankingPageState
   }
 
   Widget _rankingCard(
-    BuildContext context,
-    int index,
-    Map<String, dynamic> row,
-  ) {
+      BuildContext context,
+      int index,
+      Map<String, dynamic> row,
+      ) {
     final colorScheme =
         Theme.of(context).colorScheme;
 
@@ -249,55 +249,55 @@ class _ViolationRankingPageState
     );
 
     final frequency =
-        _int(row['frequency']);
+    _int(row['frequency']);
 
     final severity =
-        _double(row['severity']);
+    _double(row['severity']);
 
     final confidence =
-        _double(
+    _double(
       row['verificationConfidence'],
     );
 
     final topFrequency =
-        _viewModel.rankings.isEmpty
-            ? 0
-            : _int(
-                _viewModel
-                    .rankings.first['frequency'],
-              );
+    _viewModel.rankings.isEmpty
+        ? 0
+        : _int(
+      _viewModel
+          .rankings.first['frequency'],
+    );
 
     final progressValue =
-        topFrequency <= 0
-            ? 0.0
-            : (frequency / topFrequency)
-                .clamp(0.0, 1.0);
+    topFrequency <= 0
+        ? 0.0
+        : (frequency / topFrequency)
+        .clamp(0.0, 1.0);
 
     final title = _localizedRuleName(row).isNotEmpty
         ? _localizedRuleName(row)
         : _settings.text(
-            en: 'Etiquette issue',
-            zh: '礼仪问题',
-            ms: 'Isu etika',
-          );
+      en: 'Etiquette issue',
+      zh: '礼仪问题',
+      ms: 'Isu etika',
+    );
 
     final isTopThree = index < 3;
 
     final rawLocation =
-        (row['attractionName'] ??
-                row['attractionId'])
-            ?.toString()
-            .trim();
+    (row['attractionName'] ??
+        row['attractionId'])
+        ?.toString()
+        .trim();
 
     final displayLocation =
-        rawLocation == null ||
-                rawLocation.isEmpty
-            ? _settings.text(
-                en: 'Unknown attraction',
-                zh: '未知景点',
-                ms: 'Tarikan tidak diketahui',
-              )
-            : rawLocation;
+    rawLocation == null ||
+        rawLocation.isEmpty
+        ? _settings.text(
+      en: 'Unknown attraction',
+      zh: '未知景点',
+      ms: 'Tarikan tidak diketahui',
+    )
+        : rawLocation;
 
     return Container(
       margin: const EdgeInsets.only(
@@ -310,13 +310,13 @@ class _ViolationRankingPageState
         border: Border.all(
           color: isTopThree
               ? colorScheme.primary
-                  .withValues(alpha: 0.35)
+              .withValues(alpha: 0.35)
               : colorScheme.outlineVariant,
         ),
       ),
       child: Row(
         crossAxisAlignment:
-            CrossAxisAlignment.start,
+        CrossAxisAlignment.start,
         children: [
           Container(
             width: 42,
@@ -327,7 +327,7 @@ class _ViolationRankingPageState
                   ? colorScheme.primaryContainer
                   : colorScheme.surfaceContainerHighest,
               borderRadius:
-                  BorderRadius.circular(14),
+              BorderRadius.circular(14),
             ),
             child: Text(
               '#${index + 1}',
@@ -343,7 +343,7 @@ class _ViolationRankingPageState
           Expanded(
             child: Column(
               crossAxisAlignment:
-                  CrossAxisAlignment.start,
+              CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
@@ -365,16 +365,16 @@ class _ViolationRankingPageState
                     ),
                     Column(
                       crossAxisAlignment:
-                          CrossAxisAlignment.end,
+                      CrossAxisAlignment.end,
                       children: [
                         Text(
                           '$frequency',
                           style: TextStyle(
                             color:
-                                colorScheme.primary,
+                            colorScheme.primary,
                             fontSize: 20,
                             fontWeight:
-                                FontWeight.w900,
+                            FontWeight.w900,
                             height: 1,
                           ),
                         ),
@@ -389,7 +389,7 @@ class _ViolationRankingPageState
                                 .onSurfaceVariant,
                             fontSize: 9,
                             fontWeight:
-                                FontWeight.w600,
+                            FontWeight.w600,
                           ),
                         ),
                       ],
@@ -412,12 +412,12 @@ class _ViolationRankingPageState
                 const SizedBox(height: 8),
                 ClipRRect(
                   borderRadius:
-                      BorderRadius.circular(30),
+                  BorderRadius.circular(30),
                   child: LinearProgressIndicator(
                     value: progressValue,
                     minHeight: 7,
                     backgroundColor:
-                        colorScheme.surfaceContainerHighest,
+                    colorScheme.surfaceContainerHighest,
                   ),
                 ),
                 const SizedBox(height: 9),
@@ -463,10 +463,10 @@ class _ViolationRankingPageState
   }
 
   Widget _meta(
-    BuildContext context,
-    IconData icon,
-    String text,
-  ) {
+      BuildContext context,
+      IconData icon,
+      String text,
+      ) {
     final color =
         Theme.of(context)
             .colorScheme
@@ -493,8 +493,8 @@ class _ViolationRankingPageState
   }
 
   Widget _buildEmptyState(
-    BuildContext context,
-  ) {
+      BuildContext context,
+      ) {
     final colorScheme =
         Theme.of(context).colorScheme;
 
@@ -553,8 +553,8 @@ class _ViolationRankingPageState
       return value.toInt();
     }
     return int.tryParse(
-          value?.toString() ?? '',
-        ) ??
+      value?.toString() ?? '',
+    ) ??
         0;
   }
 
@@ -563,8 +563,8 @@ class _ViolationRankingPageState
       return value.toDouble();
     }
     return double.tryParse(
-          value?.toString() ?? '',
-        ) ??
+      value?.toString() ?? '',
+    ) ??
         0.0;
   }
 }

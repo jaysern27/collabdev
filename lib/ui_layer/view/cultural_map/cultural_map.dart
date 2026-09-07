@@ -247,10 +247,10 @@ class _CulturalMapViewState
   }
 
   String _distanceText(
-    Map<String, dynamic> attraction,
-  ) {
+      Map<String, dynamic> attraction,
+      ) {
     final distance =
-        _viewModel.distanceKmFor(attraction);
+    _viewModel.distanceKmFor(attraction);
 
     if (distance == null) {
       return _t(
@@ -266,8 +266,8 @@ class _CulturalMapViewState
   }
 
   String _addressText(
-    Map<String, dynamic> attraction,
-  ) {
+      Map<String, dynamic> attraction,
+      ) {
     final address =
         attraction['address']?.toString().trim() ?? '';
 
@@ -283,8 +283,8 @@ class _CulturalMapViewState
   }
 
   String _nameText(
-    Map<String, dynamic> attraction,
-  ) {
+      Map<String, dynamic> attraction,
+      ) {
     final name =
         attraction['name']?.toString().trim() ?? '';
 
@@ -3360,16 +3360,16 @@ class _RankedGuideSection
   });
 
   String _ruleText(
-    Map<String, dynamic> item,
-  ) {
+      Map<String, dynamic> item,
+      ) {
     final english =
-        (item['ruleName'] ?? 'Etiquette rule')
-            .toString()
-            .trim();
+    (item['ruleName'] ?? 'Etiquette rule')
+        .toString()
+        .trim();
     final chinese =
-        (item['ruleNameZh'] ?? '').toString().trim();
+    (item['ruleNameZh'] ?? '').toString().trim();
     final malay =
-        (item['ruleNameMs'] ?? '').toString().trim();
+    (item['ruleNameMs'] ?? '').toString().trim();
 
     switch (_settings.language) {
       case AppLanguage.chinese:
@@ -3459,9 +3459,9 @@ class _RankedGuideSection
                 );
 
                 final ruleName =
-                    _ruleText(
-                      item,
-                    );
+                _ruleText(
+                  item,
+                );
 
                 return Padding(
                   padding:
