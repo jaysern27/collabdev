@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../../external_data_sources/google_maps/google_maps_data_source.dart';
 import '../../../data_layer/model/repositories/ranking_report/ranking_report_repository.dart';
 import '../../view_model/cultural_map/cultural_map_view_model.dart';
+import '../../view_model/settings/app_settings_controller.dart';
 
 class CulturalMapView extends StatefulWidget {
   final Map<String, dynamic>? initialAttraction;
@@ -29,6 +30,9 @@ class _CulturalMapViewState
   final RankingReportRepository _rankingRepository =
   RankingReportRepository();
 
+  final AppSettingsController _settings =
+      AppSettingsController.instance;
+
   final TextEditingController _searchController =
   TextEditingController();
 
@@ -41,6 +45,10 @@ class _CulturalMapViewState
   void initState() {
     super.initState();
 
+
+    _settings.addListener(
+      _onSettingsChanged,
+    );
     _viewModel =
         CulturalMapViewModel();
 
@@ -63,8 +71,128 @@ class _CulturalMapViewState
     );
   }
 
+  void _onSettingsChanged() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  String _t({
+    required String en,
+    required String zh,
+    required String ms,
+  }) {
+    return _settings.text(
+      en: en,
+      zh: zh,
+      ms: ms,
+    );
+  }
+
+  String _localizedText(
+      Map source, {
+        required String enKey,
+        required String zhKey,
+        required String msKey,
+      }) {
+    final english =
+    (source[enKey] ?? '')
+        .toString()
+        .trim();
+
+    final chinese =
+    (source[zhKey] ?? '')
+        .toString()
+        .trim();
+
+    final malay =
+    (source[msKey] ?? '')
+        .toString()
+        .trim();
+
+    return _t(
+      en: english,
+      zh: chinese.isNotEmpty
+          ? chinese
+          : english,
+      ms: malay.isNotEmpty
+          ? malay
+          : english,
+    );
+  }
+
+  String _ruleText(Map<String, dynamic> rule) {
+    final english =
+    (rule['ruleName'] ??
+        rule['title'] ??
+        rule['description'] ??
+        '')
+        .toString()
+        .trim();
+
+    final chinese =
+    (rule['ruleNameZh'] ?? '')
+        .toString()
+        .trim();
+
+    final malay =
+    (rule['ruleNameMs'] ?? '')
+        .toString()
+        .trim();
+
+    switch (_settings.language) {
+      case AppLanguage.chinese:
+        return chinese.isNotEmpty ? chinese : english;
+      case AppLanguage.malay:
+        return malay.isNotEmpty ? malay : english;
+      case AppLanguage.english:
+        return english;
+    }
+  }
+
+  String _categoryText(String category) {
+    switch (category) {
+      case 'Islamic Culture':
+        return _t(
+          en: 'Islamic Culture',
+          zh: '伊斯兰文化',
+          ms: 'Budaya Islam',
+        );
+      case 'Chinese Culture':
+        return _t(
+          en: 'Chinese Culture',
+          zh: '中华文化',
+          ms: 'Budaya Cina',
+        );
+      case 'Indian Culture':
+        return _t(
+          en: 'Indian Culture',
+          zh: '印度文化',
+          ms: 'Budaya India',
+        );
+      case 'Places of Worship':
+        return _t(
+          en: 'Places of Worship',
+          zh: '宗教场所',
+          ms: 'Tempat Ibadat',
+        );
+      case 'Historical Landmarks':
+        return _t(
+          en: 'Historical Landmarks',
+          zh: '历史地标',
+          ms: 'Mercu Tanda Bersejarah',
+        );
+      default:
+        return category;
+    }
+  }
+
   @override
   void dispose() {
+    _settings.removeListener(
+      _onSettingsChanged,
+    );
+
     _mapController?.dispose();
     _searchController.dispose();
     _viewModel.dispose();
@@ -518,8 +646,10 @@ class _CulturalMapViewState
                 attraction,
               ),
               category:
-              _viewModel.attractionCategory(
-                attraction,
+              _categoryText(
+                _viewModel.attractionCategory(
+                  attraction,
+                ),
               ),
               dos: rankedDos,
               donts: rankedDonts,
@@ -734,7 +864,7 @@ class _CulturalMapViewState
                                 ),
                               ),
                               child: Text(
-                                category,
+                                _categoryText(category),
                                 style:
                                 const TextStyle(
                                   color:
@@ -811,7 +941,11 @@ class _CulturalMapViewState
                                     Expanded(
                                       child:
                                       _buildMetric(
-                                        'Distance',
+                                        _t(
+                                          en: 'Distance',
+                                          zh: '距离',
+                                          ms: 'Jarak',
+                                        ),
                                         _viewModel
                                             .distanceTextFor(
                                           attraction,
@@ -845,7 +979,11 @@ class _CulturalMapViewState
                                       Column(
                                         children: [
                                           Text(
-                                            'Rating',
+                                            _t(
+                                              en: 'Rating',
+                                              zh: '评分',
+                                              ms: 'Penilaian',
+                                            ),
                                             style:
                                             TextStyle(
                                               color:
@@ -951,7 +1089,7 @@ class _CulturalMapViewState
                                       crossAxisAlignment:
                                       CrossAxisAlignment.start,
                                       children: [
-                                        const Row(
+                                        Row(
                                           children: [
                                             Text(
                                               '🙏',
@@ -964,7 +1102,11 @@ class _CulturalMapViewState
                                               width: 8,
                                             ),
                                             Text(
-                                              'Know Before You Enter',
+                                              _t(
+                                                en: 'Know Before You Enter',
+                                                zh: '进入前须知',
+                                                ms: 'Sebelum Anda Masuk',
+                                              ),
                                               style:
                                               TextStyle(
                                                 color:
@@ -980,7 +1122,11 @@ class _CulturalMapViewState
                                           height: 3,
                                         ),
                                         Text(
-                                          'Essential etiquette for $name',
+                                          _t(
+                                            en: 'Essential etiquette for $name',
+                                            zh: '$name 的重要礼仪',
+                                            ms: 'Etika penting untuk $name',
+                                          ),
                                           style:
                                           const TextStyle(
                                             color:
@@ -1002,14 +1148,15 @@ class _CulturalMapViewState
                                       crossAxisAlignment:
                                       CrossAxisAlignment.start,
                                       children: [
-                                        const Text(
-                                          '✅ DO',
-                                          style:
-                                          TextStyle(
-                                            color:
-                                            Colors.green,
-                                            fontWeight:
-                                            FontWeight.bold,
+                                        Text(
+                                          _t(
+                                            en: '✅ DO',
+                                            zh: '✅ 应该做',
+                                            ms: '✅ BOLEH',
+                                          ),
+                                          style: const TextStyle(
+                                            color: Colors.green,
+                                            fontWeight: FontWeight.bold,
                                           ),
                                         ),
 
@@ -1018,8 +1165,12 @@ class _CulturalMapViewState
                                         ),
 
                                         if (previewDos.isEmpty)
-                                          const Text(
-                                            'No specific DO guidance available.',
+                                          Text(
+                                            _t(
+                                              en: 'No specific DO guidance available.',
+                                              zh: '目前没有具体的“应该做”礼仪建议。',
+                                              ms: 'Tiada panduan BOLEH khusus buat masa ini.',
+                                            ),
                                           )
                                         else
                                           ...previewDos.map(
@@ -1028,8 +1179,13 @@ class _CulturalMapViewState
                                                   rank:
                                                   _rankValue(item),
                                                   text:
-                                                  item['ruleName']?.toString() ??
-                                                      'Etiquette rule',
+                                                  _ruleText(item).isNotEmpty
+                                                      ? _ruleText(item)
+                                                      : _t(
+                                                    en: 'Etiquette rule',
+                                                    zh: '礼仪规则',
+                                                    ms: 'Peraturan etika',
+                                                  ),
                                                   color:
                                                   Colors.green,
                                                 ),
@@ -1039,14 +1195,15 @@ class _CulturalMapViewState
                                           height: 28,
                                         ),
 
-                                        const Text(
-                                          "❌ DON'T",
-                                          style:
-                                          TextStyle(
-                                            color:
-                                            Colors.red,
-                                            fontWeight:
-                                            FontWeight.bold,
+                                        Text(
+                                          _t(
+                                            en: "❌ DON'T",
+                                            zh: '❌ 不应该做',
+                                            ms: '❌ JANGAN',
+                                          ),
+                                          style: const TextStyle(
+                                            color: Colors.red,
+                                            fontWeight: FontWeight.bold,
                                           ),
                                         ),
 
@@ -1055,8 +1212,12 @@ class _CulturalMapViewState
                                         ),
 
                                         if (previewDonts.isEmpty)
-                                          const Text(
-                                            "No specific DON'T guidance available.",
+                                          Text(
+                                            _t(
+                                              en: "No specific DON'T guidance available.",
+                                              zh: '目前没有具体的“不应该做”礼仪建议。',
+                                              ms: 'Tiada panduan JANGAN khusus buat masa ini.',
+                                            ),
                                           )
                                         else
                                           ...previewDonts.map(
@@ -1065,8 +1226,13 @@ class _CulturalMapViewState
                                                   rank:
                                                   _rankValue(item),
                                                   text:
-                                                  item['ruleName']?.toString() ??
-                                                      'Etiquette rule',
+                                                  _ruleText(item).isNotEmpty
+                                                      ? _ruleText(item)
+                                                      : _t(
+                                                    en: 'Etiquette rule',
+                                                    zh: '礼仪规则',
+                                                    ms: 'Peraturan etika',
+                                                  ),
                                                   color:
                                                   Colors.red,
                                                 ),
@@ -1077,7 +1243,11 @@ class _CulturalMapViewState
                                         ),
 
                                         Text(
-                                          'Top 3 ranked etiquette rules for this place. Approved reports can reprioritise the DON\'T ranking. Open the full guide to see all rules.',
+                                          _t(
+                                            en: "Top 3 ranked etiquette rules for this place. Approved reports can reprioritise the DON'T ranking. Open the full guide to see all rules.",
+                                            zh: '此地点显示排名前三的礼仪规则。管理员批准的报告可能会调整“不应该做”的优先顺序。打开完整指南可查看所有规则。',
+                                            ms: 'Tiga peraturan etika teratas untuk tempat ini. Laporan yang diluluskan boleh mengubah keutamaan kedudukan JANGAN. Buka panduan penuh untuk melihat semua peraturan.',
+                                          ),
                                           style:
                                           TextStyle(
                                             color:
@@ -1110,8 +1280,12 @@ class _CulturalMapViewState
                                               Icons.menu_book_outlined,
                                             ),
                                             label:
-                                            const Text(
-                                              'View Full Etiquette Guide',
+                                            Text(
+                                              _t(
+                                                en: 'View Full Etiquette Guide',
+                                                zh: '查看完整礼仪指南',
+                                                ms: 'Lihat Panduan Etika Penuh',
+                                              ),
                                             ),
                                             style:
                                             FilledButton.styleFrom(
@@ -1176,7 +1350,7 @@ class _CulturalMapViewState
                                       ),
                                     ),
                                     child:
-                                    const Row(
+                                    Row(
                                       crossAxisAlignment:
                                       CrossAxisAlignment.start,
                                       children: [
@@ -1196,7 +1370,11 @@ class _CulturalMapViewState
                                             CrossAxisAlignment.start,
                                             children: [
                                               Text(
-                                                'What You Can Do Here',
+                                                _t(
+                                                  en: 'What You Can Do Here',
+                                                  zh: '您可以在这里做什么',
+                                                  ms: 'Aktiviti yang Boleh Dilakukan di Sini',
+                                                ),
                                                 style:
                                                 TextStyle(
                                                   color:
@@ -1206,7 +1384,11 @@ class _CulturalMapViewState
                                                 ),
                                               ),
                                               Text(
-                                                'Tourist-friendly activities at this cultural attraction',
+                                                _t(
+                                                  en: 'Tourist-friendly activities at this cultural attraction',
+                                                  zh: '适合游客在此文化景点进行的活动',
+                                                  ms: 'Aktiviti mesra pelancong di tarikan budaya ini',
+                                                ),
                                                 style:
                                                 TextStyle(
                                                   color:
@@ -1223,14 +1405,18 @@ class _CulturalMapViewState
                                   ),
 
                                   if (activities.isEmpty)
-                                    const Padding(
+                                    Padding(
                                       padding:
                                       EdgeInsets.all(
                                         16,
                                       ),
                                       child:
                                       Text(
-                                        'Activity information is not available yet.',
+                                        _t(
+                                          en: 'Activity information is not available yet.',
+                                          zh: '暂无活动信息。',
+                                          ms: 'Maklumat aktiviti belum tersedia.',
+                                        ),
                                       ),
                                     )
                                   else
@@ -1248,11 +1434,19 @@ class _CulturalMapViewState
                                           index:
                                           index,
                                           title:
-                                          activity['title'] ??
-                                              '',
+                                          _localizedText(
+                                            activity,
+                                            enKey: 'title',
+                                            zhKey: 'titleZh',
+                                            msKey: 'titleMs',
+                                          ),
                                           description:
-                                          activity['description'] ??
-                                              '',
+                                          _localizedText(
+                                            activity,
+                                            enKey: 'description',
+                                            zhKey: 'descriptionZh',
+                                            msKey: 'descriptionMs',
+                                          ),
                                         );
                                       },
                                     ),
@@ -1272,10 +1466,17 @@ class _CulturalMapViewState
                               icon:
                               Icons.info_outline,
                               title:
-                              'About',
+                              _t(
+                                en: 'About',
+                                zh: '关于',
+                                ms: 'Tentang',
+                              ),
                               content:
-                              _viewModel.attractionDescription(
+                              _localizedText(
                                 attraction,
+                                enKey: 'description',
+                                zhKey: 'descriptionZh',
+                                msKey: 'descriptionMs',
                               ),
                             ),
 
@@ -1287,7 +1488,11 @@ class _CulturalMapViewState
                               icon:
                               Icons.location_on_outlined,
                               title:
-                              'Location',
+                              _t(
+                                en: 'Location',
+                                zh: '地点',
+                                ms: 'Lokasi',
+                              ),
                               content:
                               _viewModel.attractionAddress(
                                 attraction,
@@ -1302,11 +1507,17 @@ class _CulturalMapViewState
                               icon:
                               Icons.schedule_outlined,
                               title:
-                              'Opening Information',
+                              _t(
+                                en: 'Opening Information',
+                                zh: '开放信息',
+                                ms: 'Maklumat Waktu Operasi',
+                              ),
                               content:
-                              _viewModel
-                                  .attractionOpeningInformation(
+                              _localizedText(
                                 attraction,
+                                enKey: 'openingInformation',
+                                zhKey: 'openingInformationZh',
+                                msKey: 'openingInformationMs',
                               ),
                             ),
 
@@ -1389,8 +1600,16 @@ class _CulturalMapViewState
                                 label:
                                 Text(
                                   isFavourite
-                                      ? 'Remove from Favourites'
-                                      : 'Save to Favourites',
+                                      ? _t(
+                                    en: 'Remove from Favourites',
+                                    zh: '从收藏中移除',
+                                    ms: 'Alih Keluar daripada Kegemaran',
+                                  )
+                                      : _t(
+                                    en: 'Save to Favourites',
+                                    zh: '保存到收藏',
+                                    ms: 'Simpan ke Kegemaran',
+                                  ),
                                 ),
                               ),
                             ),
@@ -1425,8 +1644,16 @@ class _CulturalMapViewState
                                 label:
                                 Text(
                                   isInVisitList
-                                      ? 'Remove from Visit List'
-                                      : 'Add to Visit List',
+                                      ? _t(
+                                    en: 'Remove from Visit List',
+                                    zh: '从参观清单移除',
+                                    ms: 'Alih Keluar daripada Senarai Lawatan',
+                                  )
+                                      : _t(
+                                    en: 'Add to Visit List',
+                                    zh: '添加到参观清单',
+                                    ms: 'Tambah ke Senarai Lawatan',
+                                  ),
                                 ),
                               ),
                             ),
@@ -1467,10 +1694,14 @@ class _CulturalMapViewState
                                     )
                                       ..hideCurrentSnackBar()
                                       ..showSnackBar(
-                                        const SnackBar(
+                                        SnackBar(
                                           content:
                                           Text(
-                                            'Unable to open directions.',
+                                            _t(
+                                              en: 'Unable to open directions.',
+                                              zh: '无法打开导航。',
+                                              ms: 'Tidak dapat membuka navigasi.',
+                                            ),
                                           ),
                                         ),
                                       );
@@ -1481,8 +1712,12 @@ class _CulturalMapViewState
                                   Icons.directions,
                                 ),
                                 label:
-                                const Text(
-                                  'Directions',
+                                Text(
+                                  _t(
+                                    en: 'Directions',
+                                    zh: '导航',
+                                    ms: 'Arah',
+                                  ),
                                 ),
                               ),
                             ),
@@ -1840,13 +2075,23 @@ class _CulturalMapViewState
             appBar: AppBar(
               backgroundColor: colorScheme.surface,
               surfaceTintColor: Colors.transparent,
-              title: const Text(
-                'Cultural Map',
-                style: TextStyle(fontWeight: FontWeight.w800),
+              title: Text(
+                _t(
+                  en: 'Cultural Map',
+                  zh: '文化地图',
+                  ms: 'Peta Budaya',
+                ),
+                style: const TextStyle(
+                  fontWeight: FontWeight.w800,
+                ),
               ),
               actions: [
                 IconButton(
-                  tooltip: 'Refresh attractions',
+                  tooltip: _t(
+                    en: 'Refresh attractions',
+                    zh: '刷新景点',
+                    ms: 'Muat semula tarikan',
+                  ),
                   onPressed: viewModel.isLoading
                       ? null
                       : () async {
@@ -1902,7 +2147,11 @@ class _CulturalMapViewState
                     colorScheme.shadow.withValues(alpha: 0.16),
                     shape: const CircleBorder(),
                     child: IconButton(
-                      tooltip: 'My Location',
+                      tooltip: _t(
+                        en: 'My Location',
+                        zh: '我的位置',
+                        ms: 'Lokasi Saya',
+                      ),
                       onPressed:
                       viewModel.isLocating ? null : _refreshLocation,
                       icon: viewModel.isLocating
@@ -1955,7 +2204,11 @@ class _CulturalMapViewState
                                 ),
                                 const SizedBox(width: 12),
                                 Text(
-                                  'Loading cultural places...',
+                                  _t(
+                                    en: 'Loading cultural places...',
+                                    zh: '正在加载文化景点...',
+                                    ms: 'Memuatkan tempat budaya...',
+                                  ),
                                   style: Theme.of(context)
                                       .textTheme
                                       .bodyMedium
@@ -1993,7 +2246,11 @@ class _CulturalMapViewState
           setState(() {});
         },
         decoration: InputDecoration(
-          hintText: 'Search cultural attractions',
+          hintText: _t(
+            en: 'Search cultural attractions',
+            zh: '搜索文化景点',
+            ms: 'Cari tarikan budaya',
+          ),
           hintStyle: TextStyle(
             color: colorScheme.onSurfaceVariant,
           ),
@@ -2007,7 +2264,11 @@ class _CulturalMapViewState
             color: colorScheme.onSurfaceVariant,
           )
               : IconButton(
-            tooltip: 'Clear search',
+            tooltip: _t(
+              en: 'Clear search',
+              zh: '清除搜索',
+              ms: 'Kosongkan carian',
+            ),
             onPressed: () {
               _searchController.clear();
               viewModel.clearSearch();
@@ -2083,7 +2344,11 @@ class _CulturalMapViewState
           const SizedBox(height: 10),
           Center(
             child: Text(
-              'Drag up for more places • drag down to view the map',
+              _t(
+                en: 'Drag up for more places â€¢ drag down to view the map',
+                zh: '向上拖查看更多景点 • 向下拖动查看地图',
+                ms: 'Tarik ke atas untuk lebih banyak tempat â€¢ tarik ke bawah untuk melihat peta',
+              ),
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: colorScheme.onSurfaceVariant,
@@ -2118,8 +2383,16 @@ class _CulturalMapViewState
                     children: [
                       Text(
                         usingDefault
-                            ? 'Kuala Lumpur pilot area'
-                            : 'Places near your location',
+                            ? _t(
+                          en: 'Kuala Lumpur pilot area',
+                          zh: '吉隆坡试点区域',
+                          ms: 'Kawasan perintis Kuala Lumpur',
+                        )
+                            : _t(
+                          en: 'Places near your location',
+                          zh: '您附近的景点',
+                          ms: 'Tempat berhampiran lokasi anda',
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style:
@@ -2129,7 +2402,11 @@ class _CulturalMapViewState
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '${viewModel.resultCount} cultural attraction${viewModel.resultCount == 1 ? '' : 's'} found',
+                        _t(
+                          en: '${viewModel.resultCount} cultural attraction${viewModel.resultCount == 1 ? '' : 's'} found',
+                          zh: '找到 ${viewModel.resultCount} 个文化景点',
+                          ms: '${viewModel.resultCount} tarikan budaya ditemui',
+                        ),
                         style:
                         Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: colorScheme.onSurfaceVariant,
@@ -2144,7 +2421,13 @@ class _CulturalMapViewState
                     Icons.my_location_rounded,
                     size: 17,
                   ),
-                  label: const Text('Update'),
+                  label: Text(
+                    _t(
+                      en: 'Update',
+                      zh: '更新位置',
+                      ms: 'Kemas Kini',
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -2174,8 +2457,16 @@ class _CulturalMapViewState
                   Expanded(
                     child: Text(
                       viewModel.hasActiveFilter
-                          ? 'Filters are active'
-                          : 'Filter by cultural category',
+                          ? _t(
+                        en: 'Filters are active',
+                        zh: '筛选条件已启用',
+                        ms: 'Penapis sedang digunakan',
+                      )
+                          : _t(
+                        en: 'Filter by cultural category',
+                        zh: '按文化类别筛选',
+                        ms: 'Tapis mengikut kategori budaya',
+                      ),
                       style: Theme.of(context)
                           .textTheme
                           .bodyMedium
@@ -2191,7 +2482,13 @@ class _CulturalMapViewState
                         viewModel.clearFilters();
                         setState(() {});
                       },
-                      child: const Text('Clear'),
+                      child: Text(
+                        _t(
+                          en: 'Clear',
+                          zh: '清除',
+                          ms: 'Kosongkan',
+                        ),
+                      ),
                     ),
                 ],
               ),
@@ -2215,7 +2512,9 @@ class _CulturalMapViewState
                 viewModel.isCategorySelected(category);
 
                 return FilterChip(
-                  label: Text(category),
+                  label: Text(
+                    _categoryText(category),
+                  ),
                   selected: selected,
                   onSelected: (_) {
                     viewModel.toggleCategory(category);
@@ -2248,7 +2547,11 @@ class _CulturalMapViewState
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Cultural places',
+                    _t(
+                      en: 'Cultural places',
+                      zh: '文化景点',
+                      ms: 'Tempat budaya',
+                    ),
                     style:
                     Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w800,
@@ -2256,7 +2559,11 @@ class _CulturalMapViewState
                   ),
                 ),
                 Text(
-                  '${viewModel.resultCount} found',
+                  _t(
+                    en: '${viewModel.resultCount} found',
+                    zh: '找到 ${viewModel.resultCount} 个',
+                    ms: '${viewModel.resultCount} ditemui',
+                  ),
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: colorScheme.onSurfaceVariant,
                   ),
@@ -2390,7 +2697,7 @@ class _CulturalMapViewState
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      category,
+                      _categoryText(category),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context)

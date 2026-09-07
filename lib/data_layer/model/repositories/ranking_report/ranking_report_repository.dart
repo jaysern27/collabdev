@@ -113,7 +113,7 @@ class RankingReportRepository {
   /// IMPORTANT:
   /// A report contributes to ranking ONLY after the Admin approves it.
   ///
-  /// If one approved report contains 3 selected DON’T rules, each of the
+  /// If one approved report contains 3 selected DONâ€™T rules, each of the
   /// 3 unique violations contributes +1 to its own ranking frequency.
   Future<void> approveReport(
       String reportId,
@@ -330,6 +330,8 @@ class RankingReportRepository {
             .trim()
             : _slug(ruleName),
         'ruleName': ruleName,
+        'ruleNameZh': (definition?['ruleNameZh'] ?? '').toString().trim(),
+        'ruleNameMs': (definition?['ruleNameMs'] ?? '').toString().trim(),
         'defaultRank': defaultRank,
         'rank': defaultRank,
         'frequency': 0,
@@ -404,6 +406,8 @@ class RankingReportRepository {
       rankedDonts.add({
         'ruleId': ruleId,
         'ruleName': ruleName,
+        'ruleNameZh': (definition?['ruleNameZh'] ?? '').toString().trim(),
+        'ruleNameMs': (definition?['ruleNameMs'] ?? '').toString().trim(),
         'category':
         definition?['category'] ??
             live?['category'] ??
@@ -577,6 +581,11 @@ class RankingReportRepository {
             : null,
       );
     }
+
+    // Add the existing trilingual rule labels from the attraction's
+    // rankingRules. This changes display metadata only; ranking order,
+    // frequency, scores and the canonical English ruleName are untouched.
+    await _enrichRankingTranslations(rankings);
 
     final locationCounts = <String, int>{};
 
@@ -914,6 +923,204 @@ class RankingReportRepository {
     return attractionId;
   }
 
+  Future<void> _enrichRankingTranslations(
+      List<Map<String, dynamic>> rankings,
+      ) async {
+    if (rankings.isEmpty) {
+      return;
+    }
+
+    // Cache attraction documents during this enrichment pass so a ranking
+    // list never reads the same attraction more than once.
+    final attractionCache =
+    <String, Map<String, dynamic>?>{};
+
+    for (final ranking in rankings) {
+      var currentZh =
+      (ranking['ruleNameZh'] ?? '')
+          .toString()
+          .trim();
+
+      var currentMs =
+      (ranking['ruleNameMs'] ?? '')
+          .toString()
+          .trim();
+
+      if (currentZh.isNotEmpty &&
+          currentMs.isNotEmpty) {
+        continue;
+      }
+
+      final ruleId =
+      (ranking['ruleId'] ?? '')
+          .toString()
+          .trim();
+
+      final ruleName =
+      (ranking['ruleName'] ?? '')
+          .toString()
+          .trim();
+
+      if (ruleId.isEmpty &&
+          ruleName.isEmpty) {
+        continue;
+      }
+
+      final candidateAttractionIds =
+      <String>{};
+
+      final rawAttractionIds =
+      ranking['attractionIds'];
+
+      if (rawAttractionIds is Iterable) {
+        for (final rawId
+        in rawAttractionIds) {
+          final id =
+          rawId.toString().trim();
+
+          if (id.isNotEmpty &&
+              id != 'all' &&
+              id != 'unknown') {
+            candidateAttractionIds.add(id);
+          }
+        }
+      }
+
+      final singleAttractionId =
+      (ranking['attractionId'] ?? '')
+          .toString()
+          .trim();
+
+      if (singleAttractionId.isNotEmpty &&
+          singleAttractionId != 'all' &&
+          singleAttractionId != 'unknown') {
+        candidateAttractionIds.add(
+          singleAttractionId,
+        );
+      }
+
+      for (final attractionId
+      in candidateAttractionIds) {
+        Map<String, dynamic>?
+        attractionData;
+
+        if (attractionCache
+            .containsKey(attractionId)) {
+          attractionData =
+          attractionCache[attractionId];
+        } else {
+          try {
+            final attractionDoc =
+            await _firestoreService
+                .getDocument(
+              collection:
+              _attractionCollection,
+              documentId:
+              attractionId,
+            );
+
+            final data =
+            attractionDoc.exists
+                ? attractionDoc.data()
+                : null;
+
+            attractionData =
+            data == null
+                ? null
+                : Map<String, dynamic>.from(
+              data,
+            );
+
+            attractionCache[attractionId] =
+                attractionData;
+          } catch (_) {
+            attractionCache[attractionId] =
+            null;
+          }
+        }
+
+        if (attractionData == null) {
+          continue;
+        }
+
+        // Violation rankings are based on DON'T rules. Include DO definitions
+        // as a harmless compatibility fallback for any older stored row.
+        final definitions =
+        <Map<String, dynamic>>[
+          ..._toMapList(
+            attractionData[
+            'rankingRules'],
+          ),
+          ..._toMapList(
+            attractionData[
+            'doRankingRules'],
+          ),
+        ];
+
+        Map<String, dynamic>? definition;
+
+        if (ruleId.isNotEmpty) {
+          for (final candidate
+          in definitions) {
+            final candidateRuleId =
+            (candidate['ruleId'] ?? '')
+                .toString()
+                .trim();
+
+            if (candidateRuleId.isNotEmpty &&
+                candidateRuleId == ruleId) {
+              definition = candidate;
+              break;
+            }
+          }
+        }
+
+        if (definition == null &&
+            ruleName.isNotEmpty) {
+          definition =
+              _matchingRuleDefinition(
+                definitions: definitions,
+                ruleName: ruleName,
+              );
+        }
+
+        if (definition == null) {
+          continue;
+        }
+
+        final translatedZh =
+        (definition['ruleNameZh'] ?? '')
+            .toString()
+            .trim();
+
+        final translatedMs =
+        (definition['ruleNameMs'] ?? '')
+            .toString()
+            .trim();
+
+        if (currentZh.isEmpty &&
+            translatedZh.isNotEmpty) {
+          ranking['ruleNameZh'] =
+              translatedZh;
+          currentZh = translatedZh;
+        }
+
+        if (currentMs.isEmpty &&
+            translatedMs.isNotEmpty) {
+          ranking['ruleNameMs'] =
+              translatedMs;
+          currentMs = translatedMs;
+        }
+
+        if (currentZh.isNotEmpty &&
+            currentMs.isNotEmpty) {
+          break;
+        }
+      }
+    }
+
+  }
+
   Future<List<Map<String, dynamic>>>
   _getStoredRankings({
     String? attractionId,
@@ -1184,6 +1391,7 @@ class RankingReportRepository {
           sample['attractionName']?.toString() ??
               'Unknown attraction',
 
+
           'attractionIds':
           attractionIds,
 
@@ -1263,6 +1471,7 @@ class RankingReportRepository {
           ),
         );
       },
+
     );
 
     for (var i = 0;

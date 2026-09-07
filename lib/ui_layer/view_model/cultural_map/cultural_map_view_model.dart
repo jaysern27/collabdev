@@ -165,7 +165,11 @@ class CulturalMapViewModel extends ChangeNotifier {
       await _locationService
           .getCurrentPosition();
 
-      if (position != null) {
+      if (position != null &&
+          _isWithinMalaysia(
+            position.latitude,
+            position.longitude,
+          )) {
         _currentLatitude =
             position.latitude;
 
@@ -203,11 +207,15 @@ class CulturalMapViewModel extends ChangeNotifier {
       await _locationService
           .getCurrentPosition();
 
-      if (position == null) {
+      if (position == null ||
+          !_isWithinMalaysia(
+            position.latitude,
+            position.longitude,
+          )) {
         _useDefaultPilotArea();
 
         _errorMessage =
-        'Current location unavailable. '
+            'Current location is outside the supported Malaysia area. '
             'Showing the default Kuala Lumpur pilot area.';
       } else {
         _currentLatitude =
@@ -234,6 +242,17 @@ class CulturalMapViewModel extends ChangeNotifier {
     }
   }
 
+  bool _isWithinMalaysia(
+    double latitude,
+    double longitude,
+  ) {
+    // Approximate bounds covering
+    // Peninsular Malaysia, Sabah, Sarawak and Labuan.
+    return latitude >= 0.8 &&
+        latitude <= 7.6 &&
+        longitude >= 99.5 &&
+        longitude <= 119.5;
+  }
   // ============================================================
   // LOAD ATTRACTIONS
   // ============================================================
@@ -846,49 +865,56 @@ class CulturalMapViewModel extends ChangeNotifier {
   List<Map<String, String>> attractionActivities(
       Map<String, dynamic> attraction,
       ) {
-    final raw =
-    attraction['activities'];
+    final raw = attraction['activities'];
 
     if (raw is! List) {
       return <Map<String, String>>[];
     }
 
-    final result =
-    <Map<String, String>>[];
+    final result = <Map<String, String>>[];
 
     for (final item in raw) {
       if (item is Map) {
         final title =
-            item['title']
-                ?.toString()
-                .trim() ??
-                '';
+            item['title']?.toString().trim() ?? '';
 
         final description =
-            item['description']
-                ?.toString()
-                .trim() ??
-                '';
+            item['description']?.toString().trim() ?? '';
+
+        final titleZh =
+            item['titleZh']?.toString().trim() ?? '';
+
+        final titleMs =
+            item['titleMs']?.toString().trim() ?? '';
+
+        final descriptionZh =
+            item['descriptionZh']?.toString().trim() ?? '';
+
+        final descriptionMs =
+            item['descriptionMs']?.toString().trim() ?? '';
 
         if (title.isNotEmpty) {
           result.add({
-            'title':
-            title,
-            'description':
-            description,
+            'title': title,
+            'description': description,
+            'titleZh': titleZh,
+            'titleMs': titleMs,
+            'descriptionZh': descriptionZh,
+            'descriptionMs': descriptionMs,
           });
         }
       } else {
         final title =
-            item?.toString().trim() ??
-                '';
+            item?.toString().trim() ?? '';
 
         if (title.isNotEmpty) {
           result.add({
-            'title':
-            title,
-            'description':
-            '',
+            'title': title,
+            'description': '',
+            'titleZh': '',
+            'titleMs': '',
+            'descriptionZh': '',
+            'descriptionMs': '',
           });
         }
       }
