@@ -13,6 +13,8 @@ class RegisterPage extends StatefulWidget {
 }
 
 class _RegisterPageState extends State<RegisterPage> {
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+
   final TextEditingController nameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
@@ -39,24 +41,78 @@ class _RegisterPageState extends State<RegisterPage> {
     super.dispose();
   }
 
+  String? _validateName(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Please enter your full name.';
+    }
+
+    return null;
+  }
+
+  String? _validateEmail(String? value) {
+    final email = value?.trim() ?? '';
+
+    if (email.isEmpty) {
+      return 'Please enter your email address.';
+    }
+
+    final emailPattern = RegExp(
+      r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
+    );
+
+    if (!emailPattern.hasMatch(email)) {
+      return 'Enter a valid email, for example name@email.com.';
+    }
+
+    return null;
+  }
+
+  String? _validatePassword(String? value) {
+    final password = value ?? '';
+
+    if (password.isEmpty) {
+      return 'Please enter a password.';
+    }
+
+    if (password.length < 8) {
+      return 'Password must be at least 8 characters.';
+    }
+
+    if (!RegExp(r'[A-Z]').hasMatch(password)) {
+      return 'Password must contain at least one uppercase letter.';
+    }
+
+    if (!RegExp(r'[a-z]').hasMatch(password)) {
+      return 'Password must contain at least one lowercase letter.';
+    }
+
+    if (!RegExp(r'[0-9]').hasMatch(password)) {
+      return 'Password must contain at least one number.';
+    }
+
+    if (!RegExp(r'[!@#$%^&*(),.?":{}|<>_\-+=/\\]').hasMatch(password)) {
+      return 'Password must contain at least one special character.';
+    }
+
+    return null;
+  }
+
+  String? _validateConfirmPassword(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Please confirm your password.';
+    }
+
+    if (value != passwordController.text) {
+      return 'Passwords do not match.';
+    }
+
+    return null;
+  }
+
   Future<void> register() async {
-    final name = nameController.text.trim();
-    final email = emailController.text.trim();
-    final password = passwordController.text;
-    final confirmPassword = confirmPasswordController.text;
+    FocusScope.of(context).unfocus();
 
-    if (name.isEmpty || email.isEmpty || password.isEmpty) {
-      _showMessage('Please complete all required fields.');
-      return;
-    }
-
-    if (password.length < 6) {
-      _showMessage('Password must contain at least 6 characters.');
-      return;
-    }
-
-    if (password != confirmPassword) {
-      _showMessage('Passwords do not match.');
+    if (!(_formKey.currentState?.validate() ?? false)) {
       return;
     }
 
@@ -67,6 +123,10 @@ class _RegisterPageState extends State<RegisterPage> {
       return;
     }
 
+    final name = nameController.text.trim();
+    final email = emailController.text.trim();
+    final password = passwordController.text;
+
     setState(() => loading = true);
 
     try {
@@ -76,6 +136,7 @@ class _RegisterPageState extends State<RegisterPage> {
       );
 
       final user = result.user;
+
       if (user == null) {
         throw Exception('Unable to create account.');
       }
@@ -139,13 +200,17 @@ class _RegisterPageState extends State<RegisterPage> {
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(22, 8, 22, 30),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _buildIntro(),
-              const SizedBox(height: 22),
-              _buildRegisterCard(),
-            ],
+          child: Form(
+            key: _formKey,
+            autovalidateMode: AutovalidateMode.onUserInteraction,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildIntro(),
+                const SizedBox(height: 22),
+                _buildRegisterCard(),
+              ],
+            ),
           ),
         ),
       ),
@@ -194,7 +259,8 @@ class _RegisterPageState extends State<RegisterPage> {
                 ),
                 const SizedBox(height: 5),
                 Text(
-                  'Create your CultureGuide account to save etiquette guidance, check appropriate outfits and submit etiquette reports.',
+                  'Create your CultureGuide account to save etiquette guidance, '
+                      'check appropriate outfits and submit etiquette reports.',
                   style: TextStyle(
                     color: colorScheme.onSurfaceVariant,
                     height: 1.45,
@@ -230,33 +296,47 @@ class _RegisterPageState extends State<RegisterPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          TextField(
+          TextFormField(
             controller: nameController,
             textCapitalization: TextCapitalization.words,
             textInputAction: TextInputAction.next,
+            validator: _validateName,
             decoration: _inputDecoration(
               label: 'Full name',
               icon: Icons.person_outline_rounded,
             ),
           ),
           const SizedBox(height: 14),
-          TextField(
+          TextFormField(
             controller: emailController,
             keyboardType: TextInputType.emailAddress,
             textInputAction: TextInputAction.next,
+            autocorrect: false,
+            validator: _validateEmail,
             decoration: _inputDecoration(
               label: 'Email address',
               icon: Icons.mail_outline_rounded,
+              helperText: 'Example: name@email.com',
             ),
           ),
           const SizedBox(height: 14),
-          TextField(
+          TextFormField(
             controller: passwordController,
             obscureText: obscurePassword,
             textInputAction: TextInputAction.next,
+            autocorrect: false,
+            enableSuggestions: false,
+            validator: _validatePassword,
+            onChanged: (_) {
+              if (confirmPasswordController.text.isNotEmpty) {
+                _formKey.currentState?.validate();
+              }
+            },
             decoration: _inputDecoration(
               label: 'Password',
               icon: Icons.lock_outline_rounded,
+              helperText:
+              '8+ characters • uppercase • lowercase • number • special character',
               suffix: IconButton(
                 onPressed: () {
                   setState(() {
@@ -272,11 +352,14 @@ class _RegisterPageState extends State<RegisterPage> {
             ),
           ),
           const SizedBox(height: 14),
-          TextField(
+          TextFormField(
             controller: confirmPasswordController,
             obscureText: obscureConfirmPassword,
             textInputAction: TextInputAction.done,
-            onSubmitted: (_) {
+            autocorrect: false,
+            enableSuggestions: false,
+            validator: _validateConfirmPassword,
+            onFieldSubmitted: (_) {
               if (!loading) register();
             },
             decoration: _inputDecoration(
@@ -365,6 +448,7 @@ class _RegisterPageState extends State<RegisterPage> {
     required String label,
     required IconData icon,
     Widget? suffix,
+    String? helperText,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -372,6 +456,9 @@ class _RegisterPageState extends State<RegisterPage> {
       labelText: label,
       prefixIcon: Icon(icon),
       suffixIcon: suffix,
+      helperText: helperText,
+      helperMaxLines: 2,
+      errorMaxLines: 3,
       filled: true,
       fillColor: colorScheme.surfaceContainerHighest,
       enabledBorder: OutlineInputBorder(
@@ -384,6 +471,19 @@ class _RegisterPageState extends State<RegisterPage> {
         borderRadius: BorderRadius.circular(16),
         borderSide: BorderSide(
           color: colorScheme.primary,
+          width: 1.7,
+        ),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(
+          color: colorScheme.error,
+        ),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(
+          color: colorScheme.error,
           width: 1.7,
         ),
       ),
