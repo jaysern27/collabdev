@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../data_layer/model/services/outfit_recognition/outfit_recognition_service.dart'
+    show OutfitGender;
 import '../../view_model/outfit_recognition/outfit_recognition_view_model.dart';
 import '../../view_model/settings/app_settings_controller.dart';
 
@@ -135,6 +137,12 @@ class _OutfitRecognitionViewState
               ),
 
               _buildConsentCard(),
+
+              const SizedBox(
+                height: 20,
+              ),
+
+              _buildGenderCard(),
 
               const SizedBox(
                 height: 20,
@@ -352,6 +360,138 @@ class _OutfitRecognitionViewState
     );
   }
 
+  Widget _buildGenderCard() {
+    return Container(
+      padding: const EdgeInsets.all(
+        16,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(
+          18,
+        ),
+        border: Border.all(
+          color: const Color(
+            0xFFE5E5E5,
+          ),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment:
+        CrossAxisAlignment.start,
+        children: [
+          Text(
+            _settings.text(
+              en: 'Select Your Gender',
+              zh: '请选择您的性别',
+              ms: 'Pilih Jantina Anda',
+            ),
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 15,
+            ),
+          ),
+
+          SizedBox(
+            height: 5,
+          ),
+
+          Text(
+            _settings.text(
+              en: 'Some dress-code rules (e.g. headwear) differ '
+                  'by gender. Please select one before your '
+                  'outfit is analysed.',
+              zh: '部分穿搭规则（例如头饰要求）会因性别而异，请先选择性别再分析您的穿搭。',
+              ms: 'Sesetengah peraturan pakaian (cth. penutup kepala) '
+                  'berbeza mengikut jantina. Sila pilih sebelum '
+                  'pakaian anda dianalisis.',
+            ),
+            style: TextStyle(
+              fontSize: 12,
+              height: 1.4,
+              color: Color(
+                0xFF666666,
+              ),
+            ),
+          ),
+
+          const SizedBox(
+            height: 12,
+          ),
+
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              _buildGenderChip(
+                gender: OutfitGender.male,
+                label: _settings.text(
+                  en: 'Male',
+                  zh: '男',
+                  ms: 'Lelaki',
+                ),
+              ),
+
+              _buildGenderChip(
+                gender: OutfitGender.female,
+                label: _settings.text(
+                  en: 'Female',
+                  zh: '女',
+                  ms: 'Perempuan',
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGenderChip({
+    required OutfitGender gender,
+    required String label,
+  }) {
+    final selected =
+        _viewModel.selectedGender == gender;
+
+    return ChoiceChip(
+      label: Text(label),
+      selected: selected,
+      onSelected: (_) {
+        _viewModel.setGender(gender);
+      },
+      showCheckmark: false,
+      selectedColor: const Color(
+        0xFF00A6A6,
+      ),
+      backgroundColor: const Color(
+        0xFFF3F8FE,
+      ),
+      labelStyle: TextStyle(
+        color: selected
+            ? Colors.white
+            : const Color(
+          0xFF14213D,
+        ),
+        fontWeight: FontWeight.w600,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(
+          12,
+        ),
+        side: BorderSide(
+          color: selected
+              ? const Color(
+            0xFF00A6A6,
+          )
+              : const Color(
+            0xFFDADADA,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildPhotoSection() {
     return Column(
       crossAxisAlignment:
@@ -385,12 +525,33 @@ class _OutfitRecognitionViewState
           height: 14,
         ),
 
+        if (!_viewModel.hasSelectedGender) ...[
+          Text(
+            _settings.text(
+              en: 'Select your gender above to enable photo analysis.',
+              zh: '请先在上方选择性别以启用照片分析。',
+              ms: 'Pilih jantina anda di atas untuk membolehkan analisis foto.',
+            ),
+            style: const TextStyle(
+              fontSize: 12,
+              color: Color(
+                0xFFB00020,
+              ),
+            ),
+          ),
+
+          const SizedBox(
+            height: 10,
+          ),
+        ],
+
         Row(
           children: [
             Expanded(
               child: OutlinedButton.icon(
                 onPressed:
-                _viewModel.isLoading
+                _viewModel.isLoading ||
+                    !_viewModel.hasSelectedGender
                     ? null
                     : _viewModel.capturePhoto,
                 icon: const Icon(
@@ -436,7 +597,8 @@ class _OutfitRecognitionViewState
             Expanded(
               child: ElevatedButton.icon(
                 onPressed:
-                _viewModel.isLoading
+                _viewModel.isLoading ||
+                    !_viewModel.hasSelectedGender
                     ? null
                     : _viewModel.selectPhoto,
                 icon: const Icon(
@@ -601,7 +763,9 @@ class _OutfitRecognitionViewState
         onPressed:
         _viewModel.isAnalysing ||
             !_viewModel
-                .isModelReady
+                .isModelReady ||
+            !_viewModel
+                .hasSelectedGender
             ? null
             : _analyseOutfit,
         icon: const Icon(

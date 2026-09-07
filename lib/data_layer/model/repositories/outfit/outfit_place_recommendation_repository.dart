@@ -5,6 +5,10 @@ import 'outfit_etiquette_repository.dart';
 import '../../services/location_geofencing/'
     'cultural_map_location_service.dart';
 
+import '../../services/outfit_recognition/'
+    'outfit_recognition_service.dart'
+    show OutfitGender;
+
 class NearbyCulturalAttractionsResult {
   final List<Map<String, dynamic>>
   attractions;
@@ -196,8 +200,9 @@ class OutfitPlaceRecommendationRepository {
 
   Future<List<Map<String, dynamic>>>
   getStructuredDressCodeRulesForCategory(
-      String category,
-      ) async {
+      String category, {
+        OutfitGender? gender,
+      }) async {
     final etiquette =
     await _outfitEtiquetteRepository
         .getOutfitByCategory(
@@ -222,7 +227,11 @@ class OutfitPlaceRecommendationRepository {
       title:
       'Sleeve Requirement',
       requirement:
-      etiquette['sleeve'],
+      _resolveRequirement(
+        etiquette,
+        'sleeve',
+        gender,
+      ),
       acceptedValuesFor:
       _acceptedSleeveValues,
     );
@@ -238,9 +247,12 @@ class OutfitPlaceRecommendationRepository {
       title:
       'Lower-Body Requirement',
       requirement:
-      etiquette['lowerbody'] ??
-          etiquette[
-          'lowerBody'],
+      _resolveRequirement(
+        etiquette,
+        'lowerbody',
+        gender,
+        legacyKey: 'lowerBody',
+      ),
       acceptedValuesFor:
       _acceptedLowerBodyValues,
     );
@@ -256,13 +268,23 @@ class OutfitPlaceRecommendationRepository {
       title:
       'Shoulder Requirement',
       requirement:
-      etiquette['shoulder'],
+      _resolveRequirement(
+        etiquette,
+        'shoulder',
+        gender,
+      ),
       acceptedValuesFor:
       _acceptedShoulderValues,
     );
 
     // =======================================================
     // HEADWEAR
+    //
+    // This is the attribute most likely to differ by gender
+    // (e.g. many places of worship require a headscarf for
+    // women but not for men). Admins set optional
+    // "headwearMale" / "headwearFemale" fields in Firestore
+    // to override the gender-neutral "headwear" field.
     // =======================================================
 
     _addRule(
@@ -272,12 +294,55 @@ class OutfitPlaceRecommendationRepository {
       title:
       'Headwear Requirement',
       requirement:
-      etiquette['headwear'],
+      _resolveRequirement(
+        etiquette,
+        'headwear',
+        gender,
+      ),
       acceptedValuesFor:
       _acceptedHeadwearValues,
     );
 
     return rules;
+  }
+
+  // =========================================================
+  // RESOLVE A GENDER-AWARE REQUIREMENT
+  //
+  // Looks for an optional gender-specific override first
+  // (e.g. "headwearFemale"), falling back to the
+  // gender-neutral base field (e.g. "headwear") when no
+  // override is set, or when the user selected "prefer not
+  // to say".
+  // =========================================================
+
+  dynamic _resolveRequirement(
+      Map<String, dynamic> etiquette,
+      String baseKey,
+      OutfitGender? gender, {
+        String? legacyKey,
+      }) {
+    final suffix = gender?.fieldSuffix;
+
+    if (suffix != null) {
+      final genderKey = '$baseKey$suffix';
+
+      final genderValue =
+      etiquette[genderKey];
+
+      if (genderValue != null &&
+          genderValue
+              .toString()
+              .trim()
+              .isNotEmpty) {
+        return genderValue;
+      }
+    }
+
+    return etiquette[baseKey] ??
+        (legacyKey != null
+            ? etiquette[legacyKey]
+            : null);
   }
 
   // =========================================================

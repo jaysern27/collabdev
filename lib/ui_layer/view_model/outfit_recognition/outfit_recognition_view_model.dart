@@ -48,6 +48,8 @@
     bool _isAnalysing = false;
     bool _isModelReady = false;
 
+    OutfitGender? _selectedGender;
+
     String? _selectedAttractionId;
     String? _selectedAttractionName;
 
@@ -98,6 +100,10 @@
     bool get isAnalysing => _isAnalysing;
 
     bool get isModelReady => _isModelReady;
+
+    OutfitGender? get selectedGender => _selectedGender;
+
+    bool get hasSelectedGender => _selectedGender != null;
 
     bool get areModelsReady =>
         _outfitRepository.areOutfitModelsReady;
@@ -212,6 +218,19 @@
       if (!value) {
         clearPhoto();
       }
+
+      notifyListeners();
+    }
+
+    // =========================================================
+    // GENDER
+    //
+    // Some dress-code rules (e.g. headwear) differ by gender,
+    // so this must be selected before outfit analysis runs.
+    // =========================================================
+
+    void setGender(OutfitGender gender) {
+      _selectedGender = gender;
 
       notifyListeners();
     }
@@ -765,6 +784,14 @@
         return;
       }
 
+      if (!hasSelectedGender) {
+        _errorMessage =
+        'Please select your gender before analysing your outfit.';
+
+        notifyListeners();
+        return;
+      }
+
       _setAnalysing(true);
 
       try {
@@ -1024,6 +1051,7 @@
           await _placeRecommendationRepository
               .getStructuredDressCodeRulesForCategory(
             category,
+            gender: _selectedGender,
           );
 
           debugPrint(

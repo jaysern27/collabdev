@@ -8,6 +8,32 @@ import 'package:image_picker/image_picker.dart';
 import '../../../../external_data_sources/ml_kit_tensorflow_lite/ml_kit_tensorflow_lite_data_source.dart';
 
 // ============================================================
+// OUTFIT GENDER
+//
+// Some dress-code rules (e.g. headwear) legitimately differ
+// by gender (e.g. headwear is required for women at certain
+// places of worship but not for men). The user must select
+// one of these before outfit analysis can run so that
+// gender-specific rules can be resolved correctly.
+// ============================================================
+
+enum OutfitGender {
+  male,
+  female;
+
+  // Firestore field-name suffix used to look up a
+  // gender-specific override, e.g. "headwearFemale".
+  String get fieldSuffix {
+    switch (this) {
+      case OutfitGender.male:
+        return 'Male';
+      case OutfitGender.female:
+        return 'Female';
+    }
+  }
+}
+
+// ============================================================
 // IMAGE DATA
 // ============================================================
 
@@ -1044,9 +1070,9 @@ class OutfitRecognitionService {
               );
 
               return [
-                pixel.r.toDouble(),
-                pixel.g.toDouble(),
-                pixel.b.toDouble(),
+                pixel.r.toDouble() / 255.0,
+                pixel.g.toDouble() / 255.0,
+                pixel.b.toDouble() / 255.0,
               ];
             },
           );
