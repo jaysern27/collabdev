@@ -283,6 +283,22 @@ class _ViolationRankingPageState
 
     final isTopThree = index < 3;
 
+    final rawLocation =
+        (row['attractionName'] ??
+                row['attractionId'])
+            ?.toString()
+            .trim();
+
+    final displayLocation =
+        rawLocation == null ||
+                rawLocation.isEmpty
+            ? _settings.text(
+                en: 'Unknown attraction',
+                zh: '未知景点',
+                ms: 'Tarikan tidak diketahui',
+              )
+            : rawLocation;
+
     return Container(
       margin: const EdgeInsets.only(
         bottom: 11,
@@ -382,7 +398,11 @@ class _ViolationRankingPageState
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Location: ${row['attractionName'] ?? row['attractionId'] ?? 'Unknown attraction'}',
+                  _settings.text(
+                    en: 'Location: $displayLocation',
+                    zh: '地点：$displayLocation',
+                    ms: 'Lokasi: $displayLocation',
+                  ),
                   style: TextStyle(
                     color: colorScheme.onSurfaceVariant,
                     fontSize: 12,
