@@ -2512,10 +2512,6 @@ class _CulturalMapViewState
           hintStyle: TextStyle(
             color: colorScheme.onSurfaceVariant,
           ),
-          prefixIcon: Icon(
-            Icons.search_rounded,
-            color: colorScheme.primary,
-          ),
           suffixIcon: _searchController.text.isEmpty
               ? Icon(
             Icons.travel_explore_rounded,
