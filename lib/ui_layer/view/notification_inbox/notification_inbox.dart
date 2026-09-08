@@ -25,10 +25,10 @@ class _NotificationInboxViewState
   final AppSettingsController _settings =
       AppSettingsController.instance;
 
-  static const Color _teal = Color(0xFF18B7C8);
-  static const Color _blue = Color(0xFF1E78D8);
-  static const Color _orange = Color(0xFFFFA800);
-  static const Color _red = Color(0xFFFF4057);
+  static const Color _teal = Color(0xFF00A77E);
+  static const Color _blue = Color(0xFF3CC8AE);
+  static const Color _orange = Color(0xFFFFB744);
+  static const Color _red = Color(0xFFFF5F78);
 
   static const List<Map<String, String>> _testAttractions = [
     {'id': 'batu_caves', 'name': 'Batu Caves'},
@@ -381,109 +381,235 @@ class _NotificationInboxViewState
     final unreadCount =
         _viewModel.unreadNotifications.length;
 
+    final colorScheme =
+        Theme.of(context).colorScheme;
+
+    final isDark =
+        Theme.of(context).brightness ==
+            Brightness.dark;
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(10, 6, 12, 22),
-      decoration: const BoxDecoration(
+      margin:
+          const EdgeInsets.fromLTRB(
+        12,
+        8,
+        12,
+        4,
+      ),
+      padding:
+          const EdgeInsets.fromLTRB(
+        8,
+        10,
+        12,
+        14,
+      ),
+      decoration: BoxDecoration(
         gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [_teal, _blue],
+          begin:
+              Alignment.topLeft,
+          end:
+              Alignment.bottomRight,
+          colors: isDark
+              ? const [
+                  Color(0xFF102D45),
+                  Color(0xFF0D5F5A),
+                ]
+              : const [
+                  Color(0xFFDDF4FF),
+                  Color(0xFFE7FBF5),
+                ],
         ),
-        borderRadius: BorderRadius.vertical(
-          bottom: Radius.circular(28),
-        ),
+        borderRadius:
+            BorderRadius.circular(26),
       ),
       child: Row(
         children: [
           IconButton(
-            onPressed: _isSelectionMode
-                ? _cancelSelectionMode
-                : () => Navigator.of(context).pop(),
+            onPressed:
+                _isSelectionMode
+                    ? _cancelSelectionMode
+                    : () =>
+                        Navigator.of(
+                          context,
+                        ).pop(),
             icon: Icon(
               _isSelectionMode
                   ? Icons.close_rounded
-                  : Icons.arrow_back,
-              color: Colors.white,
+                  : Icons
+                      .arrow_back_rounded,
+              color: isDark
+                  ? Colors.white
+                  : const Color(
+                      0xFF123B61,
+                    ),
             ),
           ),
-          const SizedBox(width: 4),
+          const SizedBox(
+            width: 4,
+          ),
+          Container(
+            width: 42,
+            height: 42,
+            decoration:
+                BoxDecoration(
+              color:
+                  const Color(
+                0xFF00A77E,
+              ).withValues(
+                alpha: 0.13,
+              ),
+              borderRadius:
+                  BorderRadius.circular(
+                14,
+              ),
+            ),
+            child: const Icon(
+              Icons
+                  .notifications_active_rounded,
+              color:
+                  Color(0xFF00A77E),
+              size: 23,
+            ),
+          ),
+          const SizedBox(
+            width: 11,
+          ),
           Expanded(
-            child: Text(
-              _isSelectionMode
-                  ? _t(
-                en:
-                '${_selectedReadNotificationIds.length} selected',
-                zh:
-                '已选择 ${_selectedReadNotificationIds.length} 项',
-                ms:
-                '${_selectedReadNotificationIds.length} dipilih',
-              )
-                  : _t(
-                en: 'Notifications',
-                zh: '通知',
-                ms: 'Pemberitahuan',
-              ),
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+            child: Column(
+              crossAxisAlignment:
+                  CrossAxisAlignment
+                      .start,
+              children: [
+                Text(
+                  _isSelectionMode
+                      ? _t(
+                          en:
+                              '${_selectedReadNotificationIds.length} selected',
+                          zh:
+                              '已选择 ${_selectedReadNotificationIds.length} 项',
+                          ms:
+                              '${_selectedReadNotificationIds.length} dipilih',
+                        )
+                      : _t(
+                          en:
+                              'Notifications',
+                          zh: '通知',
+                          ms:
+                              'Pemberitahuan',
+                        ),
+                  style: TextStyle(
+                    color: isDark
+                        ? Colors.white
+                        : const Color(
+                            0xFF123B61,
+                          ),
+                    fontSize: 19,
+                    fontWeight:
+                        FontWeight.w900,
+                  ),
+                ),
+                if (!_isSelectionMode)
+                  Text(
+                    _t(
+                      en:
+                          'Cultural reminders for your journey',
+                      zh:
+                          '旅途中的文化礼仪提醒',
+                      ms:
+                          'Peringatan budaya untuk perjalanan anda',
+                    ),
+                    style: TextStyle(
+                      color: isDark
+                          ? Colors.white
+                              .withValues(
+                              alpha:
+                                  0.72,
+                            )
+                          : colorScheme
+                              .onSurfaceVariant,
+                      fontSize: 11.5,
+                    ),
+                  ),
+              ],
             ),
           ),
           if (_isSelectionMode)
             IconButton(
               tooltip: _t(
-                en: 'Delete selected',
-                zh: '删除所选项目',
-                ms: 'Padam yang dipilih',
+                en:
+                    'Delete selected',
+                zh:
+                    '删除所选项目',
+                ms:
+                    'Padam yang dipilih',
               ),
               onPressed:
-              _selectedReadNotificationIds.isEmpty ||
+                  _selectedReadNotificationIds
+                              .isEmpty ||
+                          _viewModel
+                              .isDeleting
+                      ? null
+                      : _deleteSelectedNotifications,
+              icon:
                   _viewModel.isDeleting
-                  ? null
-                  : _deleteSelectedNotifications,
-              icon: _viewModel.isDeleting
-                  ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.white,
-                ),
-              )
-                  : const Icon(
-                Icons.delete_outline_rounded,
-                color: Colors.white,
-              ),
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child:
+                              CircularProgressIndicator(
+                            strokeWidth:
+                                2,
+                            color:
+                                Color(
+                              0xFF00A77E,
+                            ),
+                          ),
+                        )
+                      : const Icon(
+                          Icons
+                              .delete_outline_rounded,
+                          color:
+                              Color(
+                            0xFFFF5F78,
+                          ),
+                        ),
             )
           else if (unreadCount > 0)
             Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 10,
+              padding:
+                  const EdgeInsets
+                      .symmetric(
+                horizontal: 9,
                 vertical: 5,
               ),
-              decoration: BoxDecoration(
+              decoration:
+                  BoxDecoration(
                 color:
-                Colors.white.withValues(alpha: 0.18),
-                borderRadius: BorderRadius.circular(20),
+                    const Color(
+                  0xFFFFB744,
+                ).withValues(
+                  alpha: 0.18,
+                ),
+                borderRadius:
+                    BorderRadius
+                        .circular(
+                  20,
+                ),
               ),
               child: Text(
                 unreadCount > 9
-                    ? _t(
-                  en: '9+ new',
-                  zh: '9+ 新通知',
-                  ms: '9+ baharu',
-                )
-                    : _t(
-                  en: '$unreadCount new',
-                  zh: '$unreadCount 则新通知',
-                  ms: '$unreadCount baharu',
-                ),
-                style: const TextStyle(
-                  color: Colors.white,
+                    ? '9+'
+                    : '$unreadCount',
+                style:
+                    const TextStyle(
+                  color:
+                      Color(
+                    0xFFFF9C12,
+                  ),
                   fontSize: 12,
-                  fontWeight: FontWeight.w600,
+                  fontWeight:
+                      FontWeight.w900,
                 ),
               ),
             ),

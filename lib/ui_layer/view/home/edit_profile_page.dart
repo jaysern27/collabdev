@@ -37,7 +37,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
   String? _existingPhotoBase64;
   XFile? _selectedPhoto;
 
-  static const Color _primary = Color(0xFF2F6FED);
+  static const Color _primary = Color(0xFF00A77E);
 
   @override
   void initState() {
@@ -440,10 +440,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
   @override
   Widget build(BuildContext context) {
     final User? user = _auth.currentUser;
-    final colorScheme = Theme.of(context).colorScheme;
+    final colorScheme =
+        Theme.of(context).colorScheme;
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor:
+          Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
           _settings.text(
@@ -452,81 +454,246 @@ class _EditProfilePageState extends State<EditProfilePage> {
             ms: 'Edit Profil',
           ),
           style: const TextStyle(
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w900,
           ),
         ),
         backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
+        foregroundColor: colorScheme.onSurface,
       ),
       body: _loading
           ? const Center(
-        child: CircularProgressIndicator(),
-      )
+              child: CircularProgressIndicator(
+                color: Color(0xFF00A77E),
+              ),
+            )
           : SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(
-            20,
-            6,
-            20,
-            30,
-          ),
-          child: Form(
-            key: _formKey,
-            autovalidateMode: AutovalidateMode.onUserInteraction,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _buildAvatar(colorScheme),
-                const SizedBox(height: 26),
-                _buildProfileCard(
-                  user,
-                  colorScheme,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(
+                  18,
+                  6,
+                  18,
+                  28,
                 ),
-                const SizedBox(height: 18),
-                _buildPrivacyNote(colorScheme),
-                const SizedBox(height: 24),
-                SizedBox(
-                  height: 54,
-                  child: FilledButton.icon(
-                    onPressed: _saving ? null : _saveProfile,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: _primary,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(17),
+                child: Form(
+                  key: _formKey,
+                  autovalidateMode:
+                      AutovalidateMode.onUserInteraction,
+                  child: Column(
+                    crossAxisAlignment:
+                        CrossAxisAlignment.stretch,
+                    children: [
+                      _buildEditProfileHero(
+                        user,
+                        colorScheme,
                       ),
-                    ),
-                    icon: _saving
-                        ? const SizedBox.shrink()
-                        : const Icon(
-                      Icons.save_outlined,
-                    ),
-                    label: _saving
-                        ? const SizedBox(
-                      width: 22,
-                      height: 22,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2.3,
+                      const SizedBox(height: 18),
+                      _buildProfileCard(
+                        user,
+                        colorScheme,
                       ),
-                    )
-                        : Text(
-                      _settings.text(
-                        en: 'Save Profile',
-                        zh: '保存个人资料',
-                        ms: 'Simpan Profil',
+                      const SizedBox(height: 16),
+                      _buildPrivacyNote(
+                        colorScheme,
                       ),
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 15.5,
+                      const SizedBox(height: 20),
+                      SizedBox(
+                        height: 54,
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            borderRadius:
+                                BorderRadius.circular(
+                              18,
+                            ),
+                            gradient:
+                                const LinearGradient(
+                              colors: [
+                                Color(0xFF00A77E),
+                                Color(0xFF3CC8AE),
+                              ],
+                            ),
+                          ),
+                          child: FilledButton.icon(
+                            onPressed: _saving
+                                ? null
+                                : _saveProfile,
+                            style:
+                                FilledButton.styleFrom(
+                              backgroundColor:
+                                  Colors.transparent,
+                              shadowColor:
+                                  Colors.transparent,
+                              foregroundColor:
+                                  Colors.white,
+                              shape:
+                                  RoundedRectangleBorder(
+                                borderRadius:
+                                    BorderRadius.circular(
+                                  18,
+                                ),
+                              ),
+                            ),
+                            icon: _saving
+                                ? const SizedBox.shrink()
+                                : const Icon(
+                                    Icons.save_outlined,
+                                  ),
+                            label: _saving
+                                ? const SizedBox(
+                                    width: 22,
+                                    height: 22,
+                                    child:
+                                        CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2.3,
+                                    ),
+                                  )
+                                : Text(
+                                    _settings.text(
+                                      en: 'Save Profile',
+                                      zh: '保存个人资料',
+                                      ms: 'Simpan Profil',
+                                    ),
+                                    style:
+                                        const TextStyle(
+                                      fontWeight:
+                                          FontWeight.w800,
+                                      fontSize: 15.5,
+                                    ),
+                                  ),
+                          ),
+                        ),
                       ),
-                    ),
+                      const SizedBox(height: 18),
+                      Row(
+                        mainAxisAlignment:
+                            MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.favorite_rounded,
+                            color:
+                                Color(0xFFFF5F78),
+                            size: 16,
+                          ),
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              _settings.text(
+                                en:
+                                    'Respect the Culture • Keep Malaysia Beautiful',
+                                zh:
+                                    '尊重文化 • 让马来西亚更美丽',
+                                ms:
+                                    'Hormati Budaya • Kekalkan Keindahan Malaysia',
+                              ),
+                              textAlign:
+                                  TextAlign.center,
+                              style: TextStyle(
+                                color: colorScheme
+                                    .onSurfaceVariant,
+                                fontSize: 11.5,
+                                fontWeight:
+                                    FontWeight.w600,
+                                fontStyle:
+                                    FontStyle.italic,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
-              ],
+              ),
+            ),
+    );
+  }
+
+  Widget _buildEditProfileHero(
+    User? user,
+    ColorScheme colorScheme,
+  ) {
+    final isDark =
+        Theme.of(context).brightness ==
+            Brightness.dark;
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(
+        18,
+        20,
+        18,
+        18,
+      ),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(28),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDark
+              ? const [
+                  Color(0xFF102D45),
+                  Color(0xFF0D5F5A),
+                ]
+              : const [
+                  Color(0xFFDDF4FF),
+                  Color(0xFFE7FBF5),
+                ],
+        ),
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            right: -8,
+            bottom: -18,
+            child: Icon(
+              Icons.travel_explore_rounded,
+              size: 125,
+              color: const Color(0xFF00A77E)
+                  .withValues(
+                alpha: isDark ? 0.16 : 0.10,
+              ),
             ),
           ),
-        ),
+          Column(
+            children: [
+              _buildAvatar(colorScheme),
+              const SizedBox(height: 12),
+              Text(
+                _settings.text(
+                  en: 'Make it yours',
+                  zh: '打造你的个人资料',
+                  ms: 'Jadikan milik anda',
+                ),
+                style: TextStyle(
+                  color: isDark
+                      ? Colors.white
+                      : const Color(0xFF123B61),
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                user?.email ??
+                    _settings.text(
+                      en: 'CultureGuide traveller',
+                      zh: 'CultureGuide 旅客',
+                      ms: 'Pelancong CultureGuide',
+                    ),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: isDark
+                      ? Colors.white.withValues(
+                          alpha: 0.75,
+                        )
+                      : const Color(0xFF4A6872),
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

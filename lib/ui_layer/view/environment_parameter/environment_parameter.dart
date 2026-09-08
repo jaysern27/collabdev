@@ -324,156 +324,401 @@ class _EnvironmentParameterPageState
   }
 
   Widget _buildHeader() {
-    return Row(
-      children: [
-        IconButton(
-          onPressed: () => Navigator.of(context).pop(),
-          icon: const Icon(Icons.arrow_back_rounded),
-          color: Theme.of(context).colorScheme.onSurface,
+    final isDark =
+        Theme.of(context).brightness ==
+            Brightness.dark;
+
+    return Container(
+      constraints:
+          const BoxConstraints(
+        minHeight: 175,
+      ),
+      padding:
+          const EdgeInsets.fromLTRB(
+        10,
+        14,
+        18,
+        18,
+      ),
+      decoration: BoxDecoration(
+        borderRadius:
+            BorderRadius.circular(28),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDark
+              ? const [
+                  Color(0xFF102D45),
+                  Color(0xFF0D5F5A),
+                ]
+              : const [
+                  Color(0xFFDDF4FF),
+                  Color(0xFFE7FBF5),
+                ],
         ),
-        const SizedBox(width: 2),
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            gradient: AppColors.heroGradient,
-            borderRadius: BorderRadius.circular(22),
-          ),
-          child: const Icon(
-            Icons.tune_rounded,
-            color: Colors.white,
-            size: 26,
-          ),
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                _envT(
-                  en: 'Environment Parameters',
-                  zh: '环境参数',
-                  ms: 'Parameter Persekitaran',
-                ),
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            right: -8,
+            bottom: -20,
+            child: Icon(
+              Icons.radar_rounded,
+              size: 125,
+              color:
+                  const Color(
+                0xFF00A77E,
+              ).withValues(
+                alpha:
+                    isDark ? 0.17 : 0.10,
               ),
-              const SizedBox(height: 2),
-              Text(
-                _envT(
-                  en: 'Geofence radius and etiquette alert cooldown',
-                  zh: '地理围栏半径与礼仪提醒冷却时间',
-                  ms: 'Jejari geofence dan tempoh bertenang amaran etika',
+            ),
+          ),
+          Column(
+            mainAxisSize:
+                MainAxisSize.min,
+            crossAxisAlignment:
+                CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  IconButton(
+                    onPressed: () =>
+                        Navigator.of(
+                          context,
+                        ).pop(),
+                    icon: const Icon(
+                      Icons
+                          .arrow_back_rounded,
+                    ),
+                    color: isDark
+                        ? Colors.white
+                        : const Color(
+                            0xFF123B61,
+                          ),
+                  ),
+                  const Spacer(),
+                  Container(
+                    padding:
+                        const EdgeInsets
+                            .symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration:
+                        BoxDecoration(
+                      color:
+                          const Color(
+                        0xFF00A77E,
+                      ).withValues(
+                        alpha: 0.12,
+                      ),
+                      borderRadius:
+                          BorderRadius
+                              .circular(
+                        14,
+                      ),
+                    ),
+                    child: Text(
+                      _envT(
+                        en:
+                            'Admin Settings',
+                        zh:
+                            '管理员设置',
+                        ms:
+                            'Tetapan Pentadbir',
+                      ),
+                      style:
+                          const TextStyle(
+                        color:
+                            Color(
+                          0xFF00A77E,
+                        ),
+                        fontSize: 11,
+                        fontWeight:
+                            FontWeight
+                                .w800,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(
+                height: 14,
+              ),
+              Padding(
+                padding:
+                    const EdgeInsets.only(
+                  left: 10,
                 ),
-                style: TextStyle(
-                  fontSize: 12.5,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                child: Column(
+                  crossAxisAlignment:
+                      CrossAxisAlignment
+                          .start,
+                  children: [
+                    Text(
+                      _envT(
+                        en:
+                            'Environment Parameters',
+                        zh:
+                            '环境参数',
+                        ms:
+                            'Parameter Persekitaran',
+                      ),
+                      style: TextStyle(
+                        color: isDark
+                            ? Colors.white
+                            : const Color(
+                                0xFF123B61,
+                              ),
+                        fontSize: 21,
+                        fontWeight:
+                            FontWeight
+                                .w900,
+                      ),
+                    ),
+                    const SizedBox(
+                      height: 5,
+                    ),
+                    SizedBox(
+                      width: 260,
+                      child: Text(
+                        _envT(
+                          en:
+                              'Control geofence radius and etiquette alert cooldown.',
+                          zh:
+                              '管理地理围栏半径和礼仪提醒冷却时间。',
+                          ms:
+                              'Urus jejari geofence dan tempoh bertenang amaran etika.',
+                        ),
+                        style: TextStyle(
+                          color: isDark
+                              ? Colors.white
+                                  .withValues(
+                                  alpha:
+                                      0.74,
+                                )
+                              : const Color(
+                                  0xFF4A6872,
+                                ),
+                          fontSize: 12.5,
+                          height: 1.4,
+                          fontWeight:
+                              FontWeight
+                                  .w600,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
   Widget _buildCooldownCard() {
+    final colorScheme =
+        Theme.of(context).colorScheme;
+    final isDark =
+        Theme.of(context).brightness ==
+            Brightness.dark;
+
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding:
+          const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        gradient: AppColors.heroGradient,
-        borderRadius: BorderRadius.circular(22),
+        color: colorScheme.surface,
+        borderRadius:
+            BorderRadius.circular(24),
+        border: Border.all(
+          color:
+              colorScheme.outlineVariant,
+        ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.25),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+            color:
+                Colors.black.withValues(
+              alpha:
+                  isDark ? 0.14 : 0.05,
+            ),
+            blurRadius: 18,
+            offset:
+                const Offset(0, 6),
           ),
         ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment:
+            CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(
-                Icons.timer_outlined,
-                color: Colors.white,
-                size: 20,
+              Container(
+                width: 46,
+                height: 46,
+                decoration:
+                    BoxDecoration(
+                  color:
+                      const Color(
+                    0xFFFFB744,
+                  ).withValues(
+                    alpha: 0.14,
+                  ),
+                  borderRadius:
+                      BorderRadius.circular(
+                    14,
+                  ),
+                ),
+                child: const Icon(
+                  Icons.timer_outlined,
+                  color:
+                      Color(
+                    0xFFFF9C12,
+                  ),
+                ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(
+                width: 12,
+              ),
               Expanded(
-                child: Text(
-                  _envT(
-                    en: 'Alert Cooldown',
-                    zh: '提醒冷却时间',
-                    ms: 'Tempoh Bertenang Amaran',
-                  ),
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 16,
-                  ),
+                child: Column(
+                  crossAxisAlignment:
+                      CrossAxisAlignment
+                          .start,
+                  children: [
+                    Text(
+                      _envT(
+                        en:
+                            'Alert Cooldown',
+                        zh:
+                            '提醒冷却时间',
+                        ms:
+                            'Tempoh Bertenang Amaran',
+                      ),
+                      style: TextStyle(
+                        color: colorScheme
+                            .onSurface,
+                        fontWeight:
+                            FontWeight
+                                .w900,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(
+                      height: 3,
+                    ),
+                    Text(
+                      _envT(
+                        en:
+                            '$_activeGeofenceCount active geofence${_activeGeofenceCount == 1 ? '' : 's'}',
+                        zh:
+                            '$_activeGeofenceCount 个启用中的地理围栏',
+                        ms:
+                            '$_activeGeofenceCount geofence aktif',
+                      ),
+                      style: TextStyle(
+                        color: colorScheme
+                            .onSurfaceVariant,
+                        fontSize: 11.5,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(
+            height: 12,
+          ),
           Text(
             _envT(
-              en: 'Minutes before the same attraction can alert the same tourist again. $_activeGeofenceCount attraction${_activeGeofenceCount == 1 ? '' : 's'} currently have an active geofence.',
-              zh: '同一景点再次提醒同一游客前需等待的分钟数。目前有 $_activeGeofenceCount 个景点启用了地理围栏。',
-              ms: 'Minit sebelum tarikan yang sama boleh memberi amaran kepada pelancong yang sama sekali lagi. $_activeGeofenceCount tarikan kini mempunyai geofence aktif.',
+              en:
+                  'Minutes before the same attraction can alert the same tourist again.',
+              zh:
+                  '同一景点再次提醒同一游客前需要等待的分钟数。',
+              ms:
+                  'Minit sebelum tarikan yang sama boleh memberi amaran kepada pelancong yang sama sekali lagi.',
             ),
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.9),
+              color: colorScheme
+                  .onSurfaceVariant,
               fontSize: 12.5,
               height: 1.4,
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(
+            height: 14,
+          ),
           Row(
             children: [
               Expanded(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surface,
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: TextField(
-                    controller: _cooldownController,
-                    keyboardType: TextInputType.number,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.onSurface,
-                      fontWeight: FontWeight.w700,
+                child: TextField(
+                  controller:
+                      _cooldownController,
+                  keyboardType:
+                      TextInputType.number,
+                  decoration:
+                      InputDecoration(
+                    filled: true,
+                    fillColor: isDark
+                        ? colorScheme
+                            .surfaceContainer
+                        : const Color(
+                            0xFFF4FBFF,
+                          ),
+                    prefixIcon:
+                        const Icon(
+                      Icons
+                          .hourglass_bottom_rounded,
+                      color:
+                          Color(
+                        0xFF00A77E,
+                      ),
                     ),
-                    decoration: InputDecoration(
-                      isDense: true,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 14,
+                    suffixText:
+                        _envT(
+                      en: 'minutes',
+                      zh: '分钟',
+                      ms: 'minit',
+                    ),
+                    border:
+                        OutlineInputBorder(
+                      borderRadius:
+                          BorderRadius
+                              .circular(
+                        16,
                       ),
-                      border: InputBorder.none,
-                      suffixText: _envT(
-                        en: 'minutes',
-                        zh: '分钟',
-                        ms: 'minit',
+                      borderSide:
+                          BorderSide.none,
+                    ),
+                    enabledBorder:
+                        OutlineInputBorder(
+                      borderRadius:
+                          BorderRadius
+                              .circular(
+                        16,
                       ),
-                      suffixStyle: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        fontSize: 12,
+                      borderSide:
+                          BorderSide(
+                        color:
+                            colorScheme
+                                .outlineVariant,
                       ),
                     ),
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(
+                width: 10,
+              ),
               _SaveButton(
-                isSaving: _isSavingCooldown,
-                onPressed: _saveCooldown,
+                isSaving:
+                    _isSavingCooldown,
+                onPressed:
+                    _saveCooldown,
                 filled: true,
               ),
             ],
@@ -489,7 +734,7 @@ class _EnvironmentParameterPageState
         Icon(
           Icons.location_on_outlined,
           size: 18,
-          color: Theme.of(context).colorScheme.primary,
+          color: const Color(0xFF00A77E),
         ),
         const SizedBox(width: 6),
         Text(
@@ -639,7 +884,7 @@ class _EnvironmentParameterPageState
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(22),
         border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Column(
@@ -693,7 +938,7 @@ class _EnvironmentParameterPageState
               ),
               Switch(
                 value: isActive,
-                activeThumbColor: AppColors.primary,
+                activeThumbColor: const Color(0xFF00A77E),
                 onChanged: (value) {
                   setState(() {
                     _activeByAttraction[id] = value;
@@ -814,7 +1059,7 @@ class _CategoryChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: selected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.surfaceContainerHighest,
+      color: selected ? const Color(0xFF00A77E) : Theme.of(context).colorScheme.surfaceContainerHighest,
       borderRadius: BorderRadius.circular(20),
       child: InkWell(
         borderRadius: BorderRadius.circular(20),
@@ -829,7 +1074,7 @@ class _CategoryChip extends StatelessWidget {
             style: TextStyle(
               fontSize: 12.5,
               fontWeight: FontWeight.w600,
-              color: selected ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onSurfaceVariant,
+              color: selected ? Colors.white : Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
         ),

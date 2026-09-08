@@ -31,8 +31,6 @@ class _LoginPageState extends State<LoginPage> {
   bool loading = false;
   bool obscurePassword = true;
 
-  static const Color _primary = Color(0xFF2F6FED);
-  static const Color _deepPurple = Color(0xFF163E85);
 
   String _t({
     required String en,
@@ -255,53 +253,108 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(22, 12, 22, 28),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _buildLanguageSelector(),
-
-              const SizedBox(height: 8),
-
-              _buildBrandHeader(),
-
-              const SizedBox(height: 28),
-
-              _buildLoginCard(),
-
-              const SizedBox(height: 18),
-
-              _buildAdminEntry(),
-
-              const SizedBox(height: 12),
-
-              TextButton.icon(
-                onPressed: loading
-                    ? null
-                    : () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const HomeView(),
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.explore_outlined),
-                label: Text(
-                  _t(
-                    en: 'Continue as Guest',
-                    zh: '以访客身份继续',
-                    ms: 'Teruskan sebagai Tetamu',
-                  ),
+      body: Stack(
+        children: [
+          Positioned(
+            top: -90,
+            right: -80,
+            child: Container(
+              width: 260,
+              height: 260,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFF7ADBCB).withValues(
+                  alpha: isDark ? 0.08 : 0.18,
                 ),
               ),
-            ],
+            ),
           ),
-        ),
+          Positioned(
+            top: 180,
+            left: -100,
+            child: Container(
+              width: 220,
+              height: 220,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFFFFD98A).withValues(
+                  alpha: isDark ? 0.05 : 0.14,
+                ),
+              ),
+            ),
+          ),
+          SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 10, 20, 28),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildLanguageSelector(),
+                  const SizedBox(height: 8),
+                  _buildBrandHeader(),
+                  const SizedBox(height: 18),
+                  _buildLoginCard(),
+                  const SizedBox(height: 14),
+                  _buildAdminEntry(),
+                  const SizedBox(height: 10),
+                  OutlinedButton.icon(
+                    onPressed: loading
+                        ? null
+                        : () {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const HomeView(),
+                              ),
+                            );
+                          },
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: colorScheme.onSurface,
+                      side: BorderSide(
+                        color: colorScheme.outlineVariant,
+                      ),
+                      minimumSize: const Size.fromHeight(50),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                    ),
+                    icon: const Icon(Icons.explore_outlined),
+                    label: Text(
+                      _t(
+                        en: 'Continue as Guest',
+                        zh: '以访客身份继续',
+                        ms: 'Teruskan sebagai Tetamu',
+                      ),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Text(
+                    _t(
+                      en: 'Respect the Culture • Keep Malaysia Beautiful',
+                      zh: '尊重文化 • 让马来西亚更美丽',
+                      ms: 'Hormati Budaya • Kekalkan Keindahan Malaysia',
+                    ),
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: colorScheme.onSurfaceVariant,
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w600,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -311,33 +364,37 @@ class _LoginPageState extends State<LoginPage> {
 
     return Align(
       alignment: Alignment.centerRight,
-      child: PopupMenuButton<AppLanguage>(
-        initialValue: _settings.language,
-        tooltip: _t(
-          en: 'Change language',
-          zh: '更改语言',
-          ms: 'Tukar bahasa',
-        ),
-        onSelected: (language) {
-          _settings.setLanguage(language);
-        },
-        itemBuilder: (context) => const [
-          PopupMenuItem(
-            value: AppLanguage.english,
-            child: Text('English'),
+      child: Material(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(18),
+        child: PopupMenuButton<AppLanguage>(
+          initialValue: _settings.language,
+          tooltip: _t(
+            en: 'Change language',
+            zh: '更改语言',
+            ms: 'Tukar bahasa',
           ),
-          PopupMenuItem(
-            value: AppLanguage.chinese,
-            child: Text('中文'),
+          onSelected: (language) {
+            _settings.setLanguage(language);
+          },
+          itemBuilder: (context) => const [
+            PopupMenuItem(
+              value: AppLanguage.english,
+              child: Text('English'),
+            ),
+            PopupMenuItem(
+              value: AppLanguage.chinese,
+              child: Text('中文'),
+            ),
+            PopupMenuItem(
+              value: AppLanguage.malay,
+              child: Text('Bahasa Melayu'),
+            ),
+          ],
+          icon: const Icon(
+            Icons.language_rounded,
+            color: Color(0xFF00A77E),
           ),
-          PopupMenuItem(
-            value: AppLanguage.malay,
-            child: Text('Bahasa Melayu'),
-          ),
-        ],
-        icon: Icon(
-          Icons.language_rounded,
-          color: colorScheme.primary,
         ),
       ),
     );
@@ -345,84 +402,141 @@ class _LoginPageState extends State<LoginPage> {
 
   Widget _buildBrandHeader() {
     final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Column(
-      children: [
-        Container(
-          width: 82,
-          height: 82,
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [
-                Color(0xFF5B8DEF),
-                Color(0xFF163E85),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+    return Container(
+      height: 205,
+      padding: const EdgeInsets.fromLTRB(22, 22, 18, 18),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(30),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDark
+              ? const [
+                  Color(0xFF102D45),
+                  Color(0xFF0D5F5A),
+                ]
+              : const [
+                  Color(0xFFDDF4FF),
+                  Color(0xFFE7FBF5),
+                ],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF00A77E).withValues(
+              alpha: isDark ? 0.12 : 0.16,
             ),
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x246C4DB5),
-                blurRadius: 22,
-                offset: Offset(0, 10),
+            blurRadius: 24,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            right: -10,
+            bottom: -8,
+            child: Icon(
+              Icons.travel_explore_rounded,
+              size: 130,
+              color: const Color(0xFF00A77E).withValues(
+                alpha: isDark ? 0.17 : 0.13,
+              ),
+            ),
+          ),
+          Positioned(
+            right: 25,
+            top: 20,
+            child: Icon(
+              Icons.local_florist_rounded,
+              size: 38,
+              color: const Color(0xFFFF5F78).withValues(alpha: 0.85),
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: colorScheme.surface.withValues(
+                    alpha: isDark ? 0.12 : 0.72,
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Text(
+                  _t(
+                    en: 'Malaysia Cultural Companion',
+                    zh: '马来西亚文化旅行伙伴',
+                    ms: 'Rakan Budaya Malaysia',
+                  ),
+                  style: TextStyle(
+                    color: isDark
+                        ? Colors.white
+                        : const Color(0xFF176E75),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              const Spacer(),
+              Text(
+                'CultureGuide',
+                style: TextStyle(
+                  color: isDark
+                      ? Colors.white
+                      : const Color(0xFF123B61),
+                  fontSize: 30,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -0.8,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                _t(
+                  en: 'Explore Malaysia. Respect every culture.',
+                  zh: '探索马来西亚，尊重每一种文化。',
+                  ms: 'Terokai Malaysia. Hormati setiap budaya.',
+                ),
+                style: TextStyle(
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.82)
+                      : const Color(0xFF365A68),
+                  fontSize: 13,
+                  height: 1.35,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ],
           ),
-          child: const Icon(
-            Icons.travel_explore_rounded,
-            size: 42,
-            color: Colors.white,
-          ),
-        ),
-
-        const SizedBox(height: 16),
-
-        Text(
-          'CultureGuide',
-          style: TextStyle(
-            fontSize: 30,
-            fontWeight: FontWeight.w800,
-            letterSpacing: -0.7,
-            color: colorScheme.onSurface,
-          ),
-        ),
-
-        const SizedBox(height: 6),
-
-        Text(
-          _t(
-            en: 'Explore Malaysia. Respect every culture.',
-            zh: '探索马来西亚，尊重每一种文化。',
-            ms: 'Terokai Malaysia. Hormati setiap budaya.',
-          ),
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 14,
-            color: colorScheme.onSurfaceVariant,
-            height: 1.4,
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
   Widget _buildLoginCard() {
     final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
-      padding: const EdgeInsets.all(22),
+      padding: const EdgeInsets.fromLTRB(20, 21, 20, 18),
       decoration: BoxDecoration(
         color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(28),
         border: Border.all(
           color: colorScheme.outlineVariant,
         ),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
-            color: Color(0x0F1D1B20),
+            color: Colors.black.withValues(
+              alpha: isDark ? 0.20 : 0.07,
+            ),
             blurRadius: 24,
-            offset: Offset(0, 8),
+            offset: const Offset(0, 9),
           ),
         ],
       ),
@@ -431,33 +545,30 @@ class _LoginPageState extends State<LoginPage> {
         children: [
           Text(
             _t(
-              en: 'Welcome back',
-              zh: '欢迎回来',
-              ms: 'Selamat kembali',
+              en: 'Welcome back 👋',
+              zh: '欢迎回来 👋',
+              ms: 'Selamat kembali 👋',
             ),
             style: TextStyle(
-              fontSize: 23,
-              fontWeight: FontWeight.w800,
+              fontSize: 22,
+              fontWeight: FontWeight.w900,
               color: colorScheme.onSurface,
             ),
           ),
-
           const SizedBox(height: 5),
-
           Text(
             _t(
-              en: 'Sign in to access your etiquette tools, reports and saved cultural guidance.',
-              zh: '登录以使用礼仪工具、报告和已保存的文化指南。',
-              ms: 'Log masuk untuk mengakses alat etika, laporan dan panduan budaya yang disimpan.',
+              en: 'Continue your Malaysia cultural journey.',
+              zh: '继续你的马来西亚文化旅程。',
+              ms: 'Teruskan perjalanan budaya Malaysia anda.',
             ),
             style: TextStyle(
               color: colorScheme.onSurfaceVariant,
-              height: 1.45,
+              height: 1.4,
+              fontSize: 13,
             ),
           ),
-
-          const SizedBox(height: 22),
-
+          const SizedBox(height: 20),
           TextField(
             controller: emailController,
             keyboardType: TextInputType.emailAddress,
@@ -471,9 +582,7 @@ class _LoginPageState extends State<LoginPage> {
               icon: Icons.mail_outline_rounded,
             ),
           ),
-
-          const SizedBox(height: 14),
-
+          const SizedBox(height: 13),
           TextField(
             controller: passwordController,
             obscureText: obscurePassword,
@@ -491,15 +600,15 @@ class _LoginPageState extends State<LoginPage> {
               suffix: IconButton(
                 tooltip: obscurePassword
                     ? _t(
-                  en: 'Show password',
-                  zh: '显示密码',
-                  ms: 'Tunjukkan kata laluan',
-                )
+                        en: 'Show password',
+                        zh: '显示密码',
+                        ms: 'Tunjukkan kata laluan',
+                      )
                     : _t(
-                  en: 'Hide password',
-                  zh: '隐藏密码',
-                  ms: 'Sembunyikan kata laluan',
-                ),
+                        en: 'Hide password',
+                        zh: '隐藏密码',
+                        ms: 'Sembunyikan kata laluan',
+                      ),
                 onPressed: () {
                   setState(() {
                     obscurePassword = !obscurePassword;
@@ -513,7 +622,6 @@ class _LoginPageState extends State<LoginPage> {
               ),
             ),
           ),
-
           Align(
             alignment: Alignment.centerRight,
             child: TextButton(
@@ -527,45 +635,52 @@ class _LoginPageState extends State<LoginPage> {
               ),
             ),
           ),
-
-          const SizedBox(height: 4),
-
           SizedBox(
             height: 52,
-            child: FilledButton(
-              onPressed: loading ? null : login,
-              style: FilledButton.styleFrom(
-                backgroundColor: _primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(17),
+                gradient: const LinearGradient(
+                  colors: [
+                    Color(0xFF00A77E),
+                    Color(0xFF3CC8AE),
+                  ],
                 ),
               ),
-              child: loading
-                  ? const SizedBox(
-                width: 22,
-                height: 22,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2.4,
-                  color: Colors.white,
+              child: FilledButton(
+                onPressed: loading ? null : login,
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  shadowColor: Colors.transparent,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(17),
+                  ),
                 ),
-              )
-                  : Text(
-                _t(
-                  en: 'Sign In',
-                  zh: '登录',
-                  ms: 'Log Masuk',
-                ),
-                style: const TextStyle(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 16,
-                ),
+                child: loading
+                    ? const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.4,
+                          color: Colors.white,
+                        ),
+                      )
+                    : Text(
+                        _t(
+                          en: 'Sign In',
+                          zh: '登录',
+                          ms: 'Log Masuk',
+                        ),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 15.5,
+                        ),
+                      ),
               ),
             ),
           ),
-
-          const SizedBox(height: 18),
-
+          const SizedBox(height: 16),
           Wrap(
             alignment: WrapAlignment.center,
             crossAxisAlignment: WrapCrossAlignment.center,
@@ -579,23 +694,24 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 style: TextStyle(
                   color: colorScheme.onSurfaceVariant,
+                  fontSize: 13,
                 ),
               ),
               TextButton(
                 onPressed: loading
                     ? null
                     : () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const RegisterPage(),
-                    ),
-                  );
-                },
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const RegisterPage(),
+                          ),
+                        );
+                      },
                 style: TextButton.styleFrom(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 4,
-                    vertical: 8,
+                    horizontal: 5,
+                    vertical: 6,
                   ),
                   minimumSize: Size.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -607,7 +723,8 @@ class _LoginPageState extends State<LoginPage> {
                     ms: 'Cipta Akaun',
                   ),
                   style: const TextStyle(
-                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF00A77E),
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
               ),
@@ -620,41 +737,58 @@ class _LoginPageState extends State<LoginPage> {
 
   Widget _buildAdminEntry() {
     final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Material(
-      color: colorScheme.surfaceContainerHighest,
-      borderRadius: BorderRadius.circular(18),
+      color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(22),
         onTap: loading
             ? null
             : () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => const AdminLoginPage(),
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const AdminLoginPage(),
+                  ),
+                );
+              },
+        child: Ink(
+          padding: const EdgeInsets.all(15),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(22),
+            gradient: LinearGradient(
+              colors: isDark
+                  ? const [
+                      Color(0xFF15283B),
+                      Color(0xFF183D45),
+                    ]
+                  : const [
+                      Color(0xFFFFF4DE),
+                      Color(0xFFEAFBF5),
+                    ],
             ),
-          );
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(16),
+            border: Border.all(
+              color: colorScheme.outlineVariant,
+            ),
+          ),
           child: Row(
             children: [
               Container(
-                width: 46,
-                height: 46,
+                width: 48,
+                height: 48,
                 decoration: BoxDecoration(
-                  color: _deepPurple,
-                  borderRadius: BorderRadius.circular(14),
+                  color: const Color(0xFFFFB744).withValues(
+                    alpha: isDark ? 0.18 : 0.22,
+                  ),
+                  borderRadius: BorderRadius.circular(15),
                 ),
                 child: const Icon(
-                  Icons.admin_panel_settings_outlined,
-                  color: Colors.white,
+                  Icons.admin_panel_settings_rounded,
+                  color: Color(0xFFFFA51E),
                 ),
               ),
-
               const SizedBox(width: 13),
-
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -666,32 +800,28 @@ class _LoginPageState extends State<LoginPage> {
                         ms: 'Log Masuk Pentadbir',
                       ),
                       style: TextStyle(
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w900,
                         color: colorScheme.onSurface,
                       ),
                     ),
-
                     const SizedBox(height: 3),
-
                     Text(
                       _t(
-                        en: 'Review etiquette reports and ranking data',
-                        zh: '查看礼仪报告和排名数据',
-                        ms: 'Semak laporan etika dan data kedudukan',
+                        en: 'Review reports, rankings and environment settings',
+                        zh: '管理报告、排名和环境参数',
+                        ms: 'Urus laporan, kedudukan dan parameter persekitaran',
                       ),
                       style: TextStyle(
-                        fontSize: 12.5,
+                        fontSize: 12,
                         color: colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
                 ),
               ),
-
-              Icon(
-                Icons.arrow_forward_ios_rounded,
-                size: 17,
-                color: colorScheme.primary,
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: Color(0xFF00A77E),
               ),
             ],
           ),

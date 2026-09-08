@@ -34,17 +34,14 @@ class _UserEtiquetteReportPageState
   File? _evidencePhoto;
   String? _errorMessage;
 
-  static const Color _purple = Color(0xFF7B61FF);
-  static const Color _blue = Color(0xFF36A8E0);
-  static const Color _peach = Color(0xFFFFB7A1);
-  static const Color _gold = Color(0xFFF6D365);
+  static const Color _purple = Color(0xFF00A77E);
+  static const Color _blue = Color(0xFF3CC8AE);
+  static const Color _peach = Color(0xFFFF8FA3);
+  static const Color _gold = Color(0xFFFFB744);
 
   // =========================================================
   // THEME HELPERS
   // =========================================================
-
-  Color get _pageBackground =>
-      Theme.of(context).colorScheme.surface;
 
   Color get _textColor =>
       Theme.of(context).colorScheme.onSurface;
@@ -142,26 +139,53 @@ class _UserEtiquetteReportPageState
   }
 
   Future<void> _loadNearestAttraction() async {
-    setState(() {
-      _isLoadingLocation = true;
-      _errorMessage = null;
-      _selectedDontRules.clear();
-    });
+    if (mounted) {
+      setState(() {
+        _isLoadingLocation = true;
+        _errorMessage = null;
+        _selectedDontRules.clear();
+      });
+    }
 
     try {
-      final Position position = await _getCurrentPosition();
+      Position position;
+
+      try {
+        position = await _getCurrentPosition().timeout(
+          const Duration(seconds: 12),
+        );
+      } catch (_) {
+        final Position? lastKnown =
+            await Geolocator.getLastKnownPosition();
+
+        if (lastKnown == null) {
+          rethrow;
+        }
+
+        position = lastKnown;
+      }
+
       final List<_AttractionInfo> attractions =
-      await _fetchAttractions();
+          await _fetchAttractions().timeout(
+        const Duration(seconds: 15),
+      );
 
       if (attractions.isEmpty) {
-        throw Exception(_t(en: 'No attractions found in Firestore.', zh: 'Firestore 中找不到景点。', ms: 'Tiada tarikan ditemui dalam Firestore.'));
+        throw Exception(
+          _t(
+            en: 'No attractions found in Firestore.',
+            zh: 'Firestore 中找不到景点。',
+            ms: 'Tiada tarikan ditemui dalam Firestore.',
+          ),
+        );
       }
 
       _AttractionInfo? nearest;
       double nearestDistance = double.infinity;
 
       for (final _AttractionInfo attraction in attractions) {
-        final double distance = Geolocator.distanceBetween(
+        final double distance =
+            Geolocator.distanceBetween(
           position.latitude,
           position.longitude,
           attraction.latitude,
@@ -176,18 +200,29 @@ class _UserEtiquetteReportPageState
         }
       }
 
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
 
       setState(() {
         _currentPosition = position;
         _nearestAttraction = nearest;
+        _errorMessage = null;
       });
-    } catch (e) {
-      if (!mounted) return;
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
 
       setState(() {
-        _errorMessage =
-            e.toString().replaceFirst('Exception: ', '');
+        _errorMessage = _t(
+          en:
+              'Unable to detect your location right now. Check location permission and try again.',
+          zh:
+              '目前无法检测您的位置。请检查定位权限后重试。',
+          ms:
+              'Lokasi anda tidak dapat dikesan sekarang. Semak kebenaran lokasi dan cuba lagi.',
+        );
       });
     } finally {
       if (mounted) {
@@ -792,196 +827,448 @@ class _UserEtiquetteReportPageState
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme =
+        Theme.of(context).colorScheme;
+
     return Scaffold(
       backgroundColor:
-      _pageBackground,
+          Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
-          _t(en: 'User Etiquette Report', zh: '用户礼仪报告', ms: 'Laporan Etika Pengguna'),
-          style: TextStyle(
-            fontWeight:
-            FontWeight.w700,
-            color: Theme.of(context).colorScheme.onSurface,
+          _t(
+            en: 'User Etiquette Report',
+            zh: '用户礼仪报告',
+            ms: 'Laporan Etika Pengguna',
+          ),
+          style: const TextStyle(
+            fontWeight: FontWeight.w900,
           ),
         ),
-        backgroundColor:
-        _pageBackground,
-        elevation: 0,
+        backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
-        iconTheme: IconThemeData(
-          color: Theme.of(context).colorScheme.onSurface,
-        ),
+        foregroundColor: colorScheme.onSurface,
+        elevation: 0,
       ),
       body: SafeArea(
         child: _isLoadingLocation
-            ? const Center(
-          child:
-          CircularProgressIndicator(),
-        )
+            ? _buildLocationLoadingState()
             : RefreshIndicator(
-          onRefresh:
-          _loadNearestAttraction,
-          child:
-          SingleChildScrollView(
-            physics:
-            const AlwaysScrollableScrollPhysics(),
-            padding:
-            const EdgeInsets.fromLTRB(
-              18,
-              12,
-              18,
-              28,
-            ),
-            child: Column(
-              crossAxisAlignment:
-              CrossAxisAlignment.start,
-              children: [
-                _buildHeaderCard(),
-                const SizedBox(
-                  height: 18,
-                ),
+                color: const Color(0xFF00A77E),
+                onRefresh: _loadNearestAttraction,
+                child: SingleChildScrollView(
+                  physics:
+                      const AlwaysScrollableScrollPhysics(),
+                  padding:
+                      const EdgeInsets.fromLTRB(
+                    18,
+                    8,
+                    18,
+                    28,
+                  ),
+                  child: Column(
+                    crossAxisAlignment:
+                        CrossAxisAlignment.start,
+                    children: [
+                      _buildHeaderCard(),
+                      const SizedBox(height: 18),
 
-                if (_errorMessage !=
-                    null)
-                  _buildErrorCard(),
+                      if (_errorMessage != null) ...[
+                        _buildErrorCard(),
+                        const SizedBox(height: 4),
+                      ],
 
-                _buildSectionTitle(
-                  _t(en: 'Detected Location', zh: '检测到的位置', ms: 'Lokasi Dikesan'),
-                ),
-                const SizedBox(
-                  height: 10,
-                ),
-                _buildLocationCard(),
+                      _buildSectionTitle(
+                        _t(
+                          en: 'Detected Location',
+                          zh: '检测到的位置',
+                          ms: 'Lokasi Dikesan',
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      _buildLocationCard(),
 
-                const SizedBox(
-                  height: 20,
-                ),
+                      const SizedBox(height: 20),
 
-                _buildSectionTitle(
-                  _t(en: 'Select Violated DON’T Rules', zh: '选择违反的“不要做”规则', ms: 'Pilih Peraturan JANGAN yang Dilanggar'),
-                ),
-                const SizedBox(
-                  height: 5,
-                ),
-                Text(
-                  _t(en: 'You can select one or multiple violations.', zh: '您可以选择一个或多个违规项目。', ms: 'Anda boleh memilih satu atau beberapa pelanggaran.'),
-                  style: TextStyle(
-                    color:
-                    _mutedTextColor,
-                    fontSize: 12.5,
+                      _buildSectionTitle(
+                        _t(
+                          en:
+                              'Select Violated DON’T Rules',
+                          zh:
+                              '选择违反的“不要做”规则',
+                          ms:
+                              'Pilih Peraturan JANGAN yang Dilanggar',
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        _t(
+                          en:
+                              'You can select one or multiple violations.',
+                          zh:
+                              '您可以选择一个或多个违规项目。',
+                          ms:
+                              'Anda boleh memilih satu atau beberapa pelanggaran.',
+                        ),
+                        style: TextStyle(
+                          color: _mutedTextColor,
+                          fontSize: 12.5,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      _buildMultiSelectCard(),
+
+                      const SizedBox(height: 20),
+
+                      _buildSectionTitle(
+                        _t(
+                          en: 'Evidence Photo',
+                          zh: '证据照片',
+                          ms: 'Foto Bukti',
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      _buildEvidenceCard(),
+
+                      const SizedBox(height: 20),
+
+                      _buildSectionTitle(
+                        _t(
+                          en: 'Report Summary',
+                          zh: '报告摘要',
+                          ms: 'Ringkasan Laporan',
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      _buildSummaryCard(),
+
+                      const SizedBox(height: 26),
+                      _buildSubmitButton(),
+                      const SizedBox(height: 10),
+
+                      Center(
+                        child: Text(
+                          _t(
+                            en:
+                                'At least one violation and one photo are required.',
+                            zh:
+                                '至少需要选择一个违规项目并提供一张照片。',
+                            ms:
+                                'Sekurang-kurangnya satu pelanggaran dan satu foto diperlukan.',
+                          ),
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: _mutedTextColor,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(
-                  height: 10,
-                ),
-
-                _buildMultiSelectCard(),
-
-                const SizedBox(
-                  height: 20,
-                ),
-
-                _buildSectionTitle(
-                  _t(en: 'Evidence Photo', zh: '证据照片', ms: 'Foto Bukti'),
-                ),
-                const SizedBox(
-                  height: 10,
-                ),
-
-                _buildEvidenceCard(),
-
-                const SizedBox(
-                  height: 20,
-                ),
-
-                _buildSectionTitle(
-                  _t(en: 'Report Summary', zh: '报告摘要', ms: 'Ringkasan Laporan'),
-                ),
-                const SizedBox(
-                  height: 10,
-                ),
-
-                _buildSummaryCard(),
-
-                const SizedBox(
-                  height: 26,
-                ),
-
-                _buildSubmitButton(),
-
-                const SizedBox(
-                  height: 10,
-                ),
-
-                Center(
-                  child: Text(
-                    _t(en: 'At least one violation and one photo are required.', zh: '至少需要选择一个违规项目并提供一张照片。', ms: 'Sekurang-kurangnya satu pelanggaran dan satu foto diperlukan.'),
-                    textAlign:
-                    TextAlign.center,
-                    style: TextStyle(
-                      color:
-                      _mutedTextColor,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+              ),
       ),
     );
   }
 
-  Widget _buildHeaderCard() {
-    return Container(
+  Widget _buildLocationLoadingState() {
+    final isDark =
+        Theme.of(context).brightness == Brightness.dark;
+    final colorScheme =
+        Theme.of(context).colorScheme;
+
+    return ListView(
+      physics:
+          const AlwaysScrollableScrollPhysics(),
       padding:
-      const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        borderRadius:
-        BorderRadius.circular(24),
-        gradient:
-        const LinearGradient(
-          colors: [
-            _purple,
-            _blue,
-          ],
-          begin: Alignment.topLeft,
-          end:
-          Alignment.bottomRight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: _purple.withValues(
-              alpha: 0.18,
-            ),
-            blurRadius: 18,
-            offset:
-            const Offset(0, 8),
-          ),
-        ],
+          const EdgeInsets.fromLTRB(
+        18,
+        8,
+        18,
+        28,
       ),
-      child: Column(
-        crossAxisAlignment:
-        CrossAxisAlignment.start,
-        children: [
-          Text(
-            _t(en: 'Submit Etiquette Violation', zh: '提交礼仪违规报告', ms: 'Hantar Pelanggaran Etika'),
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 22,
-              fontWeight:
-              FontWeight.w800,
+      children: [
+        Container(
+          constraints:
+              const BoxConstraints(
+            minHeight: 200,
+          ),
+          padding:
+              const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            borderRadius:
+                BorderRadius.circular(28),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: isDark
+                  ? const [
+                      Color(0xFF102D45),
+                      Color(0xFF0D5F5A),
+                    ]
+                  : const [
+                      Color(0xFFDDF4FF),
+                      Color(0xFFE7FBF5),
+                    ],
             ),
           ),
-          SizedBox(height: 8),
-          Text(
-            _t(en: 'Your location is detected automatically. Select all violated DON’T rules, take one evidence photo, and submit.', zh: '系统会自动检测您的位置。请选择所有违反的“不要做”规则，拍摄一张证据照片后提交。', ms: 'Lokasi anda dikesan secara automatik. Pilih semua peraturan JANGAN yang dilanggar, ambil satu foto bukti dan hantar.'),
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 13,
-              height: 1.5,
+          child: Column(
+            mainAxisAlignment:
+                MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 62,
+                height: 62,
+                decoration: BoxDecoration(
+                  color:
+                      const Color(0xFF00A77E)
+                          .withValues(
+                    alpha: 0.12,
+                  ),
+                  shape: BoxShape.circle,
+                ),
+                child: const Padding(
+                  padding:
+                      EdgeInsets.all(17),
+                  child:
+                      CircularProgressIndicator(
+                    strokeWidth: 3,
+                    color:
+                        Color(0xFF00A77E),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                _t(
+                  en:
+                      'Detecting your location...',
+                  zh:
+                      '正在检测您的位置……',
+                  ms:
+                      'Mengesan lokasi anda...',
+                ),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: isDark
+                      ? Colors.white
+                      : const Color(
+                          0xFF123B61,
+                        ),
+                  fontSize: 18,
+                  fontWeight:
+                      FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 7),
+              Text(
+                _t(
+                  en:
+                      'Finding the nearest cultural attraction for your report.',
+                  zh:
+                      '正在为您的报告寻找最近的文化景点。',
+                  ms:
+                      'Mencari tarikan budaya terdekat untuk laporan anda.',
+                ),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: isDark
+                      ? Colors.white
+                          .withValues(
+                          alpha: 0.72,
+                        )
+                      : colorScheme
+                          .onSurfaceVariant,
+                  height: 1.4,
+                  fontSize: 12.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        Container(
+          padding:
+              const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: colorScheme.surface,
+            borderRadius:
+                BorderRadius.circular(22),
+            border: Border.all(
+              color:
+                  colorScheme.outlineVariant,
             ),
+          ),
+          child: Row(
+            children: [
+              const Icon(
+                Icons.location_on_outlined,
+                color:
+                    Color(0xFF00A77E),
+              ),
+              const SizedBox(width: 11),
+              Expanded(
+                child: Text(
+                  _t(
+                    en:
+                        'Please keep Location enabled while this page opens.',
+                    zh:
+                        '打开此页面时，请保持定位服务开启。',
+                    ms:
+                        'Pastikan Lokasi diaktifkan semasa halaman ini dibuka.',
+                  ),
+                  style: TextStyle(
+                    color: colorScheme
+                        .onSurfaceVariant,
+                    fontSize: 12.5,
+                    height: 1.4,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHeaderCard() {
+    final isDark =
+        Theme.of(context).brightness ==
+            Brightness.dark;
+
+    return Container(
+      constraints: const BoxConstraints(minHeight: 185),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(28),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDark
+              ? const [
+                  Color(0xFF102D45),
+                  Color(0xFF0D5F5A),
+                ]
+              : const [
+                  Color(0xFFDDF4FF),
+                  Color(0xFFE7FBF5),
+                ],
+        ),
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            right: -10,
+            bottom: -8,
+            child: Icon(
+              Icons.volunteer_activism_rounded,
+              size: 125,
+              color: const Color(0xFF00A77E)
+                  .withValues(
+                alpha: isDark ? 0.18 : 0.11,
+              ),
+            ),
+          ),
+          const Positioned(
+            right: 18,
+            top: 8,
+            child: Icon(
+              Icons.photo_camera_rounded,
+              color: Color(0xFFFFB744),
+              size: 30,
+            ),
+          ),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment:
+                CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color:
+                      const Color(0xFF00A77E)
+                          .withValues(
+                    alpha: 0.12,
+                  ),
+                  borderRadius:
+                      BorderRadius.circular(
+                    14,
+                  ),
+                ),
+                child: Text(
+                  _t(
+                    en:
+                        'Community Etiquette',
+                    zh:
+                        '社区礼仪',
+                    ms:
+                        'Etika Komuniti',
+                  ),
+                  style:
+                      const TextStyle(
+                    color:
+                        Color(0xFF00A77E),
+                    fontSize: 11,
+                    fontWeight:
+                        FontWeight.w800,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+              Text(
+                _t(
+                  en:
+                      'Help keep every journey respectful',
+                  zh:
+                      '一起守护文明旅程',
+                  ms:
+                      'Bantu jadikan setiap perjalanan penuh hormat',
+                ),
+                style: TextStyle(
+                  color: isDark
+                      ? Colors.white
+                      : const Color(
+                          0xFF123B61,
+                        ),
+                  fontSize: 21,
+                  fontWeight:
+                      FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 6),
+              SizedBox(
+                width: 270,
+                child: Text(
+                  _t(
+                    en:
+                        'Your location is detected automatically. Select the violated rules, take one evidence photo and submit.',
+                    zh:
+                        '系统会自动检测您的位置。选择违规规则、拍摄一张证据照片并提交。',
+                    ms:
+                        'Lokasi anda dikesan secara automatik. Pilih peraturan yang dilanggar, ambil satu foto bukti dan hantar.',
+                  ),
+                  style: TextStyle(
+                    color: isDark
+                        ? Colors.white
+                            .withValues(
+                            alpha: 0.78,
+                          )
+                        : const Color(
+                            0xFF4A6872,
+                          ),
+                    fontSize: 12.5,
+                    height: 1.4,
+                    fontWeight:
+                        FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),

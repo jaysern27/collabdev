@@ -24,8 +24,7 @@ class _MyEtiquetteReportsPageState
 
   List<Map<String, dynamic>> reports = [];
 
-  static const Color _primary = Color(0xFF2F6FED);
-  static const Color _background = Color(0xFFFFFFFF);
+  static const Color _primary = Color(0xFF00A77E);
 
   @override
   void initState() {
@@ -118,7 +117,7 @@ class _MyEtiquetteReportsPageState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text(
           'My Etiquette Reports',
@@ -126,10 +125,11 @@ class _MyEtiquetteReportsPageState
             fontWeight: FontWeight.w700,
           ),
         ),
-        backgroundColor: _background,
-        surfaceTintColor: _background,
+        backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
       ),
       body: RefreshIndicator(
+        color: const Color(0xFF00A77E),
         onRefresh: _loadReports,
         child: ListView(
           padding: const EdgeInsets.fromLTRB(18, 8, 18, 28),
@@ -169,61 +169,116 @@ class _MyEtiquetteReportsPageState
 
   Widget _buildSummary() {
     final pending = reports.where(
-          (report) => _status(report['status']) == 'pending',
+      (report) =>
+          _status(report['status']) == 'pending',
     ).length;
 
     final approved = reports.where(
-          (report) => _status(report['status']) == 'approved',
+      (report) =>
+          _status(report['status']) == 'approved',
     ).length;
 
     final rejected = reports.where(
-          (report) => _status(report['status']) == 'rejected',
+      (report) =>
+          _status(report['status']) == 'rejected',
     ).length;
 
+    final isDark =
+        Theme.of(context).brightness == Brightness.dark;
+
     return Container(
-      padding: const EdgeInsets.all(18),
+      height: 190,
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [
-            Color(0xFFDCE9FD),
-            Color(0xFFE5F6F1),
-          ],
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDark
+              ? const [
+                  Color(0xFF102D45),
+                  Color(0xFF0D5F5A),
+                ]
+              : const [
+                  Color(0xFFDDF4FF),
+                  Color(0xFFE7FBF5),
+                ],
         ),
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(28),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
         children: [
-          const Text(
-            'Report Status',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-              color: Color(0xFF14213D),
+          Positioned(
+            right: -6,
+            bottom: -18,
+            child: Icon(
+              Icons.assignment_turned_in_rounded,
+              size: 112,
+              color: const Color(0xFF00A77E)
+                  .withValues(
+                alpha: isDark ? 0.18 : 0.10,
+              ),
             ),
           ),
-          const SizedBox(height: 14),
-          Row(
+          Column(
+            crossAxisAlignment:
+                CrossAxisAlignment.start,
             children: [
-              _summaryItem(
-                '${reports.length}',
-                'All',
-                _primary,
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF00A77E)
+                      .withValues(alpha: 0.12),
+                  borderRadius:
+                      BorderRadius.circular(14),
+                ),
+                child: const Text(
+                  'Your Contributions',
+                  style: TextStyle(
+                    color: Color(0xFF00A77E),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
               ),
-              _summaryItem(
-                '$pending',
-                'Pending',
-                const Color(0xFFB36B00),
+              const SizedBox(height: 12),
+              Text(
+                'Report Status',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                  color: isDark
+                      ? Colors.white
+                      : const Color(0xFF123B61),
+                ),
               ),
-              _summaryItem(
-                '$approved',
-                'Approved',
-                const Color(0xFF16805F),
-              ),
-              _summaryItem(
-                '$rejected',
-                'Rejected',
-                const Color(0xFFB43D3D),
+              const Spacer(),
+              Row(
+                children: [
+                  _summaryItem(
+                    '${reports.length}',
+                    'All',
+                    const Color(0xFF00A77E),
+                  ),
+                  _summaryItem(
+                    '$pending',
+                    'Pending',
+                    const Color(0xFFFFA51E),
+                  ),
+                  _summaryItem(
+                    '$approved',
+                    'Approved',
+                    const Color(0xFF18A57A),
+                  ),
+                  _summaryItem(
+                    '$rejected',
+                    'Rejected',
+                    const Color(0xFFFF5F78),
+                  ),
+                ],
               ),
             ],
           ),
@@ -326,10 +381,10 @@ class _MyEtiquetteReportsPageState
       margin: const EdgeInsets.only(bottom: 11),
       padding: const EdgeInsets.all(17),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(19),
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(22),
         border: Border.all(
-          color: const Color(0xFFE3EDFC),
+          color: Theme.of(context).colorScheme.outlineVariant,
         ),
       ),
       child: Column(
@@ -342,7 +397,8 @@ class _MyEtiquetteReportsPageState
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF3F8FE),
+                  color: const Color(0xFF00A77E)
+                      .withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(13),
                 ),
                 child: const Icon(
@@ -461,10 +517,10 @@ class _MyEtiquetteReportsPageState
       margin: const EdgeInsets.only(top: 34),
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(22),
         border: Border.all(
-          color: const Color(0xFFE3EDFC),
+          color: Theme.of(context).colorScheme.outlineVariant,
         ),
       ),
       child: Column(

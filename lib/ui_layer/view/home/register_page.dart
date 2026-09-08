@@ -34,7 +34,6 @@ class _RegisterPageState extends State<RegisterPage> {
   bool obscureConfirmPassword = true;
   bool acceptedGuidelines = false;
 
-  static const Color _primary = Color(0xFF2F6FED);
 
   String _t({
     required String en,
@@ -279,16 +278,22 @@ class _RegisterPageState extends State<RegisterPage> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
+        foregroundColor: colorScheme.onSurface,
         title: Text(
           _t(
             en: 'Create Account',
             zh: '创建账户',
             ms: 'Cipta Akaun',
+          ),
+          style: const TextStyle(
+            fontWeight: FontWeight.w800,
           ),
         ),
         actions: [
@@ -298,7 +303,7 @@ class _RegisterPageState extends State<RegisterPage> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(22, 8, 22, 30),
+          padding: const EdgeInsets.fromLTRB(20, 6, 20, 30),
           child: Form(
             key: _formKey,
             autovalidateMode: AutovalidateMode.onUserInteraction,
@@ -306,8 +311,23 @@ class _RegisterPageState extends State<RegisterPage> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 _buildIntro(),
-                const SizedBox(height: 22),
+                const SizedBox(height: 16),
                 _buildRegisterCard(),
+                const SizedBox(height: 18),
+                Text(
+                  _t(
+                    en: 'Respect the Culture • Keep Malaysia Beautiful',
+                    zh: '尊重文化 • 让马来西亚更美丽',
+                    ms: 'Hormati Budaya • Kekalkan Keindahan Malaysia',
+                  ),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: colorScheme.onSurfaceVariant,
+                    fontSize: 11.5,
+                    fontStyle: FontStyle.italic,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ],
             ),
           ),
@@ -317,8 +337,6 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   Widget _buildLanguageMenu() {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return PopupMenuButton<AppLanguage>(
       initialValue: _settings.language,
       tooltip: _t(
@@ -343,71 +361,100 @@ class _RegisterPageState extends State<RegisterPage> {
           child: Text('Bahasa Melayu'),
         ),
       ],
-      icon: Icon(
+      icon: const Icon(
         Icons.language_rounded,
-        color: colorScheme.primary,
+        color: Color(0xFF00A77E),
       ),
     );
   }
 
   Widget _buildIntro() {
-    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      height: 185,
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 18),
       decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(28),
         gradient: LinearGradient(
-          colors: [
-            colorScheme.primaryContainer,
-            colorScheme.secondaryContainer,
-          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
+          colors: isDark
+              ? const [
+                  Color(0xFF102D45),
+                  Color(0xFF0D5F5A),
+                ]
+              : const [
+                  Color(0xFFDDF4FF),
+                  Color(0xFFE7FBF5),
+                ],
         ),
-        borderRadius: BorderRadius.circular(24),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
         children: [
-          CircleAvatar(
-            radius: 25,
-            backgroundColor: colorScheme.surface,
+          Positioned(
+            right: -5,
+            bottom: -8,
             child: Icon(
-              Icons.volunteer_activism_outlined,
-              color: colorScheme.primary,
+              Icons.map_rounded,
+              size: 115,
+              color: const Color(0xFF00A77E).withValues(
+                alpha: isDark ? 0.18 : 0.13,
+              ),
             ),
           ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _t(
-                    en: 'Travel with respect',
-                    zh: '尊重文化，文明出行',
-                    ms: 'Mengembara dengan hormat',
-                  ),
-                  style: TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 20,
-                    color: colorScheme.onSurface,
-                  ),
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  _t(
-                    en: 'Create your CultureGuide account to save etiquette guidance, check appropriate outfits and submit etiquette reports.',
-                    zh: '创建 CultureGuide 账户，以保存礼仪指南、检查合适的穿搭并提交礼仪报告。',
-                    ms: 'Cipta akaun CultureGuide untuk menyimpan panduan etika, menyemak pakaian yang sesuai dan menghantar laporan etika.',
-                  ),
-                  style: TextStyle(
-                    color: colorScheme.onSurfaceVariant,
-                    height: 1.45,
-                  ),
-                ),
-              ],
+          Positioned(
+            right: 16,
+            top: 10,
+            child: const Icon(
+              Icons.local_florist_rounded,
+              size: 34,
+              color: Color(0xFFFF617A),
             ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(
+                Icons.favorite_rounded,
+                color: Color(0xFFFFB744),
+                size: 30,
+              ),
+              const Spacer(),
+              Text(
+                _t(
+                  en: 'Travel with respect',
+                  zh: '尊重文化，文明出行',
+                  ms: 'Mengembara dengan hormat',
+                ),
+                style: TextStyle(
+                  color: isDark
+                      ? Colors.white
+                      : const Color(0xFF123B61),
+                  fontWeight: FontWeight.w900,
+                  fontSize: 22,
+                ),
+              ),
+              const SizedBox(height: 5),
+              SizedBox(
+                width: 245,
+                child: Text(
+                  _t(
+                    en: 'Create your account and make every Malaysia journey more meaningful.',
+                    zh: '创建账户，让每一次马来西亚之旅都更有意义。',
+                    ms: 'Cipta akaun dan jadikan setiap perjalanan di Malaysia lebih bermakna.',
+                  ),
+                  style: TextStyle(
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.80)
+                        : const Color(0xFF46646F),
+                    height: 1.35,
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -416,20 +463,23 @@ class _RegisterPageState extends State<RegisterPage> {
 
   Widget _buildRegisterCard() {
     final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
-      padding: const EdgeInsets.all(22),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(28),
         border: Border.all(
           color: colorScheme.outlineVariant,
         ),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
-            color: Color(0x0E1D1B20),
+            color: Colors.black.withValues(
+              alpha: isDark ? 0.18 : 0.06,
+            ),
             blurRadius: 22,
-            offset: Offset(0, 8),
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -450,7 +500,7 @@ class _RegisterPageState extends State<RegisterPage> {
               icon: Icons.person_outline_rounded,
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 13),
           TextFormField(
             controller: emailController,
             keyboardType: TextInputType.emailAddress,
@@ -471,7 +521,7 @@ class _RegisterPageState extends State<RegisterPage> {
               ),
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 13),
           TextFormField(
             controller: passwordController,
             obscureText: obscurePassword,
@@ -499,15 +549,15 @@ class _RegisterPageState extends State<RegisterPage> {
               suffix: IconButton(
                 tooltip: obscurePassword
                     ? _t(
-                  en: 'Show password',
-                  zh: '显示密码',
-                  ms: 'Tunjukkan kata laluan',
-                )
+                        en: 'Show password',
+                        zh: '显示密码',
+                        ms: 'Tunjukkan kata laluan',
+                      )
                     : _t(
-                  en: 'Hide password',
-                  zh: '隐藏密码',
-                  ms: 'Sembunyikan kata laluan',
-                ),
+                        en: 'Hide password',
+                        zh: '隐藏密码',
+                        ms: 'Sembunyikan kata laluan',
+                      ),
                 onPressed: () {
                   setState(() {
                     obscurePassword = !obscurePassword;
@@ -521,7 +571,7 @@ class _RegisterPageState extends State<RegisterPage> {
               ),
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 13),
           TextFormField(
             controller: confirmPasswordController,
             obscureText: obscureConfirmPassword,
@@ -542,15 +592,15 @@ class _RegisterPageState extends State<RegisterPage> {
               suffix: IconButton(
                 tooltip: obscureConfirmPassword
                     ? _t(
-                  en: 'Show password',
-                  zh: '显示密码',
-                  ms: 'Tunjukkan kata laluan',
-                )
+                        en: 'Show password',
+                        zh: '显示密码',
+                        ms: 'Tunjukkan kata laluan',
+                      )
                     : _t(
-                  en: 'Hide password',
-                  zh: '隐藏密码',
-                  ms: 'Sembunyikan kata laluan',
-                ),
+                        en: 'Hide password',
+                        zh: '隐藏密码',
+                        ms: 'Sembunyikan kata laluan',
+                      ),
                 onPressed: () {
                   setState(() {
                     obscureConfirmPassword = !obscureConfirmPassword;
@@ -564,62 +614,84 @@ class _RegisterPageState extends State<RegisterPage> {
               ),
             ),
           ),
-          const SizedBox(height: 8),
-          CheckboxListTile(
-            value: acceptedGuidelines,
-            onChanged: loading
-                ? null
-                : (value) {
-              setState(() {
-                acceptedGuidelines = value ?? false;
-              });
-            },
-            controlAffinity: ListTileControlAffinity.leading,
-            contentPadding: EdgeInsets.zero,
-            dense: true,
-            title: Text(
-              _t(
-                en: 'I will use cultural and etiquette information respectfully.',
-                zh: '我会以尊重文化的方式使用文化和礼仪信息。',
-                ms: 'Saya akan menggunakan maklumat budaya dan etika dengan penuh hormat.',
+          const SizedBox(height: 7),
+          Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFF00A77E).withValues(
+                alpha: isDark ? 0.08 : 0.06,
               ),
-              style: const TextStyle(
-                fontSize: 13.5,
-                height: 1.35,
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: CheckboxListTile(
+              value: acceptedGuidelines,
+              onChanged: loading
+                  ? null
+                  : (value) {
+                      setState(() {
+                        acceptedGuidelines = value ?? false;
+                      });
+                    },
+              activeColor: const Color(0xFF00A77E),
+              controlAffinity: ListTileControlAffinity.leading,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+              dense: true,
+              title: Text(
+                _t(
+                  en: 'I will use cultural and etiquette information respectfully.',
+                  zh: '我会以尊重文化的方式使用文化和礼仪信息。',
+                  ms: 'Saya akan menggunakan maklumat budaya dan etika dengan penuh hormat.',
+                ),
+                style: const TextStyle(
+                  fontSize: 13,
+                  height: 1.35,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
           SizedBox(
             height: 52,
-            child: FilledButton(
-              onPressed: loading ? null : register,
-              style: FilledButton.styleFrom(
-                backgroundColor: _primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(17),
+                gradient: const LinearGradient(
+                  colors: [
+                    Color(0xFF00A77E),
+                    Color(0xFF3CC8AE),
+                  ],
                 ),
               ),
-              child: loading
-                  ? const SizedBox(
-                width: 22,
-                height: 22,
-                child: CircularProgressIndicator(
-                  color: Colors.white,
-                  strokeWidth: 2.3,
+              child: FilledButton(
+                onPressed: loading ? null : register,
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  shadowColor: Colors.transparent,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(17),
+                  ),
                 ),
-              )
-                  : Text(
-                _t(
-                  en: 'Create User Account',
-                  zh: '创建用户账户',
-                  ms: 'Cipta Akaun Pengguna',
-                ),
-                style: const TextStyle(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 15.5,
-                ),
+                child: loading
+                    ? const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2.3,
+                        ),
+                      )
+                    : Text(
+                        _t(
+                          en: 'Create User Account',
+                          zh: '创建用户账户',
+                          ms: 'Cipta Akaun Pengguna',
+                        ),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 15,
+                        ),
+                      ),
               ),
             ),
           ),
@@ -633,7 +705,7 @@ class _RegisterPageState extends State<RegisterPage> {
             textAlign: TextAlign.center,
             style: TextStyle(
               color: colorScheme.onSurfaceVariant,
-              fontSize: 12.5,
+              fontSize: 12,
             ),
           ),
         ],

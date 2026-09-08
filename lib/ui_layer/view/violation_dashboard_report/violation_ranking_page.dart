@@ -70,7 +70,12 @@ class _ViolationRankingPageState
         Theme.of(context).colorScheme;
 
     return Scaffold(
+      backgroundColor:
+          Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+        foregroundColor: colorScheme.onSurface,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -170,64 +175,132 @@ class _ViolationRankingPageState
   }
 
   Widget _buildIntroCard(
-      BuildContext context,
-      ) {
-    final colorScheme =
-        Theme.of(context).colorScheme;
+    BuildContext context,
+  ) {
+    final isDark =
+        Theme.of(context).brightness ==
+            Brightness.dark;
 
     return Container(
-      padding: const EdgeInsets.all(18),
+      height: 178,
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            colorScheme.primary,
-            colorScheme.tertiary,
-          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDark
+              ? const [
+                  Color(0xFF102D45),
+                  Color(0xFF0D5F5A),
+                ]
+              : const [
+                  Color(0xFFDDF4FF),
+                  Color(0xFFE7FBF5),
+                ],
         ),
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(28),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
         children: [
-          const Icon(
-            Icons.leaderboard_rounded,
-            color: Colors.white,
-            size: 30,
+          Positioned(
+            right: -8,
+            bottom: -18,
+            child: Icon(
+              Icons.emoji_events_rounded,
+              size: 125,
+              color: const Color(0xFFFFB744)
+                  .withValues(
+                alpha: isDark ? 0.18 : 0.14,
+              ),
+            ),
           ),
-          const SizedBox(width: 13),
-          Expanded(
-            child: Column(
-              crossAxisAlignment:
-              CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _settings.text(
-                    en: 'Etiquette Violation Ranking',
-                    zh: '礼仪违规排名',
-                    ms: 'Kedudukan Pelanggaran Etika',
+          Column(
+            crossAxisAlignment:
+                CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color:
+                      const Color(0xFFFFB744)
+                          .withValues(
+                    alpha: 0.16,
                   ),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
+                  borderRadius:
+                      BorderRadius.circular(
+                    14,
                   ),
                 ),
-                const SizedBox(height: 5),
-                Text(
+                child: Text(
                   _settings.text(
-                    en: 'The large number shows approved occurrences. Ranking order still considers frequency, severity and verification confidence.',
-                    zh: '右侧大数字表示获批准次数；排名顺序仍会综合出现频率、严重程度和验证可信度。',
-                    ms: 'Nombor besar menunjukkan bilangan diluluskan; susunan masih mempertimbangkan kekerapan, keterukan dan keyakinan pengesahan.',
+                    en: 'Community Ranking',
+                    zh: '社区排名',
+                    ms: 'Kedudukan Komuniti',
+                  ),
+                  style:
+                      const TextStyle(
+                    color:
+                        Color(0xFFFF9C12),
+                    fontSize: 11,
+                    fontWeight:
+                        FontWeight.w800,
+                  ),
+                ),
+              ),
+              const Spacer(),
+              Text(
+                _settings.text(
+                  en:
+                      'Etiquette Violation Ranking',
+                  zh:
+                      '礼仪违规排名',
+                  ms:
+                      'Kedudukan Pelanggaran Etika',
+                ),
+                style: TextStyle(
+                  color: isDark
+                      ? Colors.white
+                      : const Color(
+                          0xFF123B61,
+                        ),
+                  fontSize: 20,
+                  fontWeight:
+                      FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 5),
+              SizedBox(
+                width: 285,
+                child: Text(
+                  _settings.text(
+                    en:
+                        'See which etiquette issues are reported most often across cultural attractions.',
+                    zh:
+                        '查看文化景点中最常被举报的礼仪问题。',
+                    ms:
+                        'Lihat isu etika yang paling kerap dilaporkan di tarikan budaya.',
                   ),
                   style: TextStyle(
-                    color: Colors.white
-                        .withValues(alpha: 0.88),
-                    height: 1.4,
+                    color: isDark
+                        ? Colors.white
+                            .withValues(
+                            alpha: 0.78,
+                          )
+                        : const Color(
+                            0xFF4A6872,
+                          ),
+                    height: 1.35,
                     fontSize: 12.5,
+                    fontWeight:
+                        FontWeight.w600,
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ],
       ),

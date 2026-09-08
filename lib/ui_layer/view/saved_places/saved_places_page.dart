@@ -189,89 +189,233 @@ class _SavedPlacesPageState
     final colorScheme =
         Theme.of(context).colorScheme;
 
-    return ChangeNotifierProvider<CulturalMapViewModel>.value(
+    return ChangeNotifierProvider<
+        CulturalMapViewModel>.value(
       value: _viewModel,
-      child: Consumer<CulturalMapViewModel>(
+      child:
+          Consumer<CulturalMapViewModel>(
         builder: (
-            context,
-            viewModel,
-            child,
-            ) {
+          context,
+          viewModel,
+          child,
+        ) {
           final savedAttractions =
-          viewModel.allAttractions
-              .where(
-                (attraction) {
-              final id =
-                  attraction['id']
-                      ?.toString()
-                      .trim() ??
-                      '';
+              viewModel.allAttractions
+                  .where(
+                    (
+                      attraction,
+                    ) {
+                      final id =
+                          attraction['id']
+                                  ?.toString()
+                                  .trim() ??
+                              '';
 
-              return id.isNotEmpty &&
-                  viewModel.isFavourite(id);
-            },
-          )
-              .toList();
+                      return id
+                              .isNotEmpty &&
+                          viewModel
+                              .isFavourite(
+                            id,
+                          );
+                    },
+                  )
+                  .toList();
 
           return Scaffold(
             backgroundColor:
-            colorScheme.surface,
+                Theme.of(context)
+                    .scaffoldBackgroundColor,
             appBar: AppBar(
               backgroundColor:
-              colorScheme.surface,
+                  Colors.transparent,
               surfaceTintColor:
-              Colors.transparent,
+                  Colors.transparent,
+              foregroundColor:
+                  colorScheme.onSurface,
               title: Text(
                 _t(
-                  en: 'Saved Places',
-                  zh: '已保存的地点',
-                  ms: 'Tempat Disimpan',
+                  en:
+                      'Saved Places',
+                  zh:
+                      '已保存的地点',
+                  ms:
+                      'Tempat Disimpan',
                 ),
-                style: const TextStyle(
+                style:
+                    const TextStyle(
                   fontWeight:
-                  FontWeight.w800,
+                      FontWeight.w900,
                 ),
               ),
             ),
-            body: viewModel.isLoading
+            body: viewModel
+                    .isLoading
                 ? const Center(
-              child:
-              CircularProgressIndicator(),
-            )
-                : savedAttractions.isEmpty
-                ? _buildEmptyState()
-                : ListView.separated(
-              padding:
-              const EdgeInsets.fromLTRB(
-                18,
-                14,
-                18,
-                18,
-              ),
-              itemCount:
-              savedAttractions.length,
-              separatorBuilder: (
-                  _,
-                  index,
-                  ) =>
-              const SizedBox(
-                height: 11,
-              ),
-              itemBuilder: (
-                  context,
-                  index,
-                  ) {
-                final attraction =
-                savedAttractions[index];
-
-                return _buildSavedCard(
-                  viewModel,
-                  attraction,
-                );
-              },
-            ),
+                    child:
+                        CircularProgressIndicator(
+                      color:
+                          Color(
+                        0xFF00A77E,
+                      ),
+                    ),
+                  )
+                : savedAttractions
+                        .isEmpty
+                    ? _buildEmptyState()
+                    : ListView(
+                        padding:
+                            const EdgeInsets
+                                .fromLTRB(
+                          18,
+                          8,
+                          18,
+                          24,
+                        ),
+                        children: [
+                          _buildSavedHero(
+                            savedAttractions
+                                .length,
+                          ),
+                          const SizedBox(
+                            height:
+                                16,
+                          ),
+                          for (var index =
+                                  0;
+                              index <
+                                  savedAttractions
+                                      .length;
+                              index++) ...[
+                            _buildSavedCard(
+                              viewModel,
+                              savedAttractions[
+                                  index],
+                            ),
+                            if (index <
+                                savedAttractions
+                                        .length -
+                                    1)
+                              const SizedBox(
+                                height:
+                                    11,
+                              ),
+                          ],
+                        ],
+                      ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildSavedHero(
+    int count,
+  ) {
+    final isDark =
+        Theme.of(context).brightness ==
+            Brightness.dark;
+
+    return Container(
+      height: 155,
+      padding:
+          const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        borderRadius:
+            BorderRadius.circular(26),
+        gradient: LinearGradient(
+          begin:
+              Alignment.topLeft,
+          end:
+              Alignment.bottomRight,
+          colors: isDark
+              ? const [
+                  Color(0xFF102D45),
+                  Color(0xFF0D5F5A),
+                ]
+              : const [
+                  Color(0xFFDDF4FF),
+                  Color(0xFFE7FBF5),
+                ],
+        ),
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            right: -4,
+            bottom: -14,
+            child: Icon(
+              Icons.favorite_rounded,
+              size: 100,
+              color:
+                  const Color(
+                0xFFFF5F78,
+              ).withValues(
+                alpha: 0.14,
+              ),
+            ),
+          ),
+          Column(
+            crossAxisAlignment:
+                CrossAxisAlignment.start,
+            children: [
+              const Icon(
+                Icons.bookmark_rounded,
+                color:
+                    Color(
+                  0xFF00A77E,
+                ),
+                size: 30,
+              ),
+              const Spacer(),
+              Text(
+                _t(
+                  en:
+                      'Places you love',
+                  zh:
+                      '您喜爱的地点',
+                  ms:
+                      'Tempat kegemaran anda',
+                ),
+                style: TextStyle(
+                  color: isDark
+                      ? Colors.white
+                      : const Color(
+                          0xFF123B61,
+                        ),
+                  fontSize: 21,
+                  fontWeight:
+                      FontWeight.w900,
+                ),
+              ),
+              const SizedBox(
+                height: 4,
+              ),
+              Text(
+                _t(
+                  en:
+                      '$count saved cultural destinations',
+                  zh:
+                      '已保存 $count 个文化目的地',
+                  ms:
+                      '$count destinasi budaya disimpan',
+                ),
+                style: TextStyle(
+                  color: isDark
+                      ? Colors.white
+                          .withValues(
+                          alpha: 0.74,
+                        )
+                      : const Color(
+                          0xFF4B6872,
+                        ),
+                  fontSize: 12.5,
+                  fontWeight:
+                      FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

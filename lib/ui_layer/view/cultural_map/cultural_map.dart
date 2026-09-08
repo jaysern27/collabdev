@@ -1083,7 +1083,7 @@ class _CulturalMapViewState
                               imageUrl,
                               width:
                               double.infinity,
-                              height: 190,
+                              height: 220,
                               fit: BoxFit.cover,
                               errorBuilder:
                                   (
@@ -1226,7 +1226,7 @@ class _CulturalMapViewState
                                           attraction,
                                         ),
                                         const Color(
-                                          0xFF2864DE,
+                                          0xFF00A77E,
                                         ),
                                       ),
                                     ),
@@ -1327,8 +1327,7 @@ class _CulturalMapViewState
                                 ),
                                 border:
                                 Border.all(
-                                  color:
-                                  const Color(0xFF18B6C9),
+                                  color: const Color(0xFF00A77E),
                                 ),
                               ),
                               child: Column(
@@ -1348,10 +1347,10 @@ class _CulturalMapViewState
                                       LinearGradient(
                                         colors: [
                                           Color(
-                                            0xFF1CB7AE,
+                                            0xFF00A77E,
                                           ),
                                           Color(
-                                            0xFF2864DE,
+                                            0xFF3CC8AE,
                                           ),
                                         ],
                                       ),
@@ -1568,9 +1567,20 @@ class _CulturalMapViewState
                                             ),
                                             style:
                                             FilledButton.styleFrom(
+                                              backgroundColor:
+                                              const Color(0xFF00A77E),
+                                              foregroundColor:
+                                              Colors.white,
                                               padding:
                                               const EdgeInsets.symmetric(
-                                                vertical: 13,
+                                                vertical: 14,
+                                              ),
+                                              shape:
+                                              RoundedRectangleBorder(
+                                                borderRadius:
+                                                BorderRadius.circular(
+                                                  16,
+                                                ),
                                               ),
                                             ),
                                           ),
@@ -1619,7 +1629,8 @@ class _CulturalMapViewState
                                     decoration:
                                     BoxDecoration(
                                       color:
-                                      colorScheme.secondaryContainer,
+                                      const Color(0xFF00A77E)
+                                          .withValues(alpha: 0.10),
                                       borderRadius:
                                       const BorderRadius.vertical(
                                         top:
@@ -1657,7 +1668,7 @@ class _CulturalMapViewState
                                                 style:
                                                 TextStyle(
                                                   color:
-                                                  colorScheme.onSecondaryContainer,
+                                                  const Color(0xFF00A77E),
                                                   fontWeight:
                                                   FontWeight.bold,
                                                 ),
@@ -1887,6 +1898,27 @@ class _CulturalMapViewState
                                       ? Icons.favorite
                                       : Icons.favorite_border,
                                 ),
+                                style:
+                                OutlinedButton.styleFrom(
+                                  foregroundColor:
+                                  const Color(0xFFFF5F78),
+                                  side:
+                                  const BorderSide(
+                                    color:
+                                    Color(0xFFFF8FA3),
+                                  ),
+                                  padding:
+                                  const EdgeInsets.symmetric(
+                                    vertical: 14,
+                                  ),
+                                  shape:
+                                  RoundedRectangleBorder(
+                                    borderRadius:
+                                    BorderRadius.circular(
+                                      16,
+                                    ),
+                                  ),
+                                ),
                                 label:
                                 Text(
                                   isFavourite
@@ -1953,6 +1985,24 @@ class _CulturalMapViewState
                                       );
                                   }
                                 },
+                                style:
+                                FilledButton.styleFrom(
+                                  backgroundColor:
+                                  const Color(0xFF00A77E),
+                                  foregroundColor:
+                                  Colors.white,
+                                  padding:
+                                  const EdgeInsets.symmetric(
+                                    vertical: 14,
+                                  ),
+                                  shape:
+                                  RoundedRectangleBorder(
+                                    borderRadius:
+                                    BorderRadius.circular(
+                                      16,
+                                    ),
+                                  ),
+                                ),
                                 icon:
                                 const Icon(
                                   Icons.directions,
@@ -1995,19 +2045,31 @@ class _CulturalMapViewState
     return Container(
       width:
       double.infinity,
-      height: 190,
-      color:
-      colorScheme.surfaceContainerHighest,
+      height: 220,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: Theme.of(context).brightness == Brightness.dark
+              ? const [
+                  Color(0xFF102D45),
+                  Color(0xFF0D5F5A),
+                ]
+              : const [
+                  Color(0xFFDDF4FF),
+                  Color(0xFFE7FBF5),
+                ],
+        ),
+      ),
       child:
       Column(
         mainAxisAlignment:
         MainAxisAlignment.center,
         children: [
           Icon(
-            Icons.temple_buddhist_outlined,
+            Icons.travel_explore_rounded,
             size: 58,
-            color:
-            colorScheme.onSurfaceVariant,
+            color: const Color(0xFF00A77E),
           ),
           const SizedBox(
             height: 8,
@@ -2034,8 +2096,6 @@ class _CulturalMapViewState
       String value,
       Color valueColor,
       ) {
-    final colorScheme =
-        Theme.of(context).colorScheme;
 
     return Column(
       children: [
@@ -2043,8 +2103,7 @@ class _CulturalMapViewState
           title,
           style:
           TextStyle(
-            color:
-            colorScheme.onSurfaceVariant,
+            color: const Color(0xFF00A77E),
             fontSize: 11,
           ),
         ),
@@ -2195,7 +2254,8 @@ class _CulturalMapViewState
             height: 38,
             decoration: BoxDecoration(
               color:
-              colorScheme.secondaryContainer,
+              const Color(0xFF00A77E)
+                  .withValues(alpha: 0.10),
               borderRadius:
               BorderRadius.circular(12),
             ),
@@ -2203,7 +2263,7 @@ class _CulturalMapViewState
               icon,
               size: 20,
               color:
-              colorScheme.onSecondaryContainer,
+              const Color(0xFF00A77E),
             ),
           ),
           const SizedBox(width: 12),
@@ -2259,7 +2319,7 @@ class _CulturalMapViewState
         color:
         colorScheme.surfaceContainerLow,
         borderRadius:
-        BorderRadius.circular(16),
+        BorderRadius.circular(20),
         border: Border.all(
           color:
           colorScheme.outlineVariant,
@@ -2274,7 +2334,8 @@ class _CulturalMapViewState
             height: 38,
             decoration: BoxDecoration(
               color:
-              colorScheme.primaryContainer,
+              const Color(0xFF00A77E)
+                  .withValues(alpha: 0.10),
               borderRadius:
               BorderRadius.circular(12),
             ),
@@ -2282,7 +2343,7 @@ class _CulturalMapViewState
               icon,
               size: 20,
               color:
-              colorScheme.onPrimaryContainer,
+              const Color(0xFF00A77E),
             ),
           ),
           const SizedBox(width: 12),
@@ -2334,15 +2395,15 @@ class _CulturalMapViewState
           final colorScheme = Theme.of(context).colorScheme;
 
           return Scaffold(
-            backgroundColor: colorScheme.surface,
+            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
             appBar: AppBar(
-              backgroundColor: colorScheme.surface,
+              backgroundColor: Colors.transparent,
               surfaceTintColor: Colors.transparent,
               title: Text(
                 _t(
-                  en: 'Cultural Map',
-                  zh: '文化地图',
-                  ms: 'Peta Budaya',
+                  en: 'Explore',
+                  zh: '探索',
+                  ms: 'Teroka',
                 ),
                 style: const TextStyle(
                   fontWeight: FontWeight.w800,
@@ -2358,6 +2419,7 @@ class _CulturalMapViewState
                   onPressed: _openSavedPlacesPage,
                   icon: const Icon(
                     Icons.favorite_rounded,
+                    color: Color(0xFFFF5F78),
                   ),
                 ),
                 IconButton(
@@ -2371,7 +2433,10 @@ class _CulturalMapViewState
                       : () async {
                     await viewModel.refreshAttractions();
                   },
-                  icon: const Icon(Icons.refresh_rounded),
+                  icon: const Icon(
+                    Icons.refresh_rounded,
+                    color: Color(0xFF00A77E),
+                  ),
                 ),
                 const SizedBox(width: 4),
               ],
@@ -2508,14 +2573,27 @@ class _CulturalMapViewState
     );
   }
 
-  Widget _buildMapSearchCard(CulturalMapViewModel viewModel) {
-    final colorScheme = Theme.of(context).colorScheme;
+  Widget _buildMapSearchCard(
+    CulturalMapViewModel viewModel,
+  ) {
+    final colorScheme =
+        Theme.of(context).colorScheme;
+    final isDark =
+        Theme.of(context).brightness == Brightness.dark;
 
-    return Material(
-      elevation: 4,
-      shadowColor: colorScheme.shadow.withValues(alpha: 0.12),
-      color: colorScheme.surface,
-      borderRadius: BorderRadius.circular(20),
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(
+              alpha: isDark ? 0.22 : 0.10,
+            ),
+            blurRadius: 20,
+            offset: const Offset(0, 7),
+          ),
+        ],
+      ),
       child: TextField(
         controller: _searchController,
         onChanged: (value) {
@@ -2530,54 +2608,60 @@ class _CulturalMapViewState
         },
         decoration: InputDecoration(
           hintText: _t(
-            en: 'Search cultural attractions',
-            zh: '搜索文化景点',
-            ms: 'Cari tarikan budaya',
+            en: 'Search destination, place, or culture...',
+            zh: '搜索目的地、地点或文化...',
+            ms: 'Cari destinasi, tempat atau budaya...',
           ),
           hintStyle: TextStyle(
             color: colorScheme.onSurfaceVariant,
           ),
-          suffixIcon: _searchController.text.isEmpty
-              ? Icon(
-            Icons.travel_explore_rounded,
-            color: colorScheme.onSurfaceVariant,
-          )
-              : IconButton(
-            tooltip: _t(
-              en: 'Clear search',
-              zh: '清除搜索',
-              ms: 'Kosongkan carian',
-            ),
-            onPressed: () {
-              _searchController.clear();
-              viewModel.clearSearch();
-              setState(() {});
-              _moveMapToCurrentArea();
-            },
-            icon: const Icon(Icons.close_rounded),
+          prefixIcon: const Icon(
+            Icons.search_rounded,
+            color: Color(0xFF00A77E),
           ),
+          suffixIcon: _searchController.text.isEmpty
+              ? const Icon(
+                  Icons.travel_explore_rounded,
+                  color: Color(0xFFFFB744),
+                )
+              : IconButton(
+                  tooltip: _t(
+                    en: 'Clear search',
+                    zh: '清除搜索',
+                    ms: 'Kosongkan carian',
+                  ),
+                  onPressed: () {
+                    _searchController.clear();
+                    viewModel.clearSearch();
+                    setState(() {});
+                    _moveMapToCurrentArea();
+                  },
+                  icon: const Icon(Icons.close_rounded),
+                ),
           filled: true,
-          fillColor: colorScheme.surface,
+          fillColor: isDark
+              ? colorScheme.surfaceContainer
+              : Colors.white,
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(24),
             borderSide: BorderSide.none,
           ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(24),
             borderSide: BorderSide(
               color: colorScheme.outlineVariant,
             ),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(20),
-            borderSide: BorderSide(
-              color: colorScheme.primary,
-              width: 1.4,
+            borderRadius: BorderRadius.circular(24),
+            borderSide: const BorderSide(
+              color: Color(0xFF00A77E),
+              width: 1.5,
             ),
           ),
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 16,
-            vertical: 15,
+            vertical: 16,
           ),
         ),
       ),
@@ -2595,7 +2679,7 @@ class _CulturalMapViewState
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(28),
+          top: Radius.circular(32),
         ),
         boxShadow: [
           BoxShadow(
@@ -2645,8 +2729,9 @@ class _CulturalMapViewState
                   width: 38,
                   height: 38,
                   decoration: BoxDecoration(
-                    color: colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(12),
+                    color: const Color(0xFF00A77E)
+                        .withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(13),
                   ),
                   child: Icon(
                     usingDefault
@@ -3262,81 +3347,177 @@ class _FullEtiquetteGuidePage
 
   @override
   Widget build(
-      BuildContext context,
-      ) {
+    BuildContext context,
+  ) {
     final colorScheme =
         Theme.of(context).colorScheme;
+    final isDark =
+        Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      appBar:
-      AppBar(
-        title:
-        Text(
+      backgroundColor:
+          Theme.of(context).scaffoldBackgroundColor,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+        foregroundColor: colorScheme.onSurface,
+        title: Text(
           _t(
             en: 'Etiquette Guide',
             zh: '礼仪指南',
             ms: 'Panduan Etika',
           ),
+          style: const TextStyle(
+            fontWeight: FontWeight.w900,
+          ),
         ),
       ),
-      backgroundColor:
-      Theme.of(context).colorScheme.surface,
-      body:
-      ListView(
+      body: ListView(
         padding:
-        const EdgeInsets.all(
+            const EdgeInsets.fromLTRB(
           18,
+          8,
+          18,
+          28,
         ),
         children: [
-          Text(
-            category,
-            style:
-            const TextStyle(
-              color:
-              Color(0xFF6C4DB5),
-              fontWeight:
-              FontWeight.w600,
+          Container(
+            constraints:
+                const BoxConstraints(
+              minHeight: 190,
+            ),
+            padding:
+                const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              borderRadius:
+                  BorderRadius.circular(28),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: isDark
+                    ? const [
+                        Color(0xFF102D45),
+                        Color(0xFF0D5F5A),
+                      ]
+                    : const [
+                        Color(0xFFDDF4FF),
+                        Color(0xFFE7FBF5),
+                      ],
+              ),
+            ),
+            child: Stack(
+              children: [
+                Positioned(
+                  right: -10,
+                  bottom: -16,
+                  child: Icon(
+                    Icons.menu_book_rounded,
+                    size: 125,
+                    color:
+                        const Color(0xFF00A77E)
+                            .withValues(
+                      alpha:
+                          isDark ? 0.17 : 0.10,
+                    ),
+                  ),
+                ),
+                Column(
+                  mainAxisSize:
+                      MainAxisSize.min,
+                  crossAxisAlignment:
+                      CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding:
+                          const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration:
+                          BoxDecoration(
+                        color:
+                            const Color(
+                          0xFF00A77E,
+                        ).withValues(
+                          alpha: 0.12,
+                        ),
+                        borderRadius:
+                            BorderRadius.circular(
+                          14,
+                        ),
+                      ),
+                      child: Text(
+                        category,
+                        style:
+                            const TextStyle(
+                          color:
+                              Color(
+                            0xFF00A77E,
+                          ),
+                          fontSize: 11,
+                          fontWeight:
+                              FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(
+                      height: 26,
+                    ),
+                    SizedBox(
+                      width: 270,
+                      child: Text(
+                        name,
+                        style:
+                            TextStyle(
+                          color: isDark
+                              ? Colors.white
+                              : const Color(
+                                  0xFF123B61,
+                                ),
+                          fontSize: 23,
+                          height: 1.15,
+                          fontWeight:
+                              FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(
+                      height: 8,
+                    ),
+                    SizedBox(
+                      width: 275,
+                      child: Text(
+                        _t(
+                          en:
+                              'Ranked specifically for this attraction. Use the guide before entering.',
+                          zh:
+                              '此排名专门针对这个景点。进入前请先查看礼仪指南。',
+                          ms:
+                              'Kedudukan ini khusus untuk tarikan ini. Rujuk panduan sebelum masuk.',
+                        ),
+                        style:
+                            TextStyle(
+                          color: isDark
+                              ? Colors.white
+                                  .withValues(
+                                  alpha: 0.76,
+                                )
+                              : const Color(
+                                  0xFF4A6872,
+                                ),
+                          fontSize: 12.5,
+                          height: 1.4,
+                          fontWeight:
+                              FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
-
-          const SizedBox(
-            height: 4,
-          ),
-
-          Text(
-            name,
-            style:
-            TextStyle(
-              fontSize: 25,
-              fontWeight:
-              FontWeight.bold,
-              color:
-              colorScheme.onSurface,
-            ),
-          ),
-
-          const SizedBox(
-            height: 8,
-          ),
-
-          Text(
-            _t(
-              en: 'Ranked specifically for this attraction.',
-              zh: '此排名专门针对这个景点。',
-              ms: 'Kedudukan ini khusus untuk tarikan ini.',
-            ),
-            style:
-            TextStyle(
-              color:
-              colorScheme.onSurfaceVariant,
-              fontSize: 12,
-            ),
-          ),
-
-          const SizedBox(
-            height: 22,
-          ),
-
+          const SizedBox(height: 18),
           _RankedGuideSection(
             title: _t(
               en: '✅ DO',
@@ -3344,14 +3525,10 @@ class _FullEtiquetteGuidePage
               ms: '✅ BOLEH',
             ),
             titleColor:
-            Colors.green,
+                const Color(0xFF18A57A),
             items: dos,
           ),
-
-          const SizedBox(
-            height: 18,
-          ),
-
+          const SizedBox(height: 14),
           _RankedGuideSection(
             title: _t(
               en: "❌ DON'T",
@@ -3359,13 +3536,60 @@ class _FullEtiquetteGuidePage
               ms: '❌ JANGAN',
             ),
             titleColor:
-            Colors.red,
+                const Color(0xFFFF5F78),
             items: donts,
+          ),
+          const SizedBox(height: 18),
+          Container(
+            padding:
+                const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color:
+                  colorScheme.surfaceContainerLow,
+              borderRadius:
+                  BorderRadius.circular(22),
+              border: Border.all(
+                color:
+                    colorScheme.outlineVariant,
+              ),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.favorite_rounded,
+                  color: Color(0xFFFF5F78),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    _t(
+                      en:
+                          'Respect the Culture, Keep Malaysia Beautiful.',
+                      zh:
+                          '尊重文化，让马来西亚更美丽。',
+                      ms:
+                          'Hormati Budaya, Kekalkan Keindahan Malaysia.',
+                    ),
+                    style:
+                        TextStyle(
+                      color:
+                          colorScheme.onSurface,
+                      fontWeight:
+                          FontWeight.w800,
+                      fontStyle:
+                          FontStyle.italic,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
+
+
 }
 
 class _RankedGuideSection
@@ -3440,7 +3664,7 @@ class _RankedGuideSection
         colorScheme.surfaceContainerLow,
         borderRadius:
         BorderRadius.circular(
-          16,
+          22,
         ),
         border:
         Border.all(

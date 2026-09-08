@@ -24,8 +24,8 @@ class _EtiquetteAlertViewState
   final AppSettingsController _settings =
       AppSettingsController.instance;
 
-  static const Color _teal = Color(0xFF18B7C8);
-  static const Color _blue = Color(0xFF1E78D8);
+  static const Color _teal = Color(0xFF00A77E);
+  static const Color _blue = Color(0xFF3CC8AE);
   static const Color _doColor = Color(0xFF238B45);
   static const Color _dontColor = Color(0xFFD43F3A);
   static const Color _warning = Color(0xFFF59E0B);
@@ -80,28 +80,34 @@ class _EtiquetteAlertViewState
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme =
+        Theme.of(context).colorScheme;
+
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor:
+          Theme.of(context)
+              .scaffoldBackgroundColor,
       appBar: AppBar(
         elevation: 0,
-        foregroundColor: Colors.white,
+        backgroundColor:
+            Colors.transparent,
+        surfaceTintColor:
+            Colors.transparent,
+        foregroundColor:
+            colorScheme.onSurface,
         title: Text(
           _t(
-            en: 'Etiquette Guidance',
-            zh: '礼仪指南',
-            ms: 'Panduan Etika',
+            en:
+                'Etiquette Guidance',
+            zh:
+                '礼仪指南',
+            ms:
+                'Panduan Etika',
           ),
-          style: TextStyle(
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [_teal, _blue],
-            ),
+          style:
+              const TextStyle(
+            fontWeight:
+                FontWeight.w900,
           ),
         ),
       ),
@@ -270,101 +276,136 @@ class _EtiquetteAlertViewState
   }
 
   Widget _buildHeader() {
+    final isDark =
+        Theme.of(context).brightness ==
+            Brightness.dark;
+
     return Container(
       width: double.infinity,
       padding:
           const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        gradient:
-            const LinearGradient(
-          begin: Alignment.topLeft,
+        gradient: LinearGradient(
+          begin:
+              Alignment.topLeft,
           end:
               Alignment.bottomRight,
-          colors: [_teal, _blue],
+          colors: isDark
+              ? const [
+                  Color(0xFF102D45),
+                  Color(0xFF0D5F5A),
+                ]
+              : const [
+                  Color(0xFFDDF4FF),
+                  Color(0xFFE7FBF5),
+                ],
         ),
         borderRadius:
-            BorderRadius.circular(20),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x1A1E78D8),
-            blurRadius: 18,
-            offset: Offset(0, 8),
-          ),
-        ],
+            BorderRadius.circular(24),
       ),
       child: Row(
         children: [
           Container(
-            width: 48,
-            height: 48,
+            width: 50,
+            height: 50,
             decoration:
                 BoxDecoration(
-              color: Colors.white
-                  .withValues(
-                alpha: 0.18,
+              color:
+                  const Color(
+                0xFF00A77E,
+              ).withValues(
+                alpha: 0.14,
               ),
               borderRadius:
                   BorderRadius.circular(
-                14,
+                15,
               ),
             ),
-            child:
-                const Icon(
+            child: const Icon(
               Icons
-                  .notifications_active_rounded,
-              color: Colors.white,
+                  .volunteer_activism_rounded,
+              color:
+                  Color(
+                0xFF00A77E,
+              ),
               size: 27,
             ),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(
+            width: 14,
+          ),
           Expanded(
             child: Column(
               crossAxisAlignment:
-                  CrossAxisAlignment.start,
+                  CrossAxisAlignment
+                      .start,
               children: [
                 Text(
                   _t(
-                    en: 'You have entered',
-                    zh: '您已进入',
-                    ms: 'Anda telah memasuki',
+                    en:
+                        'You have entered',
+                    zh:
+                        '您已进入',
+                    ms:
+                        'Anda telah memasuki',
                   ),
-                  style: TextStyle(
-                    color: Colors.white
-                        .withValues(
-                      alpha: 0.86,
-                    ),
-                    fontSize: 12.5,
+                  style:
+                      TextStyle(
+                    color: isDark
+                        ? Colors.white
+                            .withValues(
+                            alpha:
+                                0.72,
+                          )
+                        : const Color(
+                            0xFF4A6872,
+                          ),
+                    fontSize: 12,
                     fontWeight:
-                        FontWeight.w600,
+                        FontWeight.w700,
                   ),
                 ),
-                const SizedBox(height: 3),
+                const SizedBox(
+                  height: 3,
+                ),
                 Text(
                   _viewModel
                       .attractionName,
                   style:
                       TextStyle(
-                    color: Colors.white,
+                    color: isDark
+                        ? Colors.white
+                        : const Color(
+                            0xFF123B61,
+                          ),
                     fontSize: 20,
                     fontWeight:
-                        FontWeight.w800,
+                        FontWeight.w900,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(
+                  height: 5,
+                ),
                 Text(
                   _t(
                     en:
-                        'Check the local etiquette before continuing.',
+                        'Learn the local customs before you continue.',
                     zh:
-                        '继续前请先查看当地礼仪。',
+                        '继续旅程前，先了解当地文化礼仪。',
                     ms:
-                        'Semak etika tempatan sebelum meneruskan.',
+                        'Kenali adat tempatan sebelum anda meneruskan perjalanan.',
                   ),
-                  style: TextStyle(
-                    color: Colors.white
-                        .withValues(
-                      alpha: 0.88,
-                    ),
+                  style:
+                      TextStyle(
+                    color: isDark
+                        ? Colors.white
+                            .withValues(
+                            alpha:
+                                0.78,
+                          )
+                        : const Color(
+                            0xFF4A6872,
+                          ),
                     fontSize: 12.5,
                     height: 1.3,
                   ),

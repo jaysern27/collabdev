@@ -8,8 +8,8 @@ import '../../view_model/settings/app_settings_controller.dart';
 import '../shared/app_theme.dart';
 
 // Shared with admin_home_page.dart's design language.
-const Color _deepPurple = AppColors.primaryDark;
-const Color _purple = AppColors.primary;
+const Color _deepPurple = Color(0xFF123B61);
+const Color _purple = Color(0xFF00A77E);
 const Color _approveColor = AppColors.success;
 const Color _rejectColor = AppColors.danger;
 
@@ -638,7 +638,7 @@ class _AdminReportManagementPageState
             ms: 'Pengurusan Laporan',
           ),
           style: TextStyle(
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w900,
             color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
@@ -656,6 +656,7 @@ class _AdminReportManagementPageState
             ),
             icon: const Icon(
               Icons.refresh_rounded,
+              color: Color(0xFF00A77E),
             ),
           ),
           const SizedBox(
@@ -677,7 +678,9 @@ class _AdminReportManagementPageState
     if (_isLoading) {
       return const Center(
         child:
-        CircularProgressIndicator(),
+        CircularProgressIndicator(
+          color: Color(0xFF00A77E),
+        ),
       );
     }
 
@@ -807,111 +810,155 @@ class _AdminReportManagementPageState
   }
 
   Widget _buildReviewHeader(
-      BuildContext context,
-      ) {
+    BuildContext context,
+  ) {
+    final isDark =
+        Theme.of(context).brightness ==
+            Brightness.dark;
+
     return Container(
-      padding:
-      const EdgeInsets.all(
-        18,
+      constraints:
+          const BoxConstraints(
+        minHeight: 175,
       ),
+      padding:
+          const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient:
-        const LinearGradient(
-          colors: [
-            _deepPurple,
-            _purple,
-          ],
-          begin:
-          Alignment.topLeft,
-          end:
-          Alignment.bottomRight,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDark
+              ? const [
+                  Color(0xFF102D45),
+                  Color(0xFF0D5F5A),
+                ]
+              : const [
+                  Color(0xFFDDF4FF),
+                  Color(0xFFE7FBF5),
+                ],
         ),
         borderRadius:
-        BorderRadius.circular(
-          22,
-        ),
+            BorderRadius.circular(28),
       ),
-      child: Row(
-        crossAxisAlignment:
-        CrossAxisAlignment.start,
+      child: Stack(
         children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration:
-            BoxDecoration(
+          Positioned(
+            right: -8,
+            bottom: -18,
+            child: Icon(
+              Icons.fact_check_rounded,
+              size: 120,
               color:
-              Colors.white.withValues(
-                alpha: 0.16,
-              ),
-              borderRadius:
-              BorderRadius.circular(
-                15,
+                  const Color(0xFF00A77E)
+                      .withValues(
+                alpha:
+                    isDark ? 0.18 : 0.10,
               ),
             ),
-            child: const Icon(
-              Icons
-                  .fact_check_outlined,
-              color:
-              Colors.white,
-              size: 26,
-            ),
           ),
-          const SizedBox(
-            width: 13,
-          ),
-          Expanded(
-            child: Column(
-              crossAxisAlignment:
-              CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _adminT(
-                    en: '${_reports.length} report${_reports.length == 1 ? '' : 's'} waiting for review',
-                    zh: '有 ${_reports.length} 份报告等待审核',
-                    ms: '${_reports.length} laporan menunggu semakan',
+          Column(
+            mainAxisSize:
+                MainAxisSize.min,
+            crossAxisAlignment:
+                CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration:
+                    BoxDecoration(
+                  color:
+                      const Color(
+                    0xFFFFB744,
+                  ).withValues(
+                    alpha: 0.16,
                   ),
-                  style:
-                  TextStyle(
-                    color:
-                    Colors.white,
-                    fontSize:
-                    17,
-                    fontWeight:
-                    FontWeight.w800,
+                  borderRadius:
+                      BorderRadius.circular(
+                    14,
                   ),
                 ),
-                const SizedBox(
-                  height: 5,
-                ),
-                Text(
+                child: Text(
                   _adminT(
-                    en: 'Check the detected location, selected DON’T rules and evidence photo before approving.',
-                    zh: '批准前请检查检测到的地点、所选“不应该做”规则和证据照片。',
-                    ms: 'Semak lokasi yang dikesan, peraturan JANGAN yang dipilih dan foto bukti sebelum meluluskan.',
+                    en: 'Pending Review',
+                    zh: '待审核',
+                    ms: 'Menunggu Semakan',
                   ),
                   style:
-                  TextStyle(
+                      const TextStyle(
                     color:
-                    Colors.white.withValues(
-                      alpha:
-                      0.88,
+                        Color(
+                      0xFFFF9C12,
                     ),
+                    fontSize: 11,
+                    fontWeight:
+                        FontWeight.w800,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+              SizedBox(
+                width: 270,
+                child: Text(
+                  _adminT(
+                    en:
+                        '${_reports.length} report${_reports.length == 1 ? '' : 's'} waiting for review',
+                    zh:
+                        '有 ${_reports.length} 份报告等待审核',
+                    ms:
+                        '${_reports.length} laporan menunggu semakan',
+                  ),
+                  style: TextStyle(
+                    color: isDark
+                        ? Colors.white
+                        : const Color(
+                            0xFF123B61,
+                          ),
+                    fontSize: 20,
+                    fontWeight:
+                        FontWeight.w900,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 7),
+              SizedBox(
+                width: 285,
+                child: Text(
+                  _adminT(
+                    en:
+                        'Check the detected location, selected DON’T rules and evidence photo before approving.',
+                    zh:
+                        '批准前请检查检测到的地点、所选“不应该做”规则和证据照片。',
+                    ms:
+                        'Semak lokasi yang dikesan, peraturan JANGAN yang dipilih dan foto bukti sebelum meluluskan.',
+                  ),
+                  style: TextStyle(
+                    color: isDark
+                        ? Colors.white
+                            .withValues(
+                            alpha: 0.76,
+                          )
+                        : const Color(
+                            0xFF4A6872,
+                          ),
                     height: 1.4,
                     fontSize: 12.5,
+                    fontWeight:
+                        FontWeight.w600,
                   ),
                 ),
-              ],
-            ),
-          ),
-          const Icon(
-            Icons.verified_user_outlined,
-            color: Colors.white,
+              ),
+            ],
           ),
         ],
       ),
     );
   }
+
+
 }
 
 class _AdminReportCard
@@ -987,7 +1034,7 @@ class _AdminReportCard
         color: Theme.of(context).colorScheme.surface,
         borderRadius:
         BorderRadius.circular(
-          22,
+          24,
         ),
         border: Border.all(
           color: Theme.of(context).colorScheme.outlineVariant,
@@ -1875,7 +1922,7 @@ class _MessageCard
         color: Theme.of(context).colorScheme.surface,
         borderRadius:
         BorderRadius.circular(
-          22,
+          24,
         ),
         border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),

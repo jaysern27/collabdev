@@ -163,6 +163,7 @@ const SizedBox(width: 8),
 ],
 ),
 body: RefreshIndicator(
+color: const Color(0xFF00A77E),
 onRefresh: _viewModel.loadDashboard,
 child: _viewModel.isLoading && _viewModel.rankings.isEmpty
 ? ListView(
@@ -176,6 +177,8 @@ Center(child: CircularProgressIndicator()),
 physics: const AlwaysScrollableScrollPhysics(),
 padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
 children: [
+_buildInsightsHero(),
+const SizedBox(height: 14),
 _buildFilterCard(),
 const SizedBox(height: 14),
 if (_viewModel.insufficientData) ...[
@@ -193,6 +196,157 @@ const SizedBox(height: 14),
 _buildFormulaCard(),
 ],
 ),
+),
+);
+}
+
+Widget _buildInsightsHero() {
+final isDark =
+    Theme.of(context).brightness ==
+        Brightness.dark;
+
+return Container(
+constraints:
+    const BoxConstraints(
+  minHeight: 185,
+),
+padding:
+    const EdgeInsets.all(20),
+decoration: BoxDecoration(
+  borderRadius:
+      BorderRadius.circular(28),
+  gradient: LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: isDark
+        ? const [
+            Color(0xFF102D45),
+            Color(0xFF0D5F5A),
+          ]
+        : const [
+            Color(0xFFDDF4FF),
+            Color(0xFFE7FBF5),
+          ],
+  ),
+),
+child: Stack(
+  children: [
+    Positioned(
+      right: -10,
+      bottom: -18,
+      child: Icon(
+        Icons.emoji_events_rounded,
+        size: 125,
+        color:
+            const Color(0xFFFFB744)
+                .withValues(
+          alpha:
+              isDark ? 0.18 : 0.13,
+        ),
+      ),
+    ),
+    Column(
+      mainAxisSize:
+          MainAxisSize.min,
+      crossAxisAlignment:
+          CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding:
+              const EdgeInsets.symmetric(
+            horizontal: 10,
+            vertical: 6,
+          ),
+          decoration:
+              BoxDecoration(
+            color:
+                const Color(
+              0xFF00A77E,
+            ).withValues(
+              alpha: 0.12,
+            ),
+            borderRadius:
+                BorderRadius.circular(
+              14,
+            ),
+          ),
+          child: Text(
+            _t(
+              en:
+                  'Community Insights',
+              zh:
+                  '社区分析',
+              ms:
+                  'Analisis Komuniti',
+            ),
+            style:
+                const TextStyle(
+              color:
+                  Color(
+                0xFF00A77E,
+              ),
+              fontSize: 11,
+              fontWeight:
+                  FontWeight.w800,
+            ),
+          ),
+        ),
+        const SizedBox(
+          height: 22,
+        ),
+        Text(
+          _t(
+            en:
+                'Understand etiquette patterns',
+            zh:
+                '了解礼仪违规趋势',
+            ms:
+                'Fahami corak etika',
+          ),
+          style: TextStyle(
+            color: isDark
+                ? Colors.white
+                : const Color(
+                    0xFF123B61,
+                  ),
+            fontSize: 21,
+            fontWeight:
+                FontWeight.w900,
+          ),
+        ),
+        const SizedBox(
+          height: 6,
+        ),
+        SizedBox(
+          width: 270,
+          child: Text(
+            _t(
+              en:
+                  '${_viewModel.approvedReports} approved violations • ${_viewModel.verificationRate.toStringAsFixed(0)}% verification rate',
+              zh:
+                  '${_viewModel.approvedReports} 个已批准违规 • 验证率 ${_viewModel.verificationRate.toStringAsFixed(0)}%',
+              ms:
+                  '${_viewModel.approvedReports} pelanggaran diluluskan • kadar pengesahan ${_viewModel.verificationRate.toStringAsFixed(0)}%',
+            ),
+            style: TextStyle(
+              color: isDark
+                  ? Colors.white
+                      .withValues(
+                      alpha: 0.75,
+                    )
+                  : const Color(
+                      0xFF4A6872,
+                    ),
+              fontSize: 12.5,
+              height: 1.4,
+              fontWeight:
+                  FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
+    ),
+  ],
 ),
 );
 }
@@ -426,24 +580,67 @@ child: Row(
 crossAxisAlignment: CrossAxisAlignment.start,
 children: [
 Container(
-width: 32,
-height: 32,
+width: 40,
+height: 40,
 alignment: Alignment.center,
 decoration: BoxDecoration(
 color: index < 3
 ? const Color(0xFFFFE7A6)
-    : const Color(0xFFEAF0FF),
+    : const Color(0xFFF2FBF8),
 borderRadius: BorderRadius.circular(10),
 ),
-child: Text(
-'${index + 1}',
-style: TextStyle(
-color: index < 3
-? const Color(0xFF9C6500)
-    : const Color(0xFF315CD6),
-fontWeight: FontWeight.w900,
-),
-),
+child: index < 3
+    ? Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.center,
+        children: [
+          Icon(
+            Icons.emoji_events_rounded,
+            color: index == 0
+                ? const Color(0xFFFFA000)
+                : index == 1
+                    ? const Color(0xFF8E9AA7)
+                    : const Color(0xFFC66A3A),
+            size: 21,
+          ),
+          Positioned(
+            right: -5,
+            bottom: -5,
+            child: Container(
+              width: 19,
+              height: 19,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: index == 0
+                    ? const Color(0xFFFFA000)
+                    : index == 1
+                        ? const Color(0xFF8E9AA7)
+                        : const Color(0xFFC66A3A),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.surface,
+                  width: 2,
+                ),
+              ),
+              child: Text(
+                '${index + 1}',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+          ),
+        ],
+      )
+    : Text(
+        '${index + 1}',
+        style: const TextStyle(
+          color: Color(0xFF00A77E),
+          fontWeight: FontWeight.w900,
+        ),
+      ),
 ),
 const SizedBox(width: 10),
 Expanded(
@@ -470,7 +667,7 @@ children: [
 Text(
 '$frequency',
 style: TextStyle(
-color: Color(0xFF146BD9),
+color: Color(0xFF00A77E),
 fontSize: 16,
 fontWeight: FontWeight.w900,
 ),
@@ -655,9 +852,12 @@ return Container(
 padding: const EdgeInsets.all(15),
 decoration: BoxDecoration(
 gradient: const LinearGradient(
-colors: [Color(0xFF08A8AD), Color(0xFF146BD9)],
+colors: [
+Color(0xFF00A77E),
+Color(0xFF3CC8AE),
+],
 ),
-borderRadius: BorderRadius.circular(18),
+borderRadius: BorderRadius.circular(22),
 ),
 child: Column(
 crossAxisAlignment: CrossAxisAlignment.start,
@@ -729,7 +929,7 @@ padding: const EdgeInsets.all(13),
 child: Column(
 crossAxisAlignment: CrossAxisAlignment.start,
 children: [
-Icon(icon, color: const Color(0xFF146BD9), size: 20),
+Icon(icon, color: const Color(0xFF00A77E), size: 20),
 const SizedBox(height: 9),
 Text(
 value,
@@ -774,10 +974,10 @@ Container(
 width: 34,
 height: 34,
 decoration: BoxDecoration(
-color: const Color(0xFFE9ECFF),
+color: const Color(0xFFE8FBF5),
 borderRadius: BorderRadius.circular(10),
 ),
-child: Icon(icon, color: const Color(0xFF315CD6), size: 19),
+child: Icon(icon, color: const Color(0xFF00A77E), size: 19),
 ),
 const SizedBox(width: 9),
 Expanded(
@@ -843,7 +1043,7 @@ return Container(
 padding: padding ?? const EdgeInsets.all(15),
 decoration: BoxDecoration(
 color: Theme.of(context).colorScheme.surface,
-borderRadius: BorderRadius.circular(18),
+borderRadius: BorderRadius.circular(22),
 border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
 boxShadow: [
 BoxShadow(
@@ -916,7 +1116,7 @@ canvas.drawLine(Offset(left, y), Offset(right, y), gridPaint);
 }
 
 final linePaint = Paint()
-..color = const Color(0xFF146BD9)
+..color = const Color(0xFF00A77E)
 ..strokeWidth = 3
 ..style = PaintingStyle.stroke
 ..strokeCap = StrokeCap.round

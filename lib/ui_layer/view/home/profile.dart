@@ -7,6 +7,7 @@ import '../../../data_layer/model/services/firebase_authentication/firebase_auth
 import '../../../data_layer/model/services/geofence_alert_monitor/geofence_alert_monitor_service.dart';
 import '../../view_model/settings/app_settings_controller.dart';
 import '../violation_dashboard_report/user_etiquette_report_page.dart';
+import '../shared/culture_guide_bottom_nav.dart';
 import 'edit_profile_page.dart';
 import 'login_page.dart';
 
@@ -566,8 +567,8 @@ class _ProfileViewState
 
   @override
   Widget build(
-      BuildContext context,
-      ) {
+    BuildContext context,
+  ) {
     final user =
         authService.currentUser;
 
@@ -581,123 +582,147 @@ class _ProfileViewState
 
     final fallbackName =
         user?.email
-            ?.split('@')
-            .first ??
+                ?.split('@')
+                .first ??
             settings.text(
-              en: 'Guest Traveller',
-              zh: '访客旅客',
-              ms: 'Pelancong Tetamu',
+              en:
+                  'Guest Traveller',
+              zh:
+                  '访客旅客',
+              ms:
+                  'Pelancong Tetamu',
             );
 
     final displayName =
-    profileName.isNotEmpty
-        ? profileName
-        : fallbackName;
+        profileName.isNotEmpty
+            ? profileName
+            : fallbackName;
 
     final colorScheme =
-        Theme.of(context).colorScheme;
+        Theme.of(context)
+            .colorScheme;
 
     return Scaffold(
       backgroundColor:
-      colorScheme.surface,
+          Theme.of(context)
+              .scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor:
-        colorScheme.surface,
+            Colors.transparent,
         surfaceTintColor:
-        Colors.transparent,
+            Colors.transparent,
+        foregroundColor:
+            colorScheme.onSurface,
         title: Text(
           settings.text(
             en: 'Profile',
             zh: '个人资料',
             ms: 'Profil',
           ),
-          style:
-          const TextStyle(
+          style: const TextStyle(
             fontWeight:
-            FontWeight.w800,
+                FontWeight.w900,
           ),
         ),
         actions: [
           IconButton(
-            tooltip: settings.text(
+            tooltip:
+                settings.text(
               en: 'Refresh',
               zh: '刷新',
               ms: 'Muat semula',
             ),
-            onPressed:
-            loading
+            onPressed: loading
                 ? null
                 : _loadProfileDetails,
             icon: loading
                 ? const SizedBox(
-              width: 18,
-              height: 18,
-              child:
-              CircularProgressIndicator(
-                strokeWidth: 2,
-              ),
-            )
+                    width: 18,
+                    height: 18,
+                    child:
+                        CircularProgressIndicator(
+                      strokeWidth: 2,
+                    ),
+                  )
                 : const Icon(
-              Icons.refresh_rounded,
-            ),
+                    Icons
+                        .refresh_rounded,
+                  ),
           ),
-          const SizedBox(width: 4),
+          const SizedBox(
+            width: 4,
+          ),
         ],
       ),
       body: RefreshIndicator(
+        color:
+            const Color(
+          0xFF00A77E,
+        ),
         onRefresh:
-        _loadProfileDetails,
+            _loadProfileDetails,
         child: ListView(
           physics:
-          const AlwaysScrollableScrollPhysics(),
+              const AlwaysScrollableScrollPhysics(),
           padding:
-          const EdgeInsets.fromLTRB(
+              const EdgeInsets.fromLTRB(
             18,
-            8,
+            6,
             18,
-            30,
+            28,
           ),
           children: [
             _buildProfileCard(
               displayName:
-              displayName,
+                  displayName,
               email:
-              email,
+                  email,
               phone:
-              profilePhone,
+                  profilePhone,
               photoUrl:
-              profilePhotoUrl,
+                  profilePhotoUrl,
               photoBase64:
-              profilePhotoBase64,
+                  profilePhotoBase64,
               signedIn:
-              user != null,
+                  user != null,
             ),
-            const SizedBox(height: 26),
-
+            const SizedBox(
+              height: 22,
+            ),
             _sectionLabel(
               settings.text(
-                en: 'Quick access',
-                zh: '快捷功能',
-                ms: 'Akses pantas',
+                en:
+                    'Quick access',
+                zh:
+                    '快捷功能',
+                ms:
+                    'Akses pantas',
               ),
             ),
-            const SizedBox(height: 10),
-
+            const SizedBox(
+              height: 10,
+            ),
             _buildReportTile(),
-            const SizedBox(height: 26),
-
+            const SizedBox(
+              height: 22,
+            ),
             _sectionLabel(
               settings.text(
-                en: 'Preferences',
-                zh: '偏好设置',
-                ms: 'Pilihan',
+                en:
+                    'Preferences',
+                zh:
+                    '偏好设置',
+                ms:
+                    'Pilihan',
               ),
             ),
-            const SizedBox(height: 10),
-
+            const SizedBox(
+              height: 10,
+            ),
             _buildPreferencesCard(),
-            const SizedBox(height: 26),
-
+            const SizedBox(
+              height: 22,
+            ),
             _sectionLabel(
               settings.text(
                 en: 'Account',
@@ -705,18 +730,85 @@ class _ProfileViewState
                 ms: 'Akaun',
               ),
             ),
-            const SizedBox(height: 10),
-
+            const SizedBox(
+              height: 10,
+            ),
             _buildAccountCard(
               signedIn:
-              user != null,
+                  user != null,
               email:
-              email,
+                  email,
               phone:
-              profilePhone,
+                  profilePhone,
+            ),
+            const SizedBox(
+              height: 18,
+            ),
+            Container(
+              padding:
+                  const EdgeInsets.all(
+                16,
+              ),
+              decoration:
+                  BoxDecoration(
+                color: colorScheme
+                    .surfaceContainerLow,
+                borderRadius:
+                    BorderRadius.circular(
+                  22,
+                ),
+                border:
+                    Border.all(
+                  color: colorScheme
+                      .outlineVariant,
+                ),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons
+                        .favorite_rounded,
+                    color:
+                        Color(
+                      0xFFFF5F78,
+                    ),
+                  ),
+                  const SizedBox(
+                    width: 10,
+                  ),
+                  Expanded(
+                    child: Text(
+                      settings.text(
+                        en:
+                            'Respect the Culture, Keep Malaysia Beautiful.',
+                        zh:
+                            '尊重文化，让马来西亚更美丽。',
+                        ms:
+                            'Hormati Budaya, Kekalkan Keindahan Malaysia.',
+                      ),
+                      style:
+                          TextStyle(
+                        color:
+                            colorScheme
+                                .onSurface,
+                        fontWeight:
+                            FontWeight
+                                .w800,
+                        fontStyle:
+                            FontStyle
+                                .italic,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
+      ),
+      bottomNavigationBar:
+          const CultureGuideBottomNav(
+        currentIndex: 3,
       ),
     );
   }
@@ -729,138 +821,227 @@ class _ProfileViewState
     required String photoBase64,
     required bool signedIn,
   }) {
-    final colorScheme =
-        Theme.of(context).colorScheme;
+    final isDark =
+        Theme.of(context).brightness ==
+            Brightness.dark;
 
     return Container(
       padding:
-      const EdgeInsets.all(18),
+          const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color:
-        colorScheme
-            .surfaceContainerLow,
         borderRadius:
-        BorderRadius.circular(22),
-        border: Border.all(
-          color:
-          colorScheme
-              .outlineVariant,
+            BorderRadius.circular(28),
+        gradient: LinearGradient(
+          begin:
+              Alignment.topLeft,
+          end:
+              Alignment.bottomRight,
+          colors: isDark
+              ? const [
+                  Color(0xFF102D45),
+                  Color(0xFF0D5F5A),
+                ]
+              : const [
+                  Color(0xFFDDF4FF),
+                  Color(0xFFE7FBF5),
+                ],
         ),
       ),
-      child: Column(
+      child: Stack(
         children: [
-          Row(
-            crossAxisAlignment:
-            CrossAxisAlignment.center,
-            children: [
-              _buildAvatar(
-                photoUrl:
-                photoUrl,
-                photoBase64:
-                photoBase64,
-                displayName:
-                displayName,
-                signedIn:
-                signedIn,
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment:
-                  CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      displayName,
-                      maxLines: 1,
-                      overflow:
-                      TextOverflow.ellipsis,
-                      style: Theme.of(
-                        context,
-                      )
-                          .textTheme
-                          .titleLarge
-                          ?.copyWith(
-                        fontWeight:
-                        FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      email,
-                      maxLines: 1,
-                      overflow:
-                      TextOverflow.ellipsis,
-                      style: Theme.of(
-                        context,
-                      )
-                          .textTheme
-                          .bodyMedium
-                          ?.copyWith(
-                        color:
-                        colorScheme
-                            .onSurfaceVariant,
-                      ),
-                    ),
-                    if (phone.isNotEmpty) ...[
-                      const SizedBox(height: 3),
-                      Text(
-                        phone,
-                        maxLines: 1,
-                        overflow:
-                        TextOverflow.ellipsis,
-                        style: Theme.of(
-                          context,
-                        )
-                            .textTheme
-                            .bodySmall
-                            ?.copyWith(
-                          color:
-                          colorScheme
-                              .onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 18),
-          SizedBox(
-            width:
-            double.infinity,
-            child: signedIn
-                ? FilledButton.tonalIcon(
-              onPressed:
-              _editProfile,
-              icon:
-              const Icon(
-                Icons.edit_outlined,
-                size: 18,
-              ),
-              label: Text(
-                settings.text(
-                  en: 'Edit Profile',
-                  zh: '编辑资料',
-                  ms: 'Edit Profil',
-                ),
-              ),
-            )
-                : FilledButton.icon(
-              onPressed:
-              _openLogin,
-              icon:
-              const Icon(
-                Icons.login_rounded,
-              ),
-              label: Text(
-                settings.text(
-                  en: 'Sign In',
-                  zh: '登录',
-                  ms: 'Log Masuk',
-                ),
+          Positioned(
+            right: -8,
+            bottom: -15,
+            child: Icon(
+              Icons
+                  .travel_explore_rounded,
+              size: 130,
+              color:
+                  const Color(
+                0xFF00A77E,
+              ).withValues(
+                alpha: isDark
+                    ? 0.16
+                    : 0.10,
               ),
             ),
+          ),
+          Column(
+            children: [
+              Row(
+                crossAxisAlignment:
+                    CrossAxisAlignment
+                        .center,
+                children: [
+                  _buildAvatar(
+                    photoUrl:
+                        photoUrl,
+                    photoBase64:
+                        photoBase64,
+                    displayName:
+                        displayName,
+                    signedIn:
+                        signedIn,
+                  ),
+                  const SizedBox(
+                    width: 16,
+                  ),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment:
+                          CrossAxisAlignment
+                              .start,
+                      children: [
+                        Text(
+                          displayName,
+                          maxLines: 1,
+                          overflow:
+                              TextOverflow
+                                  .ellipsis,
+                          style:
+                              TextStyle(
+                            color: isDark
+                                ? Colors
+                                    .white
+                                : const Color(
+                                    0xFF123B61,
+                                  ),
+                            fontSize:
+                                21,
+                            fontWeight:
+                                FontWeight
+                                    .w900,
+                          ),
+                        ),
+                        const SizedBox(
+                          height: 4,
+                        ),
+                        Text(
+                          email,
+                          maxLines: 1,
+                          overflow:
+                              TextOverflow
+                                  .ellipsis,
+                          style:
+                              TextStyle(
+                            color: isDark
+                                ? Colors
+                                    .white
+                                    .withValues(
+                                    alpha:
+                                        0.76,
+                                  )
+                                : const Color(
+                                    0xFF4A6872,
+                                  ),
+                            fontSize:
+                                12.5,
+                          ),
+                        ),
+                        if (phone
+                            .isNotEmpty) ...[
+                          const SizedBox(
+                            height: 3,
+                          ),
+                          Text(
+                            phone,
+                            style:
+                                TextStyle(
+                              color: isDark
+                                  ? Colors
+                                      .white
+                                      .withValues(
+                                      alpha:
+                                          0.72,
+                                    )
+                                  : const Color(
+                                      0xFF4A6872,
+                                    ),
+                              fontSize:
+                                  12,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(
+                height: 18,
+              ),
+              SizedBox(
+                width:
+                    double.infinity,
+                child: signedIn
+                    ? FilledButton.icon(
+                        onPressed:
+                            _editProfile,
+                        style:
+                            FilledButton
+                                .styleFrom(
+                          backgroundColor:
+                              const Color(
+                            0xFF00A77E,
+                          ),
+                          foregroundColor:
+                              Colors.white,
+                          shape:
+                              RoundedRectangleBorder(
+                            borderRadius:
+                                BorderRadius
+                                    .circular(
+                              16,
+                            ),
+                          ),
+                        ),
+                        icon:
+                            const Icon(
+                          Icons
+                              .edit_outlined,
+                          size: 18,
+                        ),
+                        label: Text(
+                          settings.text(
+                            en:
+                                'Edit Profile',
+                            zh:
+                                '编辑资料',
+                            ms:
+                                'Edit Profil',
+                          ),
+                        ),
+                      )
+                    : FilledButton.icon(
+                        onPressed:
+                            _openLogin,
+                        style:
+                            FilledButton
+                                .styleFrom(
+                          backgroundColor:
+                              const Color(
+                            0xFF00A77E,
+                          ),
+                          foregroundColor:
+                              Colors.white,
+                        ),
+                        icon:
+                            const Icon(
+                          Icons
+                              .login_rounded,
+                        ),
+                        label: Text(
+                          settings.text(
+                            en:
+                                'Sign In',
+                            zh: '登录',
+                            ms:
+                                'Log Masuk',
+                          ),
+                        ),
+                      ),
+              ),
+            ],
           ),
         ],
       ),

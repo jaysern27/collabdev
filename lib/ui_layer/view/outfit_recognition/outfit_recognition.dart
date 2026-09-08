@@ -5,6 +5,7 @@ import '../../../data_layer/model/services/outfit_recognition/outfit_recognition
 import '../../../data_layer/model/services/firebase_authentication/firebase_authentication_service.dart';
 import '../../view_model/outfit_recognition/outfit_recognition_view_model.dart';
 import '../../view_model/settings/app_settings_controller.dart';
+import '../shared/culture_guide_bottom_nav.dart';
 
 class OutfitRecognitionView extends StatefulWidget {
   const OutfitRecognitionView({super.key});
@@ -118,185 +119,294 @@ class _OutfitRecognitionViewState
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(
-        0xFFFFFFFF,
-      ),
+    final colorScheme =
+        Theme.of(context).colorScheme;
 
+    return Scaffold(
+      backgroundColor:
+          Theme.of(context)
+              .scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: const Color(
-          0xFFFFFFFF,
-        ),
-        foregroundColor: const Color(
-          0xFF14213D,
-        ),
-        elevation: 0,
-        centerTitle: true,
+        backgroundColor:
+            Colors.transparent,
+        surfaceTintColor:
+            Colors.transparent,
+        foregroundColor:
+            colorScheme.onSurface,
+        centerTitle: false,
         title: Text(
           _settings.text(
             en: 'Check Your Outfit',
             zh: '检查您的穿搭',
             ms: 'Periksa Pakaian Anda',
           ),
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
+          style: const TextStyle(
+            fontWeight:
+                FontWeight.w900,
           ),
         ),
       ),
-
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(
-            20,
-            10,
-            20,
-            30,
+        child:
+            SingleChildScrollView(
+          padding:
+              const EdgeInsets.fromLTRB(
+            18,
+            6,
+            18,
+            28,
           ),
           child: Column(
             crossAxisAlignment:
-            CrossAxisAlignment.start,
+                CrossAxisAlignment.start,
             children: [
               _buildIntroduction(),
-
               const SizedBox(
-                height: 20,
+                height: 16,
               ),
-
               _buildConsentCard(),
-
               const SizedBox(
-                height: 20,
+                height: 14,
               ),
-
               _buildGenderCard(),
-
               const SizedBox(
-                height: 20,
+                height: 18,
               ),
-
               _buildPhotoSection(),
-
               const SizedBox(
-                height: 20,
+                height: 18,
               ),
-
-              if (_viewModel.hasSelectedImage)
+              if (_viewModel
+                  .hasSelectedImage)
                 _buildAnalyseButton(),
-
-              if (_viewModel.isAnalysing) ...[
+              if (_viewModel
+                  .isAnalysing) ...[
                 const SizedBox(
                   height: 18,
                 ),
                 Center(
                   child: Column(
                     children: [
-                      CircularProgressIndicator(),
-
-                      SizedBox(
+                      const CircularProgressIndicator(
+                        color:
+                            Color(
+                          0xFF00A77E,
+                        ),
+                      ),
+                      const SizedBox(
                         height: 10,
                       ),
-
                       Text(
-                        _settings.text(en: 'Analysing your outfit...', zh: '正在分析您的穿搭……', ms: 'Menganalisis pakaian anda...'),
+                        _settings.text(
+                          en:
+                              'Analysing your outfit...',
+                          zh:
+                              '正在分析您的穿搭……',
+                          ms:
+                              'Menganalisis pakaian anda...',
+                        ),
                       ),
                     ],
                   ),
                 ),
               ],
-
-              if (_viewModel.sleevePrediction != null &&
-                  _viewModel.lowerBodyPrediction != null &&
-                  _viewModel.shoulderPrediction != null &&
-                  _viewModel.headwearPrediction != null) ...[
+              if (_viewModel
+                          .sleevePrediction !=
+                      null &&
+                  _viewModel
+                          .lowerBodyPrediction !=
+                      null &&
+                  _viewModel
+                          .shoulderPrediction !=
+                      null &&
+                  _viewModel
+                          .headwearPrediction !=
+                      null) ...[
                 const SizedBox(
                   height: 24,
                 ),
                 _buildResultCard(),
-
-                const SizedBox(
-                  height: 20,
-                ),
-
-                _buildPlaceRecommendationSection(),
-              ],
-
-              if (_viewModel.errorMessage != null) ...[
                 const SizedBox(
                   height: 18,
                 ),
-
+                _buildPlaceRecommendationSection(),
+              ],
+              if (_viewModel
+                      .errorMessage !=
+                  null) ...[
+                const SizedBox(
+                  height: 18,
+                ),
                 _buildErrorCard(),
               ],
             ],
           ),
         ),
       ),
+      bottomNavigationBar:
+          const CultureGuideBottomNav(
+        currentIndex: 2,
+      ),
     );
   }
 
   Widget _buildIntroduction() {
+    final isDark =
+        Theme.of(context).brightness ==
+            Brightness.dark;
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(
-        18,
-      ),
+      height: 190,
+      padding:
+          const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [
-            Color(
-              0xFF02AAA8,
-            ),
-            Color(
-              0xFF2374D8,
-            ),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(
-          22,
+        borderRadius:
+            BorderRadius.circular(28),
+        gradient: LinearGradient(
+          begin:
+              Alignment.topLeft,
+          end:
+              Alignment.bottomRight,
+          colors: isDark
+              ? const [
+                  Color(0xFF102D45),
+                  Color(0xFF0D5F5A),
+                ]
+              : const [
+                  Color(0xFFDDF4FF),
+                  Color(0xFFE7FBF5),
+                ],
         ),
       ),
-      child: Column(
-        crossAxisAlignment:
-        CrossAxisAlignment.start,
+      child: Stack(
         children: [
-          Icon(
-            Icons.checkroom_outlined,
-            color: Colors.white,
-            size: 34,
-          ),
-
-          SizedBox(
-            height: 12,
-          ),
-
-          Text(
-            _settings.text(
-              en: 'Dress with confidence',
-              zh: '自信地穿着',
-              ms: 'Berpakaian dengan yakin',
-            ),
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 21,
-              fontWeight: FontWeight.bold,
+          Positioned(
+            right: -8,
+            bottom: -18,
+            child: Icon(
+              Icons.checkroom_rounded,
+              size: 135,
+              color:
+                  const Color(
+                0xFF00A77E,
+              ).withValues(
+                alpha:
+                    isDark
+                        ? 0.17
+                        : 0.12,
+              ),
             ),
           ),
-
-          SizedBox(
-            height: 6,
+          const Positioned(
+            right: 18,
+            top: 10,
+            child: Icon(
+              Icons
+                  .auto_awesome_rounded,
+              size: 30,
+              color:
+                  Color(0xFFFFB744),
+            ),
           ),
-
-          Text(
-            _settings.text(
-              en: 'Upload or take a photo of your outfit. CultureGuide will analyse visible clothing attributes and provide an advisory result.',
-              zh: '上传或拍摄您的穿搭照片。CultureGuide 会分析可见的服装特征，并提供参考结果。',
-              ms: 'Muat naik atau ambil foto pakaian anda. CultureGuide akan menganalisis ciri pakaian yang kelihatan dan memberikan hasil sebagai panduan.',
-            ),
-            style: TextStyle(
-              color: Colors.white,
-              height: 1.4,
-              fontSize: 13,
-            ),
+          Column(
+            crossAxisAlignment:
+                CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding:
+                    const EdgeInsets
+                        .symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration:
+                    BoxDecoration(
+                  color:
+                      const Color(
+                    0xFF00A77E,
+                  ).withValues(
+                    alpha: 0.12,
+                  ),
+                  borderRadius:
+                      BorderRadius
+                          .circular(
+                    14,
+                  ),
+                ),
+                child: Text(
+                  _settings.text(
+                    en:
+                        'Smart Outfit Guide',
+                    zh:
+                        '智能穿搭指南',
+                    ms:
+                        'Panduan Pakaian Pintar',
+                  ),
+                  style:
+                      const TextStyle(
+                    color:
+                        Color(
+                      0xFF00A77E,
+                    ),
+                    fontSize: 11,
+                    fontWeight:
+                        FontWeight.w800,
+                  ),
+                ),
+              ),
+              const Spacer(),
+              Text(
+                _settings.text(
+                  en:
+                      'Dress with confidence',
+                  zh:
+                      '自信地穿着',
+                  ms:
+                      'Berpakaian dengan yakin',
+                ),
+                style: TextStyle(
+                  color: isDark
+                      ? Colors.white
+                      : const Color(
+                          0xFF123B61,
+                        ),
+                  fontSize: 22,
+                  fontWeight:
+                      FontWeight.w900,
+                ),
+              ),
+              const SizedBox(
+                height: 6,
+              ),
+              SizedBox(
+                width: 260,
+                child: Text(
+                  _settings.text(
+                    en:
+                        'Check your outfit before visiting cultural attractions.',
+                    zh:
+                        '前往文化景点前，先检查您的穿搭是否合适。',
+                    ms:
+                        'Semak pakaian anda sebelum melawat tarikan budaya.',
+                  ),
+                  style: TextStyle(
+                    color: isDark
+                        ? Colors.white
+                            .withValues(
+                            alpha: 0.80,
+                          )
+                        : const Color(
+                            0xFF47646E,
+                          ),
+                    fontSize: 12.5,
+                    height: 1.35,
+                    fontWeight:
+                        FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),

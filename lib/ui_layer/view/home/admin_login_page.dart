@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../../data_layer/model/services/firebase_authentication/firebase_authentication_service.dart';
 import '../../../data_layer/model/services/firebase_authentication/user_role_service.dart';
 import '../../view_model/settings/app_settings_controller.dart';
-import '../shared/app_theme.dart';
 
 import 'admin_home_page.dart';
 
@@ -149,11 +148,15 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
+        foregroundColor: colorScheme.onSurface,
         title: Text(
           _t(
             en: 'Admin Portal',
             zh: '管理员门户',
             ms: 'Portal Pentadbir',
+          ),
+          style: const TextStyle(
+            fontWeight: FontWeight.w800,
           ),
         ),
         actions: [
@@ -163,23 +166,23 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(22, 8, 22, 30),
+          padding: const EdgeInsets.fromLTRB(20, 6, 20, 30),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _buildAdminHero(),
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
               _buildLoginCard(),
-              const SizedBox(height: 18),
+              const SizedBox(height: 16),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
                     Icons.lock_outline_rounded,
-                    size: 16,
+                    size: 15,
                     color: colorScheme.onSurfaceVariant,
                   ),
-                  const SizedBox(width: 7),
+                  const SizedBox(width: 6),
                   Flexible(
                     child: Text(
                       _t(
@@ -189,7 +192,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                       ),
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 12.5,
+                        fontSize: 12,
                         color: colorScheme.onSurfaceVariant,
                       ),
                     ),
@@ -204,8 +207,6 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
   }
 
   Widget _buildLanguageMenu() {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return PopupMenuButton<AppLanguage>(
       initialValue: _settings.language,
       tooltip: _t(
@@ -230,70 +231,108 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
           child: Text('Bahasa Melayu'),
         ),
       ],
-      icon: Icon(
+      icon: const Icon(
         Icons.language_rounded,
-        color: colorScheme.primary,
+        color: Color(0xFF00A77E),
       ),
     );
   }
 
   Widget _buildAdminHero() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
+      height: 210,
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [
-            AppColors.primaryDark,
-            AppColors.primary,
-          ],
+        borderRadius: BorderRadius.circular(30),
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
+          colors: isDark
+              ? const [
+                  Color(0xFF10283C),
+                  Color(0xFF0C4F52),
+                ]
+              : const [
+                  Color(0xFFDDF4FF),
+                  Color(0xFFE9FBF2),
+                ],
         ),
-        borderRadius: BorderRadius.circular(26),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.28),
-            blurRadius: 24,
-            offset: const Offset(0, 10),
-          ),
-        ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
         children: [
-          const CircleAvatar(
-            radius: 27,
-            backgroundColor: Color(0x24FFFFFF),
+          Positioned(
+            right: -18,
+            bottom: -20,
             child: Icon(
               Icons.admin_panel_settings_rounded,
-              color: Colors.white,
-              size: 30,
+              size: 145,
+              color: const Color(0xFF00A77E).withValues(
+                alpha: isDark ? 0.17 : 0.12,
+              ),
             ),
           ),
-          const SizedBox(height: 18),
-          Text(
-            _t(
-              en: 'Administrator Access',
-              zh: '管理员访问',
-              ms: 'Akses Pentadbir',
-            ),
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w800,
-              fontSize: 24,
+          Positioned(
+            right: 14,
+            top: 10,
+            child: const Icon(
+              Icons.emoji_events_rounded,
+              size: 34,
+              color: Color(0xFFFFB744),
             ),
           ),
-          const SizedBox(height: 7),
-          Text(
-            _t(
-              en: 'Review submitted etiquette violations, verify reports and monitor priority etiquette issues.',
-              zh: '审核已提交的礼仪违规、验证报告并监控优先礼仪问题。',
-              ms: 'Semak pelanggaran etika yang dihantar, sahkan laporan dan pantau isu etika keutamaan.',
-            ),
-            style: const TextStyle(
-              color: Color(0xFFE3EDFC),
-              height: 1.45,
-            ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF00A77E).withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Icon(
+                  Icons.verified_user_rounded,
+                  color: Color(0xFF00A77E),
+                  size: 27,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                _t(
+                  en: 'Administrator Access',
+                  zh: '管理员访问',
+                  ms: 'Akses Pentadbir',
+                ),
+                style: TextStyle(
+                  color: isDark
+                      ? Colors.white
+                      : const Color(0xFF123B61),
+                  fontWeight: FontWeight.w900,
+                  fontSize: 23,
+                ),
+              ),
+              const SizedBox(height: 6),
+              SizedBox(
+                width: 265,
+                child: Text(
+                  _t(
+                    en: 'Keep CultureGuide safe, respectful and useful for every traveller.',
+                    zh: '让 CultureGuide 为每一位旅客保持安全、尊重且实用。',
+                    ms: 'Pastikan CultureGuide selamat, menghormati dan berguna untuk setiap pelancong.',
+                  ),
+                  style: TextStyle(
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.80)
+                        : const Color(0xFF48656E),
+                    height: 1.35,
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -302,15 +341,25 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
 
   Widget _buildLoginCard() {
     final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
-      padding: const EdgeInsets.all(22),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(28),
         border: Border.all(
           color: colorScheme.outlineVariant,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(
+              alpha: isDark ? 0.18 : 0.06,
+            ),
+            blurRadius: 22,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -323,8 +372,20 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
             ),
             style: TextStyle(
               fontSize: 21,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w900,
               color: colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 5),
+          Text(
+            _t(
+              en: 'Manage reports, rankings and tourism safety settings.',
+              zh: '管理报告、排名和旅游安全设置。',
+              ms: 'Urus laporan, kedudukan dan tetapan keselamatan pelancongan.',
+            ),
+            style: TextStyle(
+              color: colorScheme.onSurfaceVariant,
+              fontSize: 12.5,
             ),
           ),
           const SizedBox(height: 18),
@@ -341,7 +402,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
               icon: Icons.alternate_email_rounded,
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 13),
           TextField(
             controller: passwordController,
             obscureText: obscurePassword,
@@ -381,40 +442,52 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
               ),
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 18),
           SizedBox(
             height: 52,
-            child: FilledButton.icon(
-              onPressed: loading ? null : loginAdmin,
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.primaryDark,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(17),
+                gradient: const LinearGradient(
+                  colors: [
+                    Color(0xFF123B61),
+                    Color(0xFF00A77E),
+                  ],
                 ),
               ),
-              icon: loading
-                  ? const SizedBox.shrink()
-                  : const Icon(Icons.verified_user_outlined),
-              label: loading
-                  ? const SizedBox(
-                      width: 22,
-                      height: 22,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2.3,
+              child: FilledButton.icon(
+                onPressed: loading ? null : loginAdmin,
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  shadowColor: Colors.transparent,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(17),
+                  ),
+                ),
+                icon: loading
+                    ? const SizedBox.shrink()
+                    : const Icon(Icons.verified_user_outlined),
+                label: loading
+                    ? const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2.3,
+                        ),
+                      )
+                    : Text(
+                        _t(
+                          en: 'Sign In to Admin Portal',
+                          zh: '登录管理员门户',
+                          ms: 'Log Masuk ke Portal Pentadbir',
+                        ),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
-                    )
-                  : Text(
-                      _t(
-                        en: 'Sign In to Admin Portal',
-                        zh: '登录管理员门户',
-                        ms: 'Log Masuk ke Portal Pentadbir',
-                      ),
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
+              ),
             ),
           ),
           const SizedBox(height: 10),
