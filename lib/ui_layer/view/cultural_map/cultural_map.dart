@@ -843,7 +843,7 @@ class _CulturalMapViewState
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor:
-      const Color(0xFFFFFBF5),
+      Theme.of(context).scaffoldBackgroundColor,
       builder: (
           sheetContext,
           ) {
@@ -907,7 +907,9 @@ class _CulturalMapViewState
                             child: SafeArea(
                               child: CircleAvatar(
                                 backgroundColor:
-                                Colors.white,
+                                Theme.of(context)
+                                    .colorScheme
+                                    .surfaceContainerHigh,
                                 child: IconButton(
                                   icon:
                                   const Icon(
@@ -976,12 +978,14 @@ class _CulturalMapViewState
                             Text(
                               name,
                               style:
-                              const TextStyle(
+                              TextStyle(
                                 fontSize: 24,
                                 fontWeight:
                                 FontWeight.bold,
                                 color:
-                                Color(0xFF14213D),
+                                Theme.of(context)
+                                    .colorScheme
+                                    .onSurface,
                               ),
                             ),
 
@@ -1001,7 +1005,9 @@ class _CulturalMapViewState
                               decoration:
                               BoxDecoration(
                                 color:
-                                Colors.white,
+                                Theme.of(context)
+                                    .colorScheme
+                                    .surfaceContainerLow,
                                 borderRadius:
                                 BorderRadius.circular(
                                   14,
@@ -1009,7 +1015,9 @@ class _CulturalMapViewState
                                 border:
                                 Border.all(
                                   color:
-                                  Colors.grey.shade200,
+                                  Theme.of(context)
+                                      .colorScheme
+                                      .outlineVariant,
                                 ),
                               ),
                               child:
@@ -1065,7 +1073,9 @@ class _CulturalMapViewState
                                             style:
                                             TextStyle(
                                               color:
-                                              Colors.grey.shade600,
+                                              Theme.of(context)
+                                                  .colorScheme
+                                                  .onSurfaceVariant,
                                               fontSize: 11,
                                             ),
                                           ),
@@ -1088,11 +1098,13 @@ class _CulturalMapViewState
                                               Text(
                                                 rating,
                                                 style:
-                                                const TextStyle(
+                                                TextStyle(
                                                   fontWeight:
                                                   FontWeight.bold,
                                                   color:
-                                                  Color(0xFF14213D),
+                                                  Theme.of(context)
+                                                      .colorScheme
+                                                      .onSurface,
                                                 ),
                                               ),
                                             ],
@@ -1119,7 +1131,9 @@ class _CulturalMapViewState
                               decoration:
                               BoxDecoration(
                                 color:
-                                Colors.white,
+                                Theme.of(context)
+                                    .colorScheme
+                                    .surfaceContainerLow,
                                 borderRadius:
                                 BorderRadius.circular(
                                   16,
@@ -1329,7 +1343,9 @@ class _CulturalMapViewState
                                           style:
                                           TextStyle(
                                             color:
-                                            Colors.grey.shade600,
+                                            Theme.of(context)
+                                                .colorScheme
+                                                .onSurfaceVariant,
                                             fontSize: 10.5,
                                             height: 1.35,
                                           ),
@@ -1395,7 +1411,9 @@ class _CulturalMapViewState
                               decoration:
                               BoxDecoration(
                                 color:
-                                Colors.white,
+                                Theme.of(context)
+                                    .colorScheme
+                                    .surfaceContainerLow,
                                 borderRadius:
                                 BorderRadius.circular(
                                   16,
@@ -1403,7 +1421,9 @@ class _CulturalMapViewState
                                 border:
                                 Border.all(
                                   color:
-                                  Colors.teal.shade100,
+                                  Theme.of(context)
+                                      .colorScheme
+                                      .outlineVariant,
                                 ),
                               ),
                               child: Column(
@@ -1418,7 +1438,9 @@ class _CulturalMapViewState
                                     decoration:
                                     BoxDecoration(
                                       color:
-                                      Colors.teal.shade50,
+                                      Theme.of(context)
+                                          .colorScheme
+                                          .secondaryContainer,
                                       borderRadius:
                                       const BorderRadius.vertical(
                                         top:
@@ -1456,7 +1478,9 @@ class _CulturalMapViewState
                                                 style:
                                                 TextStyle(
                                                   color:
-                                                  Color(0xFF00796B),
+                                                  Theme.of(context)
+                                                      .colorScheme
+                                                      .onSecondaryContainer,
                                                   fontWeight:
                                                   FontWeight.bold,
                                                 ),
@@ -1470,7 +1494,9 @@ class _CulturalMapViewState
                                                 style:
                                                 TextStyle(
                                                   color:
-                                                  Color(0xFF00796B),
+                                                  Theme.of(context)
+                                                      .colorScheme
+                                                      .onSecondaryContainer,
                                                   fontSize:
                                                   11,
                                                 ),
@@ -1622,7 +1648,9 @@ class _CulturalMapViewState
                                 decoration:
                                 BoxDecoration(
                                   color:
-                                  Colors.blueGrey.shade50,
+                                  Theme.of(context)
+                                      .colorScheme
+                                      .surfaceContainerHighest,
                                   borderRadius:
                                   BorderRadius.circular(
                                     12,
@@ -1630,7 +1658,9 @@ class _CulturalMapViewState
                                   border:
                                   Border.all(
                                     color:
-                                    Colors.blueGrey.shade100,
+                                    Theme.of(context)
+                                        .colorScheme
+                                        .outlineVariant,
                                   ),
                                 ),
                                 child:
@@ -1777,26 +1807,36 @@ class _CulturalMapViewState
   // ============================================================
 
   Widget _buildHeroPlaceholder() {
+    final colorScheme =
+        Theme.of(context).colorScheme;
+
     return Container(
       width:
       double.infinity,
       height: 190,
       color:
-      const Color(0xFFEDEDED),
+      colorScheme.surfaceContainerHighest,
       child:
-      const Column(
+      Column(
         mainAxisAlignment:
         MainAxisAlignment.center,
         children: [
           Icon(
             Icons.temple_buddhist_outlined,
             size: 58,
+            color:
+            colorScheme.onSurfaceVariant,
           ),
-          SizedBox(
+          const SizedBox(
             height: 8,
           ),
           Text(
             'Cultural Attraction',
+            style:
+            TextStyle(
+              color:
+              colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),
@@ -1808,6 +1848,9 @@ class _CulturalMapViewState
       String value,
       Color valueColor,
       ) {
+    final colorScheme =
+        Theme.of(context).colorScheme;
+
     return Column(
       children: [
         Text(
@@ -1815,7 +1858,7 @@ class _CulturalMapViewState
           style:
           TextStyle(
             color:
-            Colors.grey.shade600,
+            colorScheme.onSurfaceVariant,
             fontSize: 11,
           ),
         ),
@@ -3005,6 +3048,9 @@ class _FullEtiquetteGuidePage
   Widget build(
       BuildContext context,
       ) {
+    final colorScheme =
+        Theme.of(context).colorScheme;
+
     return Scaffold(
       appBar:
       AppBar(
@@ -3014,7 +3060,7 @@ class _FullEtiquetteGuidePage
         ),
       ),
       backgroundColor:
-      const Color(0xFFFFFBF5),
+      colorScheme.surface,
       body:
       ListView(
         padding:
@@ -3025,9 +3071,9 @@ class _FullEtiquetteGuidePage
           Text(
             category,
             style:
-            const TextStyle(
+            TextStyle(
               color:
-              Color(0xFF6C4DB5),
+              colorScheme.primary,
               fontWeight:
               FontWeight.w600,
             ),
@@ -3040,12 +3086,12 @@ class _FullEtiquetteGuidePage
           Text(
             name,
             style:
-            const TextStyle(
+            TextStyle(
               fontSize: 25,
               fontWeight:
               FontWeight.bold,
               color:
-              Color(0xFF14213D),
+              colorScheme.onSurface,
             ),
           ),
 
@@ -3058,7 +3104,7 @@ class _FullEtiquetteGuidePage
             style:
             TextStyle(
               color:
-              Colors.grey.shade600,
+              colorScheme.onSurfaceVariant,
               fontSize: 12,
             ),
           ),
@@ -3119,6 +3165,9 @@ class _RankedGuideSection
   Widget build(
       BuildContext context,
       ) {
+    final colorScheme =
+        Theme.of(context).colorScheme;
+
     return Container(
       padding:
       const EdgeInsets.all(
@@ -3127,7 +3176,7 @@ class _RankedGuideSection
       decoration:
       BoxDecoration(
         color:
-        Colors.white,
+        colorScheme.surfaceContainerLow,
         borderRadius:
         BorderRadius.circular(
           16,
@@ -3135,7 +3184,7 @@ class _RankedGuideSection
         border:
         Border.all(
           color:
-          Colors.grey.shade200,
+          colorScheme.outlineVariant,
         ),
       ),
       child:
