@@ -57,8 +57,6 @@ class _EnvironmentParameterPageState
   List<Map<String, dynamic>> _attractions = [];
 
   final Map<String, TextEditingController> _radiusControllers = {};
-  final Map<String, TextEditingController> _latControllers = {};
-  final Map<String, TextEditingController> _lngControllers = {};
   final Map<String, bool> _activeByAttraction = {};
 
   final TextEditingController _cooldownController =
@@ -94,12 +92,6 @@ class _EnvironmentParameterPageState
   void dispose() {
     AppSettingsController.instance.removeListener(_onSettingsChanged);
     for (final controller in _radiusControllers.values) {
-      controller.dispose();
-    }
-    for (final controller in _latControllers.values) {
-      controller.dispose();
-    }
-    for (final controller in _lngControllers.values) {
       controller.dispose();
     }
     _cooldownController.dispose();
@@ -149,19 +141,6 @@ class _EnvironmentParameterPageState
           text: radius is num ? radius.toString() : '300',
         );
 
-        final center = AttractionRepository.geofenceCenter(attraction);
-
-        _latControllers[id] = TextEditingController(
-          text: center != null
-              ? center['latitude'].toString()
-              : '',
-        );
-        _lngControllers[id] = TextEditingController(
-          text: center != null
-              ? center['longitude'].toString()
-              : '',
-        );
-
         final isActive = attraction['geofenceActive'] == true;
         _activeByAttraction[id] = isActive;
 
@@ -205,27 +184,6 @@ class _EnvironmentParameterPageState
       return;
     }
 
-    final latText = _latControllers[attractionId]?.text.trim() ?? '';
-    final lngText = _lngControllers[attractionId]?.text.trim() ?? '';
-    final latitude = double.tryParse(latText);
-    final longitude = double.tryParse(lngText);
-
-    if (latitude == null ||
-        longitude == null ||
-        latitude < -90 ||
-        latitude > 90 ||
-        longitude < -180 ||
-        longitude > 180) {
-      _showMessage(
-        _envT(
-          en: 'Please enter a valid geofence location (latitude -90 to 90, longitude -180 to 180).',
-          zh: '请输入有效的地理围栏位置（纬度 -90 至 90，经度 -180 至 180）。',
-          ms: 'Sila masukkan lokasi geofence yang sah (latitud -90 hingga 90, longitud -180 hingga 180).',
-        ),
-      );
-      return;
-    }
-
     setState(() {
       _savingAttractionIds.add(attractionId);
     });
@@ -237,8 +195,6 @@ class _EnvironmentParameterPageState
         attractionId: attractionId,
         radiusMeters: radius,
         active: active,
-        latitude: latitude,
-        longitude: longitude,
       );
 
       _showMessage(_envT(
@@ -670,33 +626,6 @@ class _EnvironmentParameterPageState
     );
   }
 
-  void _resetLocationToPin(Map<String, dynamic> attraction) {
-    final id = attraction['id']?.toString();
-
-    if (id == null) {
-      return;
-    }
-
-    final latitude = attraction['latitude'];
-    final longitude = attraction['longitude'];
-
-    if (latitude is! num || longitude is! num) {
-      _showMessage(
-        _envT(
-          en: 'This attraction has no map location to copy.',
-          zh: '此景点没有可复制的地图位置。',
-          ms: 'Tarikan ini tidak mempunyai lokasi peta untuk disalin.',
-        ),
-      );
-      return;
-    }
-
-    setState(() {
-      _latControllers[id]?.text = latitude.toString();
-      _lngControllers[id]?.text = longitude.toString();
-    });
-  }
-
   Widget _buildGeofenceCard(Map<String, dynamic> attraction) {
     final id = attraction['id']?.toString() ?? '';
     final name = attraction['name']?.toString() ??
@@ -774,46 +703,6 @@ class _EnvironmentParameterPageState
             ],
           ),
           const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _CoordinateField(
-                  controller: _latControllers[id],
-                  label: _envT(
-                    en: 'Latitude',
-                    zh: '纬度',
-                    ms: 'Latitud',
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _CoordinateField(
-                  controller: _lngControllers[id],
-                  label: _envT(
-                    en: 'Longitude',
-                    zh: '经度',
-                    ms: 'Longitud',
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              IconButton(
-                onPressed: () => _resetLocationToPin(attraction),
-                tooltip: _envT(
-                  en: "Use attraction's map location",
-                  zh: '使用景点的地图位置',
-                  ms: 'Gunakan lokasi peta tarikan',
-                ),
-                icon: const Icon(
-                  Icons.my_location_rounded,
-                  size: 20,
-                  color: AppColors.primary,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
           Row(
             children: [
               Expanded(
@@ -905,52 +794,6 @@ class _SaveButton extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(14),
           child: child,
-        ),
-      ),
-    );
-  }
-}
-
-class _CoordinateField extends StatelessWidget {
-  final TextEditingController? controller;
-  final String label;
-
-  const _CoordinateField({
-    required this.controller,
-    required this.label,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
-      ),
-      child: TextField(
-        controller: controller,
-        keyboardType: const TextInputType.numberWithOptions(
-          decimal: true,
-          signed: true,
-        ),
-        style: TextStyle(
-          color: Theme.of(context).colorScheme.onSurface,
-          fontWeight: FontWeight.w600,
-          fontSize: 13,
-        ),
-        decoration: InputDecoration(
-          isDense: true,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 12,
-            vertical: 12,
-          ),
-          border: InputBorder.none,
-          labelText: label,
-          labelStyle: TextStyle(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-            fontSize: 11,
-          ),
         ),
       ),
     );

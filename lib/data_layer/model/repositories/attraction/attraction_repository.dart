@@ -193,15 +193,12 @@ class AttractionRepository {
   // =========================================================
 
   // UC03 A2.3/A2.6: the Admin sets or updates the geofence
-  // location and radius, or toggles its active status. The
-  // geofence location defaults to the attraction's own map pin
-  // when the Admin hasn't set a distinct one.
+  // radius or toggles its active status. The geofence is always
+  // centred on the attraction's own map location.
   Future<void> updateGeofenceConfig({
     required String attractionId,
     required double radiusMeters,
     required bool active,
-    double? latitude,
-    double? longitude,
   }) async {
     await _firestoreService.updateDocument(
       collection: _collection,
@@ -209,22 +206,17 @@ class AttractionRepository {
       data: {
         'geofenceRadiusMeters': radiusMeters,
         'geofenceActive': active,
-        if (latitude != null) 'geofenceLatitude': latitude,
-        if (longitude != null) 'geofenceLongitude': longitude,
       },
     );
   }
 
-  // The geofence's centre point: the Admin-configured
-  // geofenceLatitude/geofenceLongitude when set, otherwise the
-  // attraction's own map location.
+  // The geofence's centre point: always the attraction's own
+  // map location.
   static Map<String, double>? geofenceCenter(
       Map<String, dynamic> attraction,
       ) {
-    final latitude =
-        attraction['geofenceLatitude'] ?? attraction['latitude'];
-    final longitude =
-        attraction['geofenceLongitude'] ?? attraction['longitude'];
+    final latitude = attraction['latitude'];
+    final longitude = attraction['longitude'];
 
     if (latitude is! num || longitude is! num) {
       return null;
