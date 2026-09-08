@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../data_layer/model/services/outfit_recognition/outfit_recognition_service.dart'
     show OutfitGender;
+import '../../../data_layer/model/services/firebase_authentication/firebase_authentication_service.dart';
 import '../../view_model/outfit_recognition/outfit_recognition_view_model.dart';
 import '../../view_model/settings/app_settings_controller.dart';
 
@@ -20,6 +21,9 @@ class _OutfitRecognitionViewState
 
   final AppSettingsController _settings =
       AppSettingsController.instance;
+
+  final FirebaseAuthenticationService _authService =
+  FirebaseAuthenticationService();
 
   @override
   void initState() {
@@ -73,6 +77,28 @@ class _OutfitRecognitionViewState
   }
 
   Future<void> _analyseOutfit() async {
+    // Only logged-in users can submit outfit analysis
+    if (!_authService.isLoggedIn) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _settings.text(
+              en: 'Please login to analyse your outfit.',
+              zh: '请先登录后再分析您的穿搭。',
+              ms: 'Sila log masuk untuk menganalisis pakaian anda.',
+            ),
+          ),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+
+      return;
+    }
+
     await _viewModel.analyseOutfit();
 
     if (!mounted) {
