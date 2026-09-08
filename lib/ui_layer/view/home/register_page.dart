@@ -48,8 +48,21 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
+  void _onSettingsChanged() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _settings.addListener(_onSettingsChanged);
+  }
+
   @override
   void dispose() {
+    _settings.removeListener(_onSettingsChanged);
     nameController.dispose();
     emailController.dispose();
     passwordController.dispose();

@@ -3,7 +3,37 @@ import 'package:flutter/material.dart';
 import '../../../data_layer/model/repositories/attraction/attraction_repository.dart';
 import '../../../data_layer/model/repositories/attraction/cultural_map_repository.dart';
 import '../../../data_layer/model/repositories/system_config/system_config_repository.dart';
+import '../../view_model/settings/app_settings_controller.dart';
 import '../shared/app_theme.dart';
+
+String _envT({
+  required String en,
+  required String zh,
+  required String ms,
+}) {
+  return AppSettingsController.instance.text(
+    en: en,
+    zh: zh,
+    ms: ms,
+  );
+}
+
+String _envCategory(String value) {
+  switch (value.trim()) {
+    case 'Islamic Culture':
+      return _envT(en: 'Islamic Culture', zh: '伊斯兰文化', ms: 'Budaya Islam');
+    case 'Chinese Culture':
+      return _envT(en: 'Chinese Culture', zh: '华人文化', ms: 'Budaya Cina');
+    case 'Indian Culture':
+      return _envT(en: 'Indian Culture', zh: '印度文化', ms: 'Budaya India');
+    case 'Places of Worship':
+      return _envT(en: 'Places of Worship', zh: '宗教场所', ms: 'Tempat Ibadat');
+    case 'Historical Landmarks':
+      return _envT(en: 'Historical Landmarks', zh: '历史地标', ms: 'Mercu Tanda Bersejarah');
+    default:
+      return value;
+  }
+}
 
 // UC03 – Setup Environment Parameter (minimal scope: Configure
 // Geofence + Configure Cooldown Settings). Attraction records
@@ -42,9 +72,16 @@ class _EnvironmentParameterPageState
   String _searchQuery = '';
   final Set<String> _selectedCategories = {};
 
+  void _onSettingsChanged() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
   @override
   void initState() {
     super.initState();
+    AppSettingsController.instance.addListener(_onSettingsChanged);
     _loadAll();
     _searchController.addListener(() {
       setState(() {
@@ -55,6 +92,7 @@ class _EnvironmentParameterPageState
 
   @override
   void dispose() {
+    AppSettingsController.instance.removeListener(_onSettingsChanged);
     for (final controller in _radiusControllers.values) {
       controller.dispose();
     }
@@ -139,7 +177,11 @@ class _EnvironmentParameterPageState
         _activeGeofenceCount = activeCount;
       });
     } catch (e) {
-      _showMessage('Unable to load environment parameters: $e');
+      _showMessage(_envT(
+        en: 'Unable to load environment parameters: $e',
+        zh: '无法加载环境参数：$e',
+        ms: 'Tidak dapat memuatkan parameter persekitaran: $e',
+      ));
     } finally {
       if (mounted) {
         setState(() {
@@ -155,7 +197,11 @@ class _EnvironmentParameterPageState
     final radius = double.tryParse(radiusText);
 
     if (radius == null || radius <= 0) {
-      _showMessage('Please enter a valid radius in metres.');
+      _showMessage(_envT(
+        en: 'Please enter a valid radius in metres.',
+        zh: '请输入有效的半径（米）。',
+        ms: 'Sila masukkan jejari yang sah dalam meter.',
+      ));
       return;
     }
 
@@ -171,8 +217,11 @@ class _EnvironmentParameterPageState
         longitude < -180 ||
         longitude > 180) {
       _showMessage(
-        'Please enter a valid geofence location '
-            '(latitude -90 to 90, longitude -180 to 180).',
+        _envT(
+          en: 'Please enter a valid geofence location (latitude -90 to 90, longitude -180 to 180).',
+          zh: '请输入有效的地理围栏位置（纬度 -90 至 90，经度 -180 至 180）。',
+          ms: 'Sila masukkan lokasi geofence yang sah (latitud -90 hingga 90, longitud -180 hingga 180).',
+        ),
       );
       return;
     }
@@ -192,7 +241,11 @@ class _EnvironmentParameterPageState
         longitude: longitude,
       );
 
-      _showMessage('Geofence configuration saved successfully.');
+      _showMessage(_envT(
+        en: 'Geofence configuration saved successfully.',
+        zh: '地理围栏配置已成功保存。',
+        ms: 'Konfigurasi geofence berjaya disimpan.',
+      ));
 
       setState(() {
         _activeGeofenceCount = _activeByAttraction.values
@@ -200,7 +253,11 @@ class _EnvironmentParameterPageState
             .length;
       });
     } catch (e) {
-      _showMessage('Unable to save geofence: $e');
+      _showMessage(_envT(
+        en: 'Unable to save geofence: $e',
+        zh: '无法保存地理围栏：$e',
+        ms: 'Tidak dapat menyimpan geofence: $e',
+      ));
     } finally {
       if (mounted) {
         setState(() {
@@ -215,8 +272,11 @@ class _EnvironmentParameterPageState
 
     if (minutes == null || minutes <= 0) {
       _showMessage(
-        'Invalid cooldown duration. Please enter a value '
-            'within the allowable range.',
+        _envT(
+          en: 'Invalid cooldown duration. Please enter a value within the allowable range.',
+          zh: '冷却时间无效。请输入允许范围内的数值。',
+          ms: 'Tempoh bertenang tidak sah. Sila masukkan nilai dalam julat yang dibenarkan.',
+        ),
       );
       return;
     }
@@ -230,9 +290,17 @@ class _EnvironmentParameterPageState
         minutes,
       );
 
-      _showMessage('Default cooldown duration updated successfully.');
+      _showMessage(_envT(
+        en: 'Default cooldown duration updated successfully.',
+        zh: '默认冷却时间已成功更新。',
+        ms: 'Tempoh bertenang lalai berjaya dikemas kini.',
+      ));
     } catch (e) {
-      _showMessage('Unable to save cooldown duration: $e');
+      _showMessage(_envT(
+        en: 'Unable to save cooldown duration: $e',
+        zh: '无法保存冷却时间：$e',
+        ms: 'Tidak dapat menyimpan tempoh bertenang: $e',
+      ));
     } finally {
       if (mounted) {
         setState(() {
@@ -263,7 +331,7 @@ class _EnvironmentParameterPageState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: _isLoading
             ? const Center(
@@ -305,7 +373,7 @@ class _EnvironmentParameterPageState
         IconButton(
           onPressed: () => Navigator.of(context).pop(),
           icon: const Icon(Icons.arrow_back_rounded),
-          color: AppColors.heading,
+          color: Theme.of(context).colorScheme.onSurface,
         ),
         const SizedBox(width: 2),
         Container(
@@ -321,24 +389,32 @@ class _EnvironmentParameterPageState
           ),
         ),
         const SizedBox(width: 14),
-        const Expanded(
+        Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Environment Parameters',
+                _envT(
+                  en: 'Environment Parameters',
+                  zh: '环境参数',
+                  ms: 'Parameter Persekitaran',
+                ),
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
-                  color: AppColors.heading,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
-              SizedBox(height: 2),
+              const SizedBox(height: 2),
               Text(
-                'Geofence radius and etiquette alert cooldown',
+                _envT(
+                  en: 'Geofence radius and etiquette alert cooldown',
+                  zh: '地理围栏半径与礼仪提醒冷却时间',
+                  ms: 'Jejari geofence dan tempoh bertenang amaran etika',
+                ),
                 style: TextStyle(
                   fontSize: 12.5,
-                  color: AppColors.muted,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
             ],
@@ -373,9 +449,13 @@ class _EnvironmentParameterPageState
                 size: 20,
               ),
               const SizedBox(width: 8),
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Alert Cooldown',
+                  _envT(
+                    en: 'Alert Cooldown',
+                    zh: '提醒冷却时间',
+                    ms: 'Tempoh Bertenang Amaran',
+                  ),
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w800,
@@ -387,10 +467,11 @@ class _EnvironmentParameterPageState
           ),
           const SizedBox(height: 6),
           Text(
-            'Minutes before the same attraction can alert the '
-                'same tourist again. $_activeGeofenceCount '
-                'attraction${_activeGeofenceCount == 1 ? '' : 's'} '
-                'currently have an active geofence.',
+            _envT(
+              en: 'Minutes before the same attraction can alert the same tourist again. $_activeGeofenceCount attraction${_activeGeofenceCount == 1 ? '' : 's'} currently have an active geofence.',
+              zh: '同一景点再次提醒同一游客前需等待的分钟数。目前有 $_activeGeofenceCount 个景点启用了地理围栏。',
+              ms: 'Minit sebelum tarikan yang sama boleh memberi amaran kepada pelancong yang sama sekali lagi. $_activeGeofenceCount tarikan kini mempunyai geofence aktif.',
+            ),
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.9),
               fontSize: 12.5,
@@ -403,26 +484,30 @@ class _EnvironmentParameterPageState
               Expanded(
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.surface,
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: TextField(
                     controller: _cooldownController,
                     keyboardType: TextInputType.number,
-                    style: const TextStyle(
-                      color: AppColors.heading,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
                       fontWeight: FontWeight.w700,
                     ),
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       isDense: true,
-                      contentPadding: EdgeInsets.symmetric(
+                      contentPadding: const EdgeInsets.symmetric(
                         horizontal: 14,
                         vertical: 14,
                       ),
                       border: InputBorder.none,
-                      suffixText: 'minutes',
+                      suffixText: _envT(
+                        en: 'minutes',
+                        zh: '分钟',
+                        ms: 'minit',
+                      ),
                       suffixStyle: TextStyle(
-                        color: AppColors.muted,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                         fontSize: 12,
                       ),
                     ),
@@ -443,17 +528,24 @@ class _EnvironmentParameterPageState
   }
 
   Widget _buildGeofenceSectionHeader() {
-    return const Row(
+    return Row(
       children: [
-        Icon(Icons.location_on_outlined,
-            size: 18, color: AppColors.primary),
-        SizedBox(width: 6),
+        Icon(
+          Icons.location_on_outlined,
+          size: 18,
+          color: Theme.of(context).colorScheme.primary,
+        ),
+        const SizedBox(width: 6),
         Text(
-          'Configure Geofence',
+          _envT(
+            en: 'Configure Geofence',
+            zh: '配置地理围栏',
+            ms: 'Konfigurasi Geofence',
+          ),
           style: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w800,
-            color: AppColors.heading,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
       ],
@@ -463,21 +555,27 @@ class _EnvironmentParameterPageState
   Widget _buildSearchField() {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.tintFaint,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.cardBorder),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: TextField(
         controller: _searchController,
-        decoration: const InputDecoration(
+        decoration: InputDecoration(
           isDense: true,
-          contentPadding: EdgeInsets.symmetric(vertical: 12),
+          contentPadding: const EdgeInsets.symmetric(vertical: 12),
           border: InputBorder.none,
-          hintText: 'Search attractions…',
-          hintStyle: TextStyle(color: AppColors.muted),
+          hintText: _envT(
+            en: 'Search attractions…',
+            zh: '搜索景点…',
+            ms: 'Cari tarikan…',
+          ),
+          hintStyle: TextStyle(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
           prefixIcon: Icon(
             Icons.search_rounded,
-            color: AppColors.muted,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
       ),
@@ -499,7 +597,11 @@ class _EnvironmentParameterPageState
             final isSelected = _selectedCategories.isEmpty;
 
             return _CategoryChip(
-              label: 'All',
+              label: _envT(
+                en: 'All',
+                zh: '全部',
+                ms: 'Semua',
+              ),
               selected: isSelected,
               onTap: () {
                 setState(() {
@@ -513,7 +615,7 @@ class _EnvironmentParameterPageState
           final isSelected = _selectedCategories.contains(category);
 
           return _CategoryChip(
-            label: category,
+            label: _envCategory(category),
             selected: isSelected,
             onTap: () {
               setState(() {
@@ -551,9 +653,17 @@ class _EnvironmentParameterPageState
           const SizedBox(height: 14),
           Text(
             _attractions.isEmpty
-                ? 'No supported attractions found.'
-                : 'No attractions match your search or filter.',
-            style: const TextStyle(color: AppColors.muted),
+                ? _envT(
+                    en: 'No supported attractions found.',
+                    zh: '找不到受支持的景点。',
+                    ms: 'Tiada tarikan yang disokong ditemui.',
+                  )
+                : _envT(
+                    en: 'No attractions match your search or filter.',
+                    zh: '没有符合搜索或筛选条件的景点。',
+                    ms: 'Tiada tarikan sepadan dengan carian atau penapis anda.',
+                  ),
+            style: TextStyle(color: AppColors.muted),
           ),
         ],
       ),
@@ -571,7 +681,13 @@ class _EnvironmentParameterPageState
     final longitude = attraction['longitude'];
 
     if (latitude is! num || longitude is! num) {
-      _showMessage('This attraction has no map location to copy.');
+      _showMessage(
+        _envT(
+          en: 'This attraction has no map location to copy.',
+          zh: '此景点没有可复制的地图位置。',
+          ms: 'Tarikan ini tidak mempunyai lokasi peta untuk disalin.',
+        ),
+      );
       return;
     }
 
@@ -583,7 +699,8 @@ class _EnvironmentParameterPageState
 
   Widget _buildGeofenceCard(Map<String, dynamic> attraction) {
     final id = attraction['id']?.toString() ?? '';
-    final name = attraction['name']?.toString() ?? 'Attraction';
+    final name = attraction['name']?.toString() ??
+        _envT(en: 'Attraction', zh: '景点', ms: 'Tarikan');
     final category = attraction['category']?.toString();
     final isActive = _activeByAttraction[id] ?? false;
     final isSaving = _savingAttractionIds.contains(id);
@@ -592,9 +709,9 @@ class _EnvironmentParameterPageState
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.cardBorder),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -627,18 +744,18 @@ class _EnvironmentParameterPageState
                       name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w700,
-                        color: AppColors.heading,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                     if (category != null) ...[
                       const SizedBox(height: 2),
                       Text(
-                        category,
-                        style: const TextStyle(
+                        _envCategory(category),
+                        style: TextStyle(
                           fontSize: 11.5,
-                          color: AppColors.muted,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -662,20 +779,32 @@ class _EnvironmentParameterPageState
               Expanded(
                 child: _CoordinateField(
                   controller: _latControllers[id],
-                  label: 'Latitude',
+                  label: _envT(
+                    en: 'Latitude',
+                    zh: '纬度',
+                    ms: 'Latitud',
+                  ),
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: _CoordinateField(
                   controller: _lngControllers[id],
-                  label: 'Longitude',
+                  label: _envT(
+                    en: 'Longitude',
+                    zh: '经度',
+                    ms: 'Longitud',
+                  ),
                 ),
               ),
               const SizedBox(width: 8),
               IconButton(
                 onPressed: () => _resetLocationToPin(attraction),
-                tooltip: "Use attraction's map location",
+                tooltip: _envT(
+                  en: "Use attraction's map location",
+                  zh: '使用景点的地图位置',
+                  ms: 'Gunakan lokasi peta tarikan',
+                ),
                 icon: const Icon(
                   Icons.my_location_rounded,
                   size: 20,
@@ -690,9 +819,9 @@ class _EnvironmentParameterPageState
               Expanded(
                 child: Container(
                   decoration: BoxDecoration(
-                    color: AppColors.tintFaint,
+                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.cardBorder),
+                    border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
                   ),
                   child: TextField(
                     controller: _radiusControllers[id],
@@ -700,12 +829,12 @@ class _EnvironmentParameterPageState
                     const TextInputType.numberWithOptions(
                       decimal: true,
                     ),
-                    style: const TextStyle(
-                      color: AppColors.heading,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
                       fontWeight: FontWeight.w600,
                       fontSize: 14,
                     ),
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       isDense: true,
                       contentPadding: EdgeInsets.symmetric(
                         horizontal: 14,
@@ -715,11 +844,11 @@ class _EnvironmentParameterPageState
                       prefixIcon: Icon(
                         Icons.radar_rounded,
                         size: 18,
-                        color: AppColors.muted,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                       suffixText: 'm',
                       suffixStyle: TextStyle(
-                        color: AppColors.muted,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                         fontSize: 12,
                       ),
                     ),
@@ -759,16 +888,16 @@ class _SaveButton extends StatelessWidget {
       height: 18,
       child: CircularProgressIndicator(
         strokeWidth: 2,
-        color: filled ? AppColors.primary : Colors.white,
+        color: filled ? Theme.of(context).colorScheme.primary : Colors.white,
       ),
     )
         : Icon(
       Icons.check_rounded,
-      color: filled ? AppColors.primary : Colors.white,
+      color: filled ? Theme.of(context).colorScheme.primary : Colors.white,
     );
 
     return Material(
-      color: filled ? Colors.white : AppColors.primary,
+      color: filled ? Theme.of(context).colorScheme.surface : Theme.of(context).colorScheme.primary,
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
@@ -795,9 +924,9 @@ class _CoordinateField extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.tintFaint,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.cardBorder),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: TextField(
         controller: controller,
@@ -805,8 +934,8 @@ class _CoordinateField extends StatelessWidget {
           decimal: true,
           signed: true,
         ),
-        style: const TextStyle(
-          color: AppColors.heading,
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.onSurface,
           fontWeight: FontWeight.w600,
           fontSize: 13,
         ),
@@ -818,8 +947,8 @@ class _CoordinateField extends StatelessWidget {
           ),
           border: InputBorder.none,
           labelText: label,
-          labelStyle: const TextStyle(
-            color: AppColors.muted,
+          labelStyle: TextStyle(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
             fontSize: 11,
           ),
         ),
@@ -842,7 +971,7 @@ class _CategoryChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: selected ? AppColors.primary : AppColors.tintFaint,
+      color: selected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.surfaceContainerHighest,
       borderRadius: BorderRadius.circular(20),
       child: InkWell(
         borderRadius: BorderRadius.circular(20),
@@ -857,7 +986,7 @@ class _CategoryChip extends StatelessWidget {
             style: TextStyle(
               fontSize: 12.5,
               fontWeight: FontWeight.w600,
-              color: selected ? Colors.white : AppColors.muted,
+              color: selected ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
         ),

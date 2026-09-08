@@ -46,8 +46,21 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
+  void _onSettingsChanged() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _settings.addListener(_onSettingsChanged);
+  }
+
   @override
   void dispose() {
+    _settings.removeListener(_onSettingsChanged);
     emailController.dispose();
     passwordController.dispose();
     super.dispose();
@@ -322,42 +335,9 @@ class _LoginPageState extends State<LoginPage> {
             child: Text('Bahasa Melayu'),
           ),
         ],
-        child: Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 12,
-            vertical: 8,
-          ),
-          decoration: BoxDecoration(
-            color: colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: colorScheme.outlineVariant,
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.language_rounded,
-                size: 18,
-                color: colorScheme.primary,
-              ),
-              const SizedBox(width: 7),
-              Text(
-                _settings.languageName,
-                style: TextStyle(
-                  color: colorScheme.onSurface,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 12.5,
-                ),
-              ),
-              const SizedBox(width: 4),
-              Icon(
-                Icons.arrow_drop_down_rounded,
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ],
-          ),
+        icon: Icon(
+          Icons.language_rounded,
+          color: colorScheme.primary,
         ),
       ),
     );

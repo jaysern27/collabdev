@@ -26,9 +26,6 @@ class _EtiquetteAlertViewState
 
   static const Color _teal = Color(0xFF18B7C8);
   static const Color _blue = Color(0xFF1E78D8);
-  static const Color _navy = Color(0xFF14213D);
-  static const Color _muted = Color(0xFF64748B);
-  static const Color _background = Color(0xFFF8FAFC);
   static const Color _doColor = Color(0xFF238B45);
   static const Color _dontColor = Color(0xFFD43F3A);
   static const Color _warning = Color(0xFFF59E0B);
@@ -84,7 +81,7 @@ class _EtiquetteAlertViewState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         elevation: 0,
         foregroundColor: Colors.white,
@@ -94,7 +91,7 @@ class _EtiquetteAlertViewState
             zh: '礼仪指南',
             ms: 'Panduan Etika',
           ),
-          style: const TextStyle(
+          style: TextStyle(
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -225,8 +222,8 @@ class _EtiquetteAlertViewState
               ),
               textAlign:
                   TextAlign.center,
-              style: const TextStyle(
-                color: _navy,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
                 fontSize: 17,
                 fontWeight:
                     FontWeight.w800,
@@ -238,8 +235,8 @@ class _EtiquetteAlertViewState
               textAlign:
                   TextAlign.center,
               style:
-                  const TextStyle(
-                color: _muted,
+                  TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 height: 1.4,
               ),
             ),
@@ -346,7 +343,7 @@ class _EtiquetteAlertViewState
                   _viewModel
                       .attractionName,
                   style:
-                      const TextStyle(
+                      TextStyle(
                     color: Colors.white,
                     fontSize: 20,
                     fontWeight:
@@ -391,8 +388,9 @@ class _EtiquetteAlertViewState
       padding:
           const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color:
-            const Color(0xFFFFF7E6),
+        color: Theme.of(context).brightness == Brightness.dark
+            ? _warning.withValues(alpha: 0.10)
+            : const Color(0xFFFFF7E6),
         borderRadius:
             BorderRadius.circular(18),
         border: Border.all(
@@ -440,9 +438,11 @@ class _EtiquetteAlertViewState
                     ms:
                         'Peringatan Etika Keutamaan',
                   ),
-                  style: const TextStyle(
+                  style: TextStyle(
                     color:
-                        Color(0xFF8A5A00),
+                        Theme.of(context).brightness == Brightness.dark
+                            ? const Color(0xFFFFC65C)
+                            : const Color(0xFF8A5A00),
                     fontSize: 12.5,
                     fontWeight:
                         FontWeight.w800,
@@ -452,8 +452,8 @@ class _EtiquetteAlertViewState
                 Text(
                   text,
                   style:
-                      const TextStyle(
-                    color: _navy,
+                      TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontSize: 15,
                     fontWeight:
                         FontWeight.w800,
@@ -471,8 +471,8 @@ class _EtiquetteAlertViewState
                         'Sila beri perhatian khusus kepada peraturan ini di ${_viewModel.attractionName}.',
                   ),
                   style:
-                      const TextStyle(
-                    color: _muted,
+                      TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     fontSize: 12.5,
                     height: 1.35,
                   ),
@@ -499,8 +499,8 @@ class _EtiquetteAlertViewState
             ms:
                 'Di ${_viewModel.attractionName}',
           ),
-          style: const TextStyle(
-            color: _navy,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface,
             fontSize: 18,
             fontWeight:
                 FontWeight.w800,
@@ -516,8 +516,8 @@ class _EtiquetteAlertViewState
             ms:
                 'Perkara BOLEH kekal mengikut susunan yang disyorkan. Perkara JANGAN diberi keutamaan berdasarkan laporan etika yang diluluskan Admin.',
           ),
-          style: const TextStyle(
-            color: _muted,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
             fontSize: 12.5,
             height: 1.35,
           ),
@@ -535,12 +535,11 @@ class _EtiquetteAlertViewState
       ),
       decoration:
           BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius:
             BorderRadius.circular(18),
         border: Border.all(
-          color:
-              const Color(0xFFE2E8F0),
+          color: Theme.of(context).colorScheme.outlineVariant,
         ),
       ),
       child: Column(
@@ -563,8 +562,8 @@ class _EtiquetteAlertViewState
             ),
             textAlign:
                 TextAlign.center,
-            style: const TextStyle(
-              color: _navy,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface,
               fontWeight:
                   FontWeight.w700,
               height: 1.4,
@@ -587,7 +586,7 @@ class _EtiquetteAlertViewState
       width: double.infinity,
       decoration:
           BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius:
             BorderRadius.circular(20),
         border: Border.all(
@@ -660,8 +659,8 @@ class _EtiquetteAlertViewState
                       Text(
                         subtitle,
                         style:
-                            const TextStyle(
-                          color: _muted,
+                            TextStyle(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                           fontSize: 11.5,
                         ),
                       ),
@@ -700,9 +699,9 @@ class _EtiquetteAlertViewState
               ],
             ),
           ),
-          const Divider(
+          Divider(
             height: 1,
-            color: Color(0xFFEFF3F7),
+            color: Theme.of(context).colorScheme.outlineVariant,
           ),
           for (var i = 0;
               i < rules.length;
@@ -714,12 +713,12 @@ class _EtiquetteAlertViewState
               color: color,
             ),
             if (i < rules.length - 1)
-              const Divider(
+              Divider(
                 height: 1,
                 indent: 54,
                 endIndent: 16,
                 color:
-                    Color(0xFFF1F5F9),
+                    Theme.of(context).colorScheme.outlineVariant,
               ),
           ],
         ],
@@ -791,8 +790,8 @@ class _EtiquetteAlertViewState
             child: Text(
               text,
               style:
-                  const TextStyle(
-                color: _navy,
+                  TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
                 fontSize: 13.5,
                 height: 1.4,
                 fontWeight:

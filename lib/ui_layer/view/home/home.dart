@@ -1074,6 +1074,22 @@ _localizedViolationTitle(
 row,
 );
 
+final rawLocation =
+(row['attractionName'] ??
+row['attractionId'])
+?.toString()
+.trim();
+
+final displayLocation =
+rawLocation == null ||
+rawLocation.isEmpty
+? _settings.text(
+en: 'Unknown attraction',
+zh: '未知景点',
+ms: 'Tarikan tidak diketahui',
+)
+    : rawLocation;
+
 final progress =
 maxFrequency <= 0
 ? 0.0
@@ -1200,6 +1216,21 @@ FontWeight
 ],
 ),
 ],
+),
+const SizedBox(height: 5),
+Text(
+_settings.text(
+en: 'Location: $displayLocation',
+zh: '地点：$displayLocation',
+ms: 'Lokasi: $displayLocation',
+),
+maxLines: 1,
+overflow: TextOverflow.ellipsis,
+style: TextStyle(
+color: colorScheme.onSurfaceVariant,
+fontSize: 10.5,
+fontWeight: FontWeight.w500,
+),
 ),
 const SizedBox(height: 8),
 ClipRRect(

@@ -4,17 +4,69 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import '../../../data_layer/model/repositories/ranking_report/ranking_report_repository.dart';
+import '../../view_model/settings/app_settings_controller.dart';
 import '../shared/app_theme.dart';
 
 // Shared with admin_home_page.dart's design language.
 const Color _deepPurple = AppColors.primaryDark;
 const Color _purple = AppColors.primary;
-const Color _background = AppColors.background;
-const Color _heading = AppColors.heading;
-const Color _muted = AppColors.muted;
-const Color _cardBorder = AppColors.cardBorder;
 const Color _approveColor = AppColors.success;
 const Color _rejectColor = AppColors.danger;
+
+String _adminT({
+  required String en,
+  required String zh,
+  required String ms,
+}) {
+  return AppSettingsController.instance.text(
+    en: en,
+    zh: zh,
+    ms: ms,
+  );
+}
+
+String _adminRuleName(Map<String, dynamic> item) {
+  final english =
+      (item['ruleName'] ?? 'Etiquette violation').toString().trim();
+  final chinese = (item['ruleNameZh'] ?? '').toString().trim();
+  final malay = (item['ruleNameMs'] ?? '').toString().trim();
+
+  switch (AppSettingsController.instance.language) {
+    case AppLanguage.chinese:
+      return chinese.isNotEmpty ? chinese : english;
+    case AppLanguage.malay:
+      return malay.isNotEmpty ? malay : english;
+    case AppLanguage.english:
+      return english;
+  }
+}
+
+String _adminCategory(String value) {
+  switch (value.trim()) {
+    case 'Dress Code':
+      return _adminT(en: 'Dress Code', zh: '穿着规范', ms: 'Kod Pakaian');
+    case 'Photography':
+      return _adminT(en: 'Photography', zh: '摄影礼仪', ms: 'Fotografi');
+    case 'Noise':
+      return _adminT(en: 'Noise', zh: '噪音礼仪', ms: 'Bunyi');
+    case 'Worship Etiquette':
+      return _adminT(en: 'Worship Etiquette', zh: '礼拜礼仪', ms: 'Etika Ibadat');
+    case 'Behaviour':
+      return _adminT(en: 'Behaviour', zh: '行为礼仪', ms: 'Tingkah Laku');
+    case 'Etiquette':
+      return _adminT(en: 'Etiquette', zh: '礼仪', ms: 'Etika');
+    case 'Islamic Culture':
+      return _adminT(en: 'Islamic Culture', zh: '伊斯兰文化', ms: 'Budaya Islam');
+    case 'Chinese Culture':
+      return _adminT(en: 'Chinese Culture', zh: '华人文化', ms: 'Budaya Cina');
+    case 'Indian Culture':
+      return _adminT(en: 'Indian Culture', zh: '印度文化', ms: 'Budaya India');
+    case 'Historical Landmarks':
+      return _adminT(en: 'Historical Landmarks', zh: '历史地标', ms: 'Mercu Tanda Bersejarah');
+    default:
+      return value;
+  }
+}
 
 
 class AdminReportManagementPage extends StatefulWidget {
@@ -41,10 +93,171 @@ class _AdminReportManagementPageState
   bool _isLoading = true;
   String? _errorMessage;
 
+  void _onSettingsChanged() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
   @override
   void initState() {
     super.initState();
+    AppSettingsController.instance.addListener(_onSettingsChanged);
     _loadReports();
+  }
+
+  @override
+  void dispose() {
+    AppSettingsController.instance.removeListener(_onSettingsChanged);
+    super.dispose();
+  }
+
+  Future<void> _attachLocalizedViolationNames(
+    List<Map<String, dynamic>> reports,
+  ) async {
+    final cache =
+        <String, List<Map<String, dynamic>>>{};
+
+    for (final report in reports) {
+      final attractionId =
+          (report['attractionId'] ?? '')
+              .toString()
+              .trim();
+
+      if (attractionId.isEmpty) {
+        continue;
+      }
+
+      List<Map<String, dynamic>> definitions;
+
+      if (cache.containsKey(attractionId)) {
+        definitions = cache[attractionId]!;
+      } else {
+        try {
+          final guide =
+              await _repository
+                  .getEtiquetteGuideRankingByAttraction(
+            attractionId,
+          );
+
+          definitions =
+              List<Map<String, dynamic>>.from(
+            guide['donts'] ??
+                const <Map<String, dynamic>>[],
+          );
+
+          cache[attractionId] = definitions;
+        } catch (_) {
+          // Localization enrichment must never block Admin review.
+          continue;
+        }
+      }
+
+      final byEnglish =
+          <String, Map<String, dynamic>>{};
+
+      for (final definition in definitions) {
+        final english =
+            (definition['ruleName'] ?? '')
+                .toString()
+                .trim();
+
+        if (english.isNotEmpty) {
+          byEnglish[english.toLowerCase()] =
+              definition;
+        }
+      }
+
+      final existing = report['violations'];
+
+      if (existing is List && existing.isNotEmpty) {
+        final enriched =
+            <Map<String, dynamic>>[];
+
+        for (final raw in existing) {
+          if (raw is! Map) {
+            continue;
+          }
+
+          final item =
+              Map<String, dynamic>.from(raw);
+
+          final english =
+              (item['ruleName'] ?? '')
+                  .toString()
+                  .trim();
+
+          final definition =
+              byEnglish[english.toLowerCase()];
+
+          if (definition != null) {
+            item['ruleNameZh'] =
+                (definition['ruleNameZh'] ?? '')
+                    .toString()
+                    .trim();
+
+            item['ruleNameMs'] =
+                (definition['ruleNameMs'] ?? '')
+                    .toString()
+                    .trim();
+
+            item['category'] ??=
+                definition['category'];
+          }
+
+          enriched.add(item);
+        }
+
+        report['violations'] = enriched;
+        continue;
+      }
+
+      // Compatibility with older reports that only saved
+      // selectedDontRules.
+      final selectedRules =
+          report['selectedDontRules'];
+
+      if (selectedRules is List) {
+        final enriched =
+            <Map<String, dynamic>>[];
+
+        for (final raw in selectedRules) {
+          final english =
+              raw.toString().trim();
+
+          if (english.isEmpty) {
+            continue;
+          }
+
+          final definition =
+              byEnglish[english.toLowerCase()];
+
+          enriched.add({
+            'ruleName': english,
+            'ruleNameZh':
+                (definition?['ruleNameZh'] ?? '')
+                    .toString()
+                    .trim(),
+            'ruleNameMs':
+                (definition?['ruleNameMs'] ?? '')
+                    .toString()
+                    .trim(),
+            'category':
+                definition?['category'] ??
+                    _categoryForRule(
+                      english,
+                      fallback:
+                          report['category']
+                              ?.toString(),
+                    ),
+          });
+        }
+
+        if (enriched.isNotEmpty) {
+          report['violations'] = enriched;
+        }
+      }
+    }
   }
 
   Future<void> _loadReports() async {
@@ -58,6 +271,10 @@ class _AdminReportManagementPageState
     try {
       final result =
       await _repository.getPendingReports();
+
+      await _attachLocalizedViolationNames(
+        result,
+      );
 
       result.sort(
             (a, b) {
@@ -134,13 +351,25 @@ class _AdminReportManagementPageState
             Icons.verified_rounded,
             color: Color(0xFF148A66),
           ),
-          title: const Text(
-            'Approve this report?',
+          title: Text(
+            _adminT(
+              en: 'Approve this report?',
+              zh: '批准这份报告？',
+              ms: 'Luluskan laporan ini?',
+            ),
           ),
           content: Text(
             violations.length <= 1
-                ? 'This verified violation will be included in the ranking.'
-                : 'All ${violations.length} selected violations in this report will be included in the ranking.',
+                ? _adminT(
+                    en: 'This verified violation will be included in the ranking.',
+                    zh: '此已验证的违规将计入排名。',
+                    ms: 'Pelanggaran yang disahkan ini akan dimasukkan dalam kedudukan.',
+                  )
+                : _adminT(
+                    en: 'All ${violations.length} selected violations in this report will be included in the ranking.',
+                    zh: '此报告中所选的 ${violations.length} 个违规项目都会计入排名。',
+                    ms: 'Kesemua ${violations.length} pelanggaran yang dipilih dalam laporan ini akan dimasukkan dalam kedudukan.',
+                  ),
           ),
           actions: [
             TextButton(
@@ -150,8 +379,12 @@ class _AdminReportManagementPageState
                   false,
                 );
               },
-              child: const Text(
-                'Cancel',
+              child: Text(
+                _adminT(
+                  en: 'Cancel',
+                  zh: '取消',
+                  ms: 'Batal',
+                ),
               ),
             ),
             FilledButton.icon(
@@ -169,8 +402,12 @@ class _AdminReportManagementPageState
               icon: const Icon(
                 Icons.check_rounded,
               ),
-              label: const Text(
-                'Approve',
+              label: Text(
+                _adminT(
+                  en: 'Approve',
+                  zh: '批准',
+                  ms: 'Lulus',
+                ),
               ),
             ),
           ],
@@ -206,8 +443,16 @@ class _AdminReportManagementPageState
 
       _showMessage(
         violations.length <= 1
-            ? 'Report approved. The violation now contributes to ranking.'
-            : 'Report approved. ${violations.length} violations now contribute to ranking.',
+            ? _adminT(
+                en: 'Report approved. The violation now contributes to ranking.',
+                zh: '报告已批准。该违规现在会计入排名。',
+                ms: 'Laporan diluluskan. Pelanggaran kini menyumbang kepada kedudukan.',
+              )
+            : _adminT(
+                en: 'Report approved. ${violations.length} violations now contribute to ranking.',
+                zh: '报告已批准。${violations.length} 个违规项目现在会计入排名。',
+                ms: 'Laporan diluluskan. ${violations.length} pelanggaran kini menyumbang kepada kedudukan.',
+              ),
         backgroundColor:
         _approveColor,
       );
@@ -246,11 +491,19 @@ class _AdminReportManagementPageState
             Icons.block_rounded,
             color: Color(0xFFB43D3D),
           ),
-          title: const Text(
-            'Reject this report?',
+          title: Text(
+            _adminT(
+              en: 'Reject this report?',
+              zh: '拒绝这份报告？',
+              ms: 'Tolak laporan ini?',
+            ),
           ),
-          content: const Text(
-            'The report will be marked Rejected and none of its selected violations will contribute to the ranking.',
+          content: Text(
+            _adminT(
+              en: 'The report will be marked Rejected and none of its selected violations will contribute to the ranking.',
+              zh: '该报告将被标记为已拒绝，其中所选的违规项目都不会计入排名。',
+              ms: 'Laporan akan ditandakan sebagai Ditolak dan tiada pelanggaran yang dipilih akan menyumbang kepada kedudukan.',
+            ),
           ),
           actions: [
             TextButton(
@@ -260,8 +513,12 @@ class _AdminReportManagementPageState
                   false,
                 );
               },
-              child: const Text(
-                'Cancel',
+              child: Text(
+                _adminT(
+                  en: 'Cancel',
+                  zh: '取消',
+                  ms: 'Batal',
+                ),
               ),
             ),
             FilledButton.icon(
@@ -279,8 +536,12 @@ class _AdminReportManagementPageState
               icon: const Icon(
                 Icons.close_rounded,
               ),
-              label: const Text(
-                'Reject',
+              label: Text(
+                _adminT(
+                  en: 'Reject',
+                  zh: '拒绝',
+                  ms: 'Tolak',
+                ),
               ),
             ),
           ],
@@ -315,7 +576,11 @@ class _AdminReportManagementPageState
       });
 
       _showMessage(
-        'Report rejected. It will not affect the ranking.',
+        _adminT(
+          en: 'Report rejected. It will not affect the ranking.',
+          zh: '报告已拒绝，不会影响排名。',
+          ms: 'Laporan ditolak dan tidak akan menjejaskan kedudukan.',
+        ),
         backgroundColor:
         _rejectColor,
       );
@@ -361,16 +626,20 @@ class _AdminReportManagementPageState
       BuildContext context,
       ) {
     return Scaffold(
-      backgroundColor: _background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
-        foregroundColor: _heading,
-        title: const Text(
-          'Report Management',
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
+        title: Text(
+          _adminT(
+            en: 'Report Management',
+            zh: '报告管理',
+            ms: 'Pengurusan Laporan',
+          ),
           style: TextStyle(
             fontWeight: FontWeight.w700,
-            color: _heading,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         actions: [
@@ -380,7 +649,11 @@ class _AdminReportManagementPageState
                 ? null
                 : _loadReports,
             tooltip:
-            'Refresh reports',
+            _adminT(
+              en: 'Refresh reports',
+              zh: '刷新报告',
+              ms: 'Muat semula laporan',
+            ),
             icon: const Icon(
               Icons.refresh_rounded,
             ),
@@ -427,11 +700,19 @@ class _AdminReportManagementPageState
               icon:
               Icons.cloud_off_rounded,
               title:
-              'Unable to load reports',
+              _adminT(
+                en: 'Unable to load reports',
+                zh: '无法加载报告',
+                ms: 'Tidak dapat memuatkan laporan',
+              ),
               message:
               _errorMessage!,
               buttonText:
-              'Try Again',
+              _adminT(
+                en: 'Try Again',
+                zh: '重试',
+                ms: 'Cuba Lagi',
+              ),
               onPressed:
               _loadReports,
             ),
@@ -455,13 +736,21 @@ class _AdminReportManagementPageState
             const SizedBox(
               height: 90,
             ),
-            const _MessageCard(
+            _MessageCard(
               icon:
               Icons.task_alt_rounded,
               title:
-              'All caught up',
+              _adminT(
+                en: 'All caught up',
+                zh: '全部处理完成',
+                ms: 'Semua telah selesai',
+              ),
               message:
-              'There are no pending etiquette reports to review right now.',
+              _adminT(
+                en: 'There are no pending etiquette reports to review right now.',
+                zh: '目前没有待审核的礼仪报告。',
+                ms: 'Tiada laporan etika yang menunggu semakan buat masa ini.',
+              ),
             ),
           ],
         ),
@@ -577,9 +866,13 @@ class _AdminReportManagementPageState
               CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${_reports.length} report${_reports.length == 1 ? '' : 's'} waiting for review',
+                  _adminT(
+                    en: '${_reports.length} report${_reports.length == 1 ? '' : 's'} waiting for review',
+                    zh: '有 ${_reports.length} 份报告等待审核',
+                    ms: '${_reports.length} laporan menunggu semakan',
+                  ),
                   style:
-                  const TextStyle(
+                  TextStyle(
                     color:
                     Colors.white,
                     fontSize:
@@ -592,7 +885,11 @@ class _AdminReportManagementPageState
                   height: 5,
                 ),
                 Text(
-                  'Check the detected location, selected DON’T rules and evidence photo before approving.',
+                  _adminT(
+                    en: 'Check the detected location, selected DON’T rules and evidence photo before approving.',
+                    zh: '批准前请检查检测到的地点、所选“不应该做”规则和证据照片。',
+                    ms: 'Semak lokasi yang dikesan, peraturan JANGAN yang dipilih dan foto bukti sebelum meluluskan.',
+                  ),
                   style:
                   TextStyle(
                     color:
@@ -638,7 +935,7 @@ class _AdminReportCard
     final attractionName =
     (report['attractionName'] ??
         report['attractionId'] ??
-        'Unknown attraction')
+        _adminT(en: 'Unknown attraction', zh: '未知景点', ms: 'Tarikan tidak diketahui'))
         .toString();
 
     final attractionCategory =
@@ -649,7 +946,7 @@ class _AdminReportCard
     final userLabel =
     (report['userEmail'] ??
         report['userId'] ??
-        'Unknown user')
+        _adminT(en: 'Unknown user', zh: '未知用户', ms: 'Pengguna tidak diketahui'))
         .toString();
 
     final distance =
@@ -669,7 +966,7 @@ class _AdminReportCard
     );
 
     final violations =
-    _extractViolations(report);
+    _displayViolations(report);
 
     final createdAt =
     _parseDate(
@@ -687,13 +984,13 @@ class _AdminReportCard
         bottom: 14,
       ),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius:
         BorderRadius.circular(
           22,
         ),
         border: Border.all(
-          color: _cardBorder,
+          color: Theme.of(context).colorScheme.outlineVariant,
         ),
         boxShadow: [
           BoxShadow(
@@ -766,7 +1063,7 @@ class _AdminReportCard
                             attractionName,
                             style:
                             TextStyle(
-                              color: _heading,
+                              color: Theme.of(context).colorScheme.onSurface,
                               fontWeight:
                               FontWeight.w800,
                               fontSize:
@@ -813,8 +1110,12 @@ class _AdminReportCard
                         ),
                       ),
                       child:
-                      const Text(
-                        'PENDING',
+                      Text(
+                        _adminT(
+                          en: 'PENDING',
+                          zh: '待审核',
+                          ms: 'MENUNGGU',
+                        ),
                         style:
                         TextStyle(
                           color:
@@ -839,7 +1140,11 @@ class _AdminReportCard
                   icon:
                   Icons.person_outline_rounded,
                   label:
-                  'Submitted by',
+                  _adminT(
+                    en: 'Submitted by',
+                    zh: '提交者',
+                    ms: 'Dihantar oleh',
+                  ),
                   value:
                   userLabel,
                 ),
@@ -850,7 +1155,11 @@ class _AdminReportCard
                     Icons
                         .schedule_rounded,
                     label:
-                    'Submitted',
+                    _adminT(
+                      en: 'Submitted',
+                      zh: '提交时间',
+                      ms: 'Dihantar',
+                    ),
                     value:
                     _dateText(
                       createdAt,
@@ -863,7 +1172,11 @@ class _AdminReportCard
                     Icons
                         .near_me_outlined,
                     label:
-                    'Distance',
+                    _adminT(
+                      en: 'Distance',
+                      zh: '距离',
+                      ms: 'Jarak',
+                    ),
                     value:
                     _distanceText(
                       distance,
@@ -900,11 +1213,19 @@ class _AdminReportCard
                     ),
                     Text(
                       violations.length == 1
-                          ? 'Selected Violation'
-                          : 'Selected Violations (${violations.length})',
+                          ? _adminT(
+                              en: 'Selected Violation',
+                              zh: '所选违规',
+                              ms: 'Pelanggaran Dipilih',
+                            )
+                          : _adminT(
+                              en: 'Selected Violations (${violations.length})',
+                              zh: '所选违规（${violations.length}）',
+                              ms: 'Pelanggaran Dipilih (${violations.length})',
+                            ),
                       style:
                       TextStyle(
-                        color: _heading,
+                        color: Theme.of(context).colorScheme.onSurface,
                         fontWeight:
                         FontWeight.w800,
                         fontSize:
@@ -920,10 +1241,14 @@ class _AdminReportCard
 
                 if (violations.isEmpty)
                   Text(
-                    'No structured violation was found in this report.',
+                    _adminT(
+                      en: 'No structured violation was found in this report.',
+                      zh: '此报告中未找到结构化违规项目。',
+                      ms: 'Tiada pelanggaran berstruktur ditemui dalam laporan ini.',
+                    ),
                     style:
                     TextStyle(
-                      color: _muted,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   )
                 else
@@ -948,7 +1273,7 @@ class _AdminReportCard
                         ),
                         decoration:
                         BoxDecoration(
-                          color: AppColors.tintFaint,
+                          color: Theme.of(context).colorScheme.surfaceContainerHighest,
                           borderRadius:
                           BorderRadius.circular(
                             14,
@@ -976,7 +1301,7 @@ class _AdminReportCard
                               Text(
                                 '${entry.key + 1}',
                                 style:
-                                const TextStyle(
+                                TextStyle(
                                   color:
                                   Color(
                                     0xFFB94B36,
@@ -998,12 +1323,10 @@ class _AdminReportCard
                                 CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    item['ruleName']
-                                        ?.toString() ??
-                                        'Etiquette violation',
+                                    _adminRuleName(item),
                                     style:
                                     TextStyle(
-                                      color: _heading,
+                                      color: Theme.of(context).colorScheme.onSurface,
                                       fontWeight:
                                       FontWeight.w700,
                                       height:
@@ -1014,9 +1337,11 @@ class _AdminReportCard
                                     height: 3,
                                   ),
                                   Text(
-                                    item['category']
-                                        ?.toString() ??
-                                        'Etiquette',
+                                    _adminCategory(
+                                      item['category']
+                                          ?.toString() ??
+                                          'Etiquette',
+                                    ),
                                     style:
                                     TextStyle(
                                       color: _deepPurple,
@@ -1067,7 +1392,7 @@ class _AdminReportCard
                     ),
                   ),
                   child:
-                  const Row(
+                  Row(
                     crossAxisAlignment:
                     CrossAxisAlignment.start,
                     children: [
@@ -1088,7 +1413,11 @@ class _AdminReportCard
                       Expanded(
                         child:
                         Text(
-                          'Approve only when the evidence clearly supports the selected violation(s).',
+                          _adminT(
+                            en: 'Approve only when the evidence clearly supports the selected violation(s).',
+                            zh: '仅当证据明确支持所选违规项目时才批准。',
+                            ms: 'Luluskan hanya apabila bukti jelas menyokong pelanggaran yang dipilih.',
+                          ),
                           style:
                           TextStyle(
                             color:
@@ -1142,8 +1471,12 @@ class _AdminReportCard
                           Icons.close_rounded,
                         ),
                         label:
-                        const Text(
-                          'Reject',
+                        Text(
+                          _adminT(
+                            en: 'Reject',
+                            zh: '拒绝',
+                            ms: 'Tolak',
+                          ),
                           style:
                           TextStyle(
                             fontWeight:
@@ -1200,8 +1533,12 @@ class _AdminReportCard
                           Icons.check_rounded,
                         ),
                         label:
-                        const Text(
-                          'Approve',
+                        Text(
+                          _adminT(
+                            en: 'Approve',
+                            zh: '批准',
+                            ms: 'Lulus',
+                          ),
                           style:
                           TextStyle(
                             fontWeight:
@@ -1249,7 +1586,7 @@ class _DetailRow
           Icon(
             icon,
             size: 16,
-            color: _muted,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
           const SizedBox(
             width: 7,
@@ -1260,7 +1597,7 @@ class _DetailRow
               label,
               style:
               TextStyle(
-                color: _muted,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontSize: 12,
               ),
             ),
@@ -1270,7 +1607,7 @@ class _DetailRow
               value,
               style:
               TextStyle(
-                color: _heading,
+                color: Theme.of(context).colorScheme.onSurface,
                 fontSize: 12.5,
                 fontWeight:
                 FontWeight.w600,
@@ -1320,7 +1657,7 @@ class _EvidenceViewer
           ),
         ),
         child:
-        const Column(
+        Column(
           children: [
             Icon(
               Icons
@@ -1334,7 +1671,11 @@ class _EvidenceViewer
               height: 6,
             ),
             Text(
-              'No evidence photo',
+              _adminT(
+                en: 'No evidence photo',
+                zh: '没有证据照片',
+                ms: 'Tiada foto bukti',
+              ),
               style:
               TextStyle(
                 color:
@@ -1386,7 +1727,7 @@ class _EvidenceViewer
 
               return Container(
                 height: 230,
-                color: AppColors.tintFaint,
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
                 alignment:
                 Alignment.center,
                 child:
@@ -1484,8 +1825,12 @@ class _InvalidEvidence
       ),
       alignment:
       Alignment.center,
-      child: const Text(
-        'Unable to display evidence photo',
+      child: Text(
+        _adminT(
+          en: 'Unable to display evidence photo',
+          zh: '无法显示证据照片',
+          ms: 'Tidak dapat memaparkan foto bukti',
+        ),
         textAlign:
         TextAlign.center,
         style: TextStyle(
@@ -1527,12 +1872,12 @@ class _MessageCard
         24,
       ),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius:
         BorderRadius.circular(
           22,
         ),
-        border: Border.all(color: _cardBorder),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Column(
         children: [
@@ -1548,7 +1893,7 @@ class _MessageCard
             title,
             style:
             TextStyle(
-              color: _heading,
+              color: Theme.of(context).colorScheme.onSurface,
               fontWeight:
               FontWeight.w800,
               fontSize: 17,
@@ -1563,7 +1908,7 @@ class _MessageCard
             TextAlign.center,
             style:
             TextStyle(
-              color: _muted,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               height: 1.4,
             ),
           ),
@@ -1585,6 +1930,24 @@ class _MessageCard
     );
   }
 }
+List<Map<String, dynamic>> _displayViolations(
+  Map<String, dynamic> report,
+) {
+  final raw = report['violations'];
+
+  if (raw is List && raw.isNotEmpty) {
+    return raw
+        .whereType<Map>()
+        .map(
+          (item) =>
+              Map<String, dynamic>.from(item),
+        )
+        .toList();
+  }
+
+  return _extractViolations(report);
+}
+
 
 List<Map<String, dynamic>>
 _extractViolations(
@@ -1635,6 +1998,8 @@ _extractViolations(
       if (seen.add(key)) {
         result.add({
           'ruleName': ruleName,
+          'ruleNameZh': item['ruleNameZh'],
+          'ruleNameMs': item['ruleNameMs'],
           'category':
           category.isEmpty
               ? 'Etiquette'
@@ -1839,8 +2204,16 @@ String _distanceText(
     double meters,
     ) {
   if (meters < 1000) {
-    return '${meters.toStringAsFixed(0)} m from attraction';
+    return _adminT(
+      en: '${meters.toStringAsFixed(0)} m from attraction',
+      zh: '距离景点 ${meters.toStringAsFixed(0)} 米',
+      ms: '${meters.toStringAsFixed(0)} m dari tarikan',
+    );
   }
 
-  return '${(meters / 1000).toStringAsFixed(2)} km from attraction';
+  return _adminT(
+    en: '${(meters / 1000).toStringAsFixed(2)} km from attraction',
+    zh: '距离景点 ${(meters / 1000).toStringAsFixed(2)} 公里',
+    ms: '${(meters / 1000).toStringAsFixed(2)} km dari tarikan',
+  );
 }

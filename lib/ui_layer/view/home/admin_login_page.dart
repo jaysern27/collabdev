@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../data_layer/model/services/firebase_authentication/firebase_authentication_service.dart';
 import '../../../data_layer/model/services/firebase_authentication/user_role_service.dart';
+import '../../view_model/settings/app_settings_controller.dart';
 import '../shared/app_theme.dart';
 
 import 'admin_home_page.dart';
@@ -18,14 +19,42 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
   final TextEditingController passwordController = TextEditingController();
 
   final FirebaseAuthenticationService authService =
-  FirebaseAuthenticationService();
+      FirebaseAuthenticationService();
   final UserRoleService roleService = UserRoleService();
+
+  final AppSettingsController _settings =
+      AppSettingsController.instance;
 
   bool loading = false;
   bool obscurePassword = true;
 
+  String _t({
+    required String en,
+    required String zh,
+    required String ms,
+  }) {
+    return _settings.text(
+      en: en,
+      zh: zh,
+      ms: ms,
+    );
+  }
+
+  void _onSettingsChanged() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _settings.addListener(_onSettingsChanged);
+  }
+
   @override
   void dispose() {
+    _settings.removeListener(_onSettingsChanged);
     emailController.dispose();
     passwordController.dispose();
     super.dispose();
@@ -36,7 +65,13 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
     final password = passwordController.text;
 
     if (email.isEmpty || password.isEmpty) {
-      _showMessage('Please enter the administrator email and password.');
+      _showMessage(
+        _t(
+          en: 'Please enter the administrator email and password.',
+          zh: '请输入管理员电子邮箱和密码。',
+          ms: 'Sila masukkan e-mel dan kata laluan pentadbir.',
+        ),
+      );
       return;
     }
 
@@ -50,7 +85,13 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
 
       final uid = result.user?.uid;
       if (uid == null) {
-        throw Exception('Unable to read administrator account.');
+        throw Exception(
+          _t(
+            en: 'Unable to read administrator account.',
+            zh: '无法读取管理员账户。',
+            ms: 'Tidak dapat membaca akaun pentadbir.',
+          ),
+        );
       }
 
       final role = await roleService.getUserRole(uid);
@@ -58,7 +99,11 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
       if (role != 'admin') {
         await authService.logout();
         throw Exception(
-          'This account does not have administrator access.',
+          _t(
+            en: 'This account does not have administrator access.',
+            zh: '此账户没有管理员权限。',
+            ms: 'Akaun ini tidak mempunyai akses pentadbir.',
+          ),
         );
       }
 
@@ -69,7 +114,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
         MaterialPageRoute(
           builder: (_) => const AdminHomePage(),
         ),
-            (route) => false,
+        (route) => false,
       );
     } catch (e) {
       _showMessage(
@@ -104,7 +149,17 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
-        title: const Text('Admin Portal'),
+        title: Text(
+          _t(
+            en: 'Admin Portal',
+            zh: '管理员门户',
+            ms: 'Portal Pentadbir',
+          ),
+        ),
+        actions: [
+          _buildLanguageMenu(),
+          const SizedBox(width: 8),
+        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -127,7 +182,11 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                   const SizedBox(width: 7),
                   Flexible(
                     child: Text(
-                      'Administrator accounts are managed internally.',
+                      _t(
+                        en: 'Administrator accounts are managed internally.',
+                        zh: '管理员账户由系统内部管理。',
+                        ms: 'Akaun pentadbir diuruskan secara dalaman.',
+                      ),
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 12.5,
@@ -140,6 +199,40 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildLanguageMenu() {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return PopupMenuButton<AppLanguage>(
+      initialValue: _settings.language,
+      tooltip: _t(
+        en: 'Change language',
+        zh: '更改语言',
+        ms: 'Tukar bahasa',
+      ),
+      onSelected: (language) {
+        _settings.setLanguage(language);
+      },
+      itemBuilder: (context) => const [
+        PopupMenuItem(
+          value: AppLanguage.english,
+          child: Text('English'),
+        ),
+        PopupMenuItem(
+          value: AppLanguage.chinese,
+          child: Text('中文'),
+        ),
+        PopupMenuItem(
+          value: AppLanguage.malay,
+          child: Text('Bahasa Melayu'),
+        ),
+      ],
+      icon: Icon(
+        Icons.language_rounded,
+        color: colorScheme.primary,
       ),
     );
   }
@@ -165,10 +258,10 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
           ),
         ],
       ),
-      child: const Column(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CircleAvatar(
+          const CircleAvatar(
             radius: 27,
             backgroundColor: Color(0x24FFFFFF),
             child: Icon(
@@ -177,19 +270,27 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
               size: 30,
             ),
           ),
-          SizedBox(height: 18),
+          const SizedBox(height: 18),
           Text(
-            'Administrator Access',
-            style: TextStyle(
+            _t(
+              en: 'Administrator Access',
+              zh: '管理员访问',
+              ms: 'Akses Pentadbir',
+            ),
+            style: const TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.w800,
               fontSize: 24,
             ),
           ),
-          SizedBox(height: 7),
+          const SizedBox(height: 7),
           Text(
-            'Review submitted etiquette violations, verify reports and monitor priority etiquette issues.',
-            style: TextStyle(
+            _t(
+              en: 'Review submitted etiquette violations, verify reports and monitor priority etiquette issues.',
+              zh: '审核已提交的礼仪违规、验证报告并监控优先礼仪问题。',
+              ms: 'Semak pelanggaran etika yang dihantar, sahkan laporan dan pantau isu etika keutamaan.',
+            ),
+            style: const TextStyle(
               color: Color(0xFFE3EDFC),
               height: 1.45,
             ),
@@ -215,7 +316,11 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'Sign in as Admin',
+            _t(
+              en: 'Sign in as Admin',
+              zh: '管理员登录',
+              ms: 'Log Masuk sebagai Pentadbir',
+            ),
             style: TextStyle(
               fontSize: 21,
               fontWeight: FontWeight.w800,
@@ -228,7 +333,11 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
             keyboardType: TextInputType.emailAddress,
             textInputAction: TextInputAction.next,
             decoration: _inputDecoration(
-              label: 'Admin email',
+              label: _t(
+                en: 'Admin email',
+                zh: '管理员电子邮箱',
+                ms: 'E-mel pentadbir',
+              ),
               icon: Icons.alternate_email_rounded,
             ),
           ),
@@ -241,9 +350,24 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
               if (!loading) loginAdmin();
             },
             decoration: _inputDecoration(
-              label: 'Password',
+              label: _t(
+                en: 'Password',
+                zh: '密码',
+                ms: 'Kata laluan',
+              ),
               icon: Icons.lock_outline_rounded,
               suffix: IconButton(
+                tooltip: obscurePassword
+                    ? _t(
+                        en: 'Show password',
+                        zh: '显示密码',
+                        ms: 'Tunjukkan kata laluan',
+                      )
+                    : _t(
+                        en: 'Hide password',
+                        zh: '隐藏密码',
+                        ms: 'Sembunyikan kata laluan',
+                      ),
                 onPressed: () {
                   setState(() {
                     obscurePassword = !obscurePassword;
@@ -274,19 +398,23 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                   : const Icon(Icons.verified_user_outlined),
               label: loading
                   ? const SizedBox(
-                width: 22,
-                height: 22,
-                child: CircularProgressIndicator(
-                  color: Colors.white,
-                  strokeWidth: 2.3,
-                ),
-              )
-                  : const Text(
-                'Sign In to Admin Portal',
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2.3,
+                      ),
+                    )
+                  : Text(
+                      _t(
+                        en: 'Sign In to Admin Portal',
+                        zh: '登录管理员门户',
+                        ms: 'Log Masuk ke Portal Pentadbir',
+                      ),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
             ),
           ),
           const SizedBox(height: 10),
@@ -294,10 +422,16 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
             onPressed: loading
                 ? null
                 : () {
-              Navigator.pop(context);
-            },
+                    Navigator.pop(context);
+                  },
             icon: const Icon(Icons.arrow_back_rounded),
-            label: const Text('Back to User Login'),
+            label: Text(
+              _t(
+                en: 'Back to User Login',
+                zh: '返回用户登录',
+                ms: 'Kembali ke Log Masuk Pengguna',
+              ),
+            ),
           ),
         ],
       ),
