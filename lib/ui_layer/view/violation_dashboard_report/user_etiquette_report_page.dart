@@ -38,8 +38,36 @@ class _UserEtiquetteReportPageState
   static const Color _blue = Color(0xFF36A8E0);
   static const Color _peach = Color(0xFFFFB7A1);
   static const Color _gold = Color(0xFFF6D365);
-  static const Color _darkText = Color(0xFF241B35);
-  static const Color _backgroundColor = Color(0xFFF8F4FB);
+
+  // =========================================================
+  // THEME HELPERS
+  // =========================================================
+
+  Color get _pageBackground =>
+      Theme.of(context).colorScheme.surface;
+
+  Color get _textColor =>
+      Theme.of(context).colorScheme.onSurface;
+
+  Color get _mutedTextColor =>
+      Theme.of(context).colorScheme.onSurfaceVariant;
+
+  Color get _softPurpleBackground {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Color.alphaBlend(
+      _purple.withValues(alpha: 0.12),
+      colorScheme.surfaceContainerLow,
+    );
+  }
+
+  Color get _softOrangeBackground {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Color.alphaBlend(
+      Colors.deepOrange.withValues(alpha: 0.10),
+      colorScheme.surfaceContainerLow,
+    );
+  }
+
 
   @override
   void initState() {
@@ -93,7 +121,7 @@ class _UserEtiquetteReportPageState
     Map<String, dynamic>? definition;
     for (final item in definitions) {
       final candidate =
-          (item['ruleName'] ?? '').toString().trim().toLowerCase();
+      (item['ruleName'] ?? '').toString().trim().toLowerCase();
       if (candidate == target) {
         definition = item;
         break;
@@ -123,7 +151,7 @@ class _UserEtiquetteReportPageState
     try {
       final Position position = await _getCurrentPosition();
       final List<_AttractionInfo> attractions =
-          await _fetchAttractions();
+      await _fetchAttractions();
 
       if (attractions.isEmpty) {
         throw Exception(_t(en: 'No attractions found in Firestore.', zh: 'Firestore 中找不到景点。', ms: 'Tiada tarikan ditemui dalam Firestore.'));
@@ -172,18 +200,18 @@ class _UserEtiquetteReportPageState
 
   Future<Position> _getCurrentPosition() async {
     final bool serviceEnabled =
-        await Geolocator.isLocationServiceEnabled();
+    await Geolocator.isLocationServiceEnabled();
 
     if (!serviceEnabled) {
       throw Exception(_t(en: 'Location service is turned off.', zh: '定位服务已关闭。', ms: 'Perkhidmatan lokasi dimatikan.'));
     }
 
     LocationPermission permission =
-        await Geolocator.checkPermission();
+    await Geolocator.checkPermission();
 
     if (permission == LocationPermission.denied) {
       permission =
-          await Geolocator.requestPermission();
+      await Geolocator.requestPermission();
     }
 
     if (permission == LocationPermission.denied) {
@@ -203,50 +231,50 @@ class _UserEtiquetteReportPageState
   }
 
   Future<List<_AttractionInfo>>
-      _fetchAttractions() async {
+  _fetchAttractions() async {
     final QuerySnapshot<Map<String, dynamic>> snapshot =
-        await FirebaseFirestore.instance
-            .collection('attractions')
-            .get();
+    await FirebaseFirestore.instance
+        .collection('attractions')
+        .get();
 
     return snapshot.docs
         .map(
           (QueryDocumentSnapshot<Map<String, dynamic>> doc) {
-            final Map<String, dynamic> data =
-                doc.data();
+        final Map<String, dynamic> data =
+        doc.data();
 
-            return _AttractionInfo(
-              id: doc.id,
-              name:
-                  (data['name'] ?? '').toString(),
-              category:
-                  (data['category'] ?? '').toString(),
-              address:
-                  (data['address'] ?? '').toString(),
-              latitude:
-                  _toDouble(data['latitude']),
-              longitude:
-                  _toDouble(data['longitude']),
-              donts:
-                  _toStringList(data['donts']),
-              rankingRules:
-                  _toMapList(data['rankingRules']),
-            );
-          },
-        )
+        return _AttractionInfo(
+          id: doc.id,
+          name:
+          (data['name'] ?? '').toString(),
+          category:
+          (data['category'] ?? '').toString(),
+          address:
+          (data['address'] ?? '').toString(),
+          latitude:
+          _toDouble(data['latitude']),
+          longitude:
+          _toDouble(data['longitude']),
+          donts:
+          _toStringList(data['donts']),
+          rankingRules:
+          _toMapList(data['rankingRules']),
+        );
+      },
+    )
         .where(
           (_AttractionInfo item) =>
-              item.name.isNotEmpty &&
-              item.latitude != 0 &&
-              item.longitude != 0 &&
-              item.donts.isNotEmpty,
-        )
+      item.name.isNotEmpty &&
+          item.latitude != 0 &&
+          item.longitude != 0 &&
+          item.donts.isNotEmpty,
+    )
         .toList();
   }
 
   Future<void> _takeEvidencePhoto() async {
     final XFile? picked =
-        await _imagePicker.pickImage(
+    await _imagePicker.pickImage(
       source: ImageSource.camera,
 
       // The project is currently using the Firebase Spark plan.
@@ -261,10 +289,10 @@ class _UserEtiquetteReportPageState
     if (picked == null || !mounted) return;
 
     final File file =
-        File(picked.path);
+    File(picked.path);
 
     final int byteLength =
-        await file.length();
+    await file.length();
 
     // Base64 increases size by roughly 33%. Keep a conservative raw-image
     // ceiling so the final Firestore report stays below the 1 MiB document
@@ -298,33 +326,33 @@ class _UserEtiquetteReportPageState
     }
 
     final Set<String> temporarySelection =
-        Set<String>.from(_selectedDontRules);
+    Set<String>.from(_selectedDontRules);
 
     final Set<String>? result =
-        await showModalBottomSheet<Set<String>>(
+    await showModalBottomSheet<Set<String>>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (BuildContext sheetContext) {
         return StatefulBuilder(
           builder: (
-            BuildContext context,
-            StateSetter setSheetState,
-          ) {
+              BuildContext context,
+              StateSetter setSheetState,
+              ) {
             return Container(
               height:
-                  MediaQuery.of(context).size.height *
-                      0.72,
+              MediaQuery.of(context).size.height *
+                  0.72,
               padding:
-                  const EdgeInsets.fromLTRB(
+              const EdgeInsets.fromLTRB(
                 18,
                 14,
                 18,
                 18,
               ),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainerLow,
+                borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(28),
                 ),
               ),
@@ -336,7 +364,7 @@ class _UserEtiquetteReportPageState
                     decoration: BoxDecoration(
                       color: const Color(0xFFD7D1DE),
                       borderRadius:
-                          BorderRadius.circular(30),
+                      BorderRadius.circular(30),
                     ),
                   ),
                   const SizedBox(height: 18),
@@ -353,8 +381,8 @@ class _UserEtiquetteReportPageState
                           style: TextStyle(
                             fontSize: 19,
                             fontWeight:
-                                FontWeight.w800,
-                            color: _darkText,
+                            FontWeight.w800,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
                       ),
@@ -363,11 +391,11 @@ class _UserEtiquetteReportPageState
                   const SizedBox(height: 6),
                   Align(
                     alignment:
-                        Alignment.centerLeft,
+                    Alignment.centerLeft,
                     child: Text(
                       _t(en: 'You can select more than one violation.', zh: '您可以选择一个或多个违规项目。', ms: 'Anda boleh memilih lebih daripada satu pelanggaran.'),
                       style: TextStyle(
-                        color: Colors.black54,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                         fontSize: 13,
                       ),
                     ),
@@ -378,38 +406,39 @@ class _UserEtiquetteReportPageState
                       itemCount: rules.length,
                       separatorBuilder:
                           (_, _) =>
-                              const SizedBox(
+                      const SizedBox(
                         height: 8,
                       ),
                       itemBuilder:
                           (BuildContext context,
-                              int index) {
+                          int index) {
                         final String rule =
-                            rules[index];
+                        rules[index];
 
                         final bool selected =
-                            temporarySelection
-                                .contains(rule);
+                        temporarySelection
+                            .contains(rule);
 
                         return Material(
                           color: selected
-                              ? const Color(
-                                  0xFFF0EBFF,
-                                )
-                              : const Color(
-                                  0xFFFAF8FC,
-                                ),
+                              ? Color.alphaBlend(
+                            _purple.withValues(alpha: 0.14),
+                            Theme.of(context).colorScheme.surfaceContainerLow,
+                          )
+                              : Theme.of(context)
+                              .colorScheme
+                              .surfaceContainerLow,
                           borderRadius:
-                              BorderRadius.circular(
+                          BorderRadius.circular(
                             16,
                           ),
                           child: CheckboxListTile(
                             value: selected,
                             activeColor: _purple,
                             shape:
-                                RoundedRectangleBorder(
+                            RoundedRectangleBorder(
                               borderRadius:
-                                  BorderRadius.circular(
+                              BorderRadius.circular(
                                 16,
                               ),
                             ),
@@ -419,7 +448,7 @@ class _UserEtiquetteReportPageState
                                 fontWeight: selected
                                     ? FontWeight.w700
                                     : FontWeight.w500,
-                                color: _darkText,
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
                             ),
                             onChanged:
@@ -451,7 +480,7 @@ class _UserEtiquetteReportPageState
                             });
                           },
                           child:
-                              Text(_t(en: 'Clear', zh: '清除', ms: 'Kosongkan')),
+                          Text(_t(en: 'Clear', zh: '清除', ms: 'Kosongkan')),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -465,20 +494,20 @@ class _UserEtiquetteReportPageState
                             );
                           },
                           style:
-                              FilledButton.styleFrom(
+                          FilledButton.styleFrom(
                             backgroundColor:
-                                _purple,
+                            _purple,
                             foregroundColor:
-                                Colors.white,
+                            Colors.white,
                             minimumSize:
-                                const Size(
+                            const Size(
                               double.infinity,
                               48,
                             ),
                           ),
                           child: Text(
                             temporarySelection
-                                    .isEmpty
+                                .isEmpty
                                 ? _t(en: 'Done', zh: '完成', ms: 'Selesai')
                                 : _t(en: 'Done (${temporarySelection.length})', zh: '完成（${temporarySelection.length}）', ms: 'Selesai (${temporarySelection.length})'),
                           ),
@@ -504,8 +533,8 @@ class _UserEtiquetteReportPageState
   }
 
   String _formatDistance(
-    double? meters,
-  ) {
+      double? meters,
+      ) {
     if (meters == null) return '-';
 
     if (meters < 1000) {
@@ -517,16 +546,16 @@ class _UserEtiquetteReportPageState
 
   bool get _canSubmit =>
       !_isSubmitting &&
-      _nearestAttraction != null &&
-      _selectedDontRules.isNotEmpty &&
-      _evidencePhoto != null &&
-      _currentPosition != null;
+          _nearestAttraction != null &&
+          _selectedDontRules.isNotEmpty &&
+          _evidencePhoto != null &&
+          _currentPosition != null;
 
   String _deriveViolationCategory(
-    String rule,
-  ) {
+      String rule,
+      ) {
     final String text =
-        rule.toLowerCase();
+    rule.toLowerCase();
 
     if (text.contains('wear') ||
         text.contains('dress') ||
@@ -580,10 +609,10 @@ class _UserEtiquetteReportPageState
   }
 
   Future<String> _encodeEvidencePhoto(
-    File file,
-  ) async {
+      File file,
+      ) async {
     final List<int> bytes =
-        await file.readAsBytes();
+    await file.readAsBytes();
 
     const int maxEvidenceBytes =
         600 * 1024;
@@ -614,38 +643,38 @@ class _UserEtiquetteReportPageState
           FirebaseAuth.instance.currentUser;
 
       final _AttractionInfo attraction =
-          _nearestAttraction!;
+      _nearestAttraction!;
 
       final List<String> selectedRules =
-          _selectedDontRules.toList();
+      _selectedDontRules.toList();
 
       final List<Map<String, dynamic>>
-          violations = selectedRules
-              .map(
-                (String rule) =>
-                    <String, dynamic>{
-                  'ruleName': rule,
-                  'category':
-                      _deriveViolationCategory(
-                    rule,
-                  ),
-                },
-              )
-              .toList();
+      violations = selectedRules
+          .map(
+            (String rule) =>
+        <String, dynamic>{
+          'ruleName': rule,
+          'category':
+          _deriveViolationCategory(
+            rule,
+          ),
+        },
+      )
+          .toList();
 
       final List<String>
-          violationCategories =
-          violations
-              .map(
-                (Map<String, dynamic> item) =>
-                    item['category']
-                        .toString(),
-              )
-              .toSet()
-              .toList();
+      violationCategories =
+      violations
+          .map(
+            (Map<String, dynamic> item) =>
+            item['category']
+                .toString(),
+      )
+          .toSet()
+          .toList();
 
       final String evidenceBase64 =
-          await _encodeEvidencePhoto(
+      await _encodeEvidencePhoto(
         _evidencePhoto!,
       );
 
@@ -659,46 +688,46 @@ class _UserEtiquetteReportPageState
           'attractionId': attraction.id,
           'attractionName': attraction.name,
           'attractionCategory':
-              attraction.category,
+          attraction.category,
 
           // NEW multi-selection fields.
           'selectedDontRules':
-              selectedRules,
+          selectedRules,
           'violationCategories':
-              violationCategories,
+          violationCategories,
           'violations': violations,
 
           // Backward-compatible fields for older code.
           'selectedDontRule':
-              selectedRules.first,
+          selectedRules.first,
           'category':
-              violationCategories.first,
+          violationCategories.first,
           'description':
-              selectedRules.join('; '),
+          selectedRules.join('; '),
 
           'status': 'pending',
           'createdAt':
-              FieldValue.serverTimestamp(),
+          FieldValue.serverTimestamp(),
 
           'latitude':
-              _currentPosition!.latitude,
+          _currentPosition!.latitude,
           'longitude':
-              _currentPosition!.longitude,
+          _currentPosition!.longitude,
           'distanceFromAttractionMeters':
-              attraction.distanceInMeters,
+          attraction.distanceInMeters,
 
           // Store compressed evidence directly in Firestore for the
           // prototype. This avoids Cloud Storage, which requires the Blaze
           // plan. The Admin Review page already supports Base64 evidence via
           // the legacy `evidenceImageUrl` field.
           'evidenceImageUrl':
-              evidenceBase64,
+          evidenceBase64,
           'evidenceStorage':
-              'firestore_base64',
+          'firestore_base64',
 
           'severity': 3,
           'verificationConfidence':
-              0.0,
+          0.0,
         },
       );
 
@@ -716,9 +745,9 @@ class _UserEtiquetteReportPageState
             _t(en: 'Report submitted successfully.', zh: '报告提交成功。', ms: 'Laporan berjaya dihantar.'),
           ),
           backgroundColor:
-              Color(0xFF1E9E74),
+          Color(0xFF1E9E74),
           behavior:
-              SnackBarBehavior.floating,
+          SnackBarBehavior.floating,
         ),
       );
     } catch (e) {
@@ -731,9 +760,9 @@ class _UserEtiquetteReportPageState
             _t(en: 'Failed to submit report: $e', zh: '报告提交失败：$e', ms: 'Gagal menghantar laporan: $e'),
           ),
           backgroundColor:
-              Colors.red,
+          Colors.red,
           behavior:
-              SnackBarBehavior.floating,
+          SnackBarBehavior.floating,
         ),
       );
     } finally {
@@ -746,8 +775,8 @@ class _UserEtiquetteReportPageState
   }
 
   void _showMessage(
-    String message,
-  ) {
+      String message,
+      ) {
     if (!mounted) return;
 
     ScaffoldMessenger.of(context)
@@ -756,7 +785,7 @@ class _UserEtiquetteReportPageState
         SnackBar(
           content: Text(message),
           behavior:
-              SnackBarBehavior.floating,
+          SnackBarBehavior.floating,
         ),
       );
   }
@@ -765,140 +794,141 @@ class _UserEtiquetteReportPageState
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor:
-          _backgroundColor,
+      _pageBackground,
       appBar: AppBar(
         title: Text(
           _t(en: 'User Etiquette Report', zh: '用户礼仪报告', ms: 'Laporan Etika Pengguna'),
           style: TextStyle(
             fontWeight:
-                FontWeight.w700,
-            color: _darkText,
+            FontWeight.w700,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         backgroundColor:
-            _backgroundColor,
+        _pageBackground,
         elevation: 0,
-        iconTheme: const IconThemeData(
-          color: _darkText,
+        surfaceTintColor: Colors.transparent,
+        iconTheme: IconThemeData(
+          color: Theme.of(context).colorScheme.onSurface,
         ),
       ),
       body: SafeArea(
         child: _isLoadingLocation
             ? const Center(
-                child:
-                    CircularProgressIndicator(),
-              )
+          child:
+          CircularProgressIndicator(),
+        )
             : RefreshIndicator(
-                onRefresh:
-                    _loadNearestAttraction,
-                child:
-                    SingleChildScrollView(
-                  physics:
-                      const AlwaysScrollableScrollPhysics(),
-                  padding:
-                      const EdgeInsets.fromLTRB(
-                    18,
-                    12,
-                    18,
-                    28,
-                  ),
-                  child: Column(
-                    crossAxisAlignment:
-                        CrossAxisAlignment.start,
-                    children: [
-                      _buildHeaderCard(),
-                      const SizedBox(
-                        height: 18,
-                      ),
+          onRefresh:
+          _loadNearestAttraction,
+          child:
+          SingleChildScrollView(
+            physics:
+            const AlwaysScrollableScrollPhysics(),
+            padding:
+            const EdgeInsets.fromLTRB(
+              18,
+              12,
+              18,
+              28,
+            ),
+            child: Column(
+              crossAxisAlignment:
+              CrossAxisAlignment.start,
+              children: [
+                _buildHeaderCard(),
+                const SizedBox(
+                  height: 18,
+                ),
 
-                      if (_errorMessage !=
-                          null)
-                        _buildErrorCard(),
+                if (_errorMessage !=
+                    null)
+                  _buildErrorCard(),
 
-                      _buildSectionTitle(
-                        _t(en: 'Detected Location', zh: '检测到的位置', ms: 'Lokasi Dikesan'),
-                      ),
-                      const SizedBox(
-                        height: 10,
-                      ),
-                      _buildLocationCard(),
+                _buildSectionTitle(
+                  _t(en: 'Detected Location', zh: '检测到的位置', ms: 'Lokasi Dikesan'),
+                ),
+                const SizedBox(
+                  height: 10,
+                ),
+                _buildLocationCard(),
 
-                      const SizedBox(
-                        height: 20,
-                      ),
+                const SizedBox(
+                  height: 20,
+                ),
 
-                      _buildSectionTitle(
-                        _t(en: 'Select Violated DON’T Rules', zh: '选择违反的“不要做”规则', ms: 'Pilih Peraturan JANGAN yang Dilanggar'),
-                      ),
-                      const SizedBox(
-                        height: 5,
-                      ),
-                      Text(
-                        _t(en: 'You can select one or multiple violations.', zh: '您可以选择一个或多个违规项目。', ms: 'Anda boleh memilih satu atau beberapa pelanggaran.'),
-                        style: TextStyle(
-                          color:
-                              Colors.black54,
-                          fontSize: 12.5,
-                        ),
-                      ),
-                      const SizedBox(
-                        height: 10,
-                      ),
-
-                      _buildMultiSelectCard(),
-
-                      const SizedBox(
-                        height: 20,
-                      ),
-
-                      _buildSectionTitle(
-                        _t(en: 'Evidence Photo', zh: '证据照片', ms: 'Foto Bukti'),
-                      ),
-                      const SizedBox(
-                        height: 10,
-                      ),
-
-                      _buildEvidenceCard(),
-
-                      const SizedBox(
-                        height: 20,
-                      ),
-
-                      _buildSectionTitle(
-                        _t(en: 'Report Summary', zh: '报告摘要', ms: 'Ringkasan Laporan'),
-                      ),
-                      const SizedBox(
-                        height: 10,
-                      ),
-
-                      _buildSummaryCard(),
-
-                      const SizedBox(
-                        height: 26,
-                      ),
-
-                      _buildSubmitButton(),
-
-                      const SizedBox(
-                        height: 10,
-                      ),
-
-                      Center(
-                        child: Text(
-                          _t(en: 'At least one violation and one photo are required.', zh: '至少需要选择一个违规项目并提供一张照片。', ms: 'Sekurang-kurangnya satu pelanggaran dan satu foto diperlukan.'),
-                          textAlign:
-                              TextAlign.center,
-                          style: TextStyle(
-                            color:
-                                Colors.black54,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
-                    ],
+                _buildSectionTitle(
+                  _t(en: 'Select Violated DON’T Rules', zh: '选择违反的“不要做”规则', ms: 'Pilih Peraturan JANGAN yang Dilanggar'),
+                ),
+                const SizedBox(
+                  height: 5,
+                ),
+                Text(
+                  _t(en: 'You can select one or multiple violations.', zh: '您可以选择一个或多个违规项目。', ms: 'Anda boleh memilih satu atau beberapa pelanggaran.'),
+                  style: TextStyle(
+                    color:
+                    _mutedTextColor,
+                    fontSize: 12.5,
                   ),
                 ),
-              ),
+                const SizedBox(
+                  height: 10,
+                ),
+
+                _buildMultiSelectCard(),
+
+                const SizedBox(
+                  height: 20,
+                ),
+
+                _buildSectionTitle(
+                  _t(en: 'Evidence Photo', zh: '证据照片', ms: 'Foto Bukti'),
+                ),
+                const SizedBox(
+                  height: 10,
+                ),
+
+                _buildEvidenceCard(),
+
+                const SizedBox(
+                  height: 20,
+                ),
+
+                _buildSectionTitle(
+                  _t(en: 'Report Summary', zh: '报告摘要', ms: 'Ringkasan Laporan'),
+                ),
+                const SizedBox(
+                  height: 10,
+                ),
+
+                _buildSummaryCard(),
+
+                const SizedBox(
+                  height: 26,
+                ),
+
+                _buildSubmitButton(),
+
+                const SizedBox(
+                  height: 10,
+                ),
+
+                Center(
+                  child: Text(
+                    _t(en: 'At least one violation and one photo are required.', zh: '至少需要选择一个违规项目并提供一张照片。', ms: 'Sekurang-kurangnya satu pelanggaran dan satu foto diperlukan.'),
+                    textAlign:
+                    TextAlign.center,
+                    style: TextStyle(
+                      color:
+                      _mutedTextColor,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -906,19 +936,19 @@ class _UserEtiquetteReportPageState
   Widget _buildHeaderCard() {
     return Container(
       padding:
-          const EdgeInsets.all(18),
+      const EdgeInsets.all(18),
       decoration: BoxDecoration(
         borderRadius:
-            BorderRadius.circular(24),
+        BorderRadius.circular(24),
         gradient:
-            const LinearGradient(
+        const LinearGradient(
           colors: [
             _purple,
             _blue,
           ],
           begin: Alignment.topLeft,
           end:
-              Alignment.bottomRight,
+          Alignment.bottomRight,
         ),
         boxShadow: [
           BoxShadow(
@@ -927,13 +957,13 @@ class _UserEtiquetteReportPageState
             ),
             blurRadius: 18,
             offset:
-                const Offset(0, 8),
+            const Offset(0, 8),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment:
-            CrossAxisAlignment.start,
+        CrossAxisAlignment.start,
         children: [
           Text(
             _t(en: 'Submit Etiquette Violation', zh: '提交礼仪违规报告', ms: 'Hantar Pelanggaran Etika'),
@@ -941,7 +971,7 @@ class _UserEtiquetteReportPageState
               color: Colors.white,
               fontSize: 22,
               fontWeight:
-                  FontWeight.w800,
+              FontWeight.w800,
             ),
           ),
           SizedBox(height: 8),
@@ -961,18 +991,21 @@ class _UserEtiquetteReportPageState
   Widget _buildErrorCard() {
     return Container(
       margin:
-          const EdgeInsets.only(
+      const EdgeInsets.only(
         bottom: 16,
       ),
       padding:
-          const EdgeInsets.all(14),
+      const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.red.shade50,
+        color: Color.alphaBlend(
+          Colors.red.withValues(alpha: 0.10),
+          Theme.of(context).colorScheme.surfaceContainerLow,
+        ),
         borderRadius:
-            BorderRadius.circular(16),
+        BorderRadius.circular(16),
         border: Border.all(
           color:
-              Colors.red.shade200,
+          Colors.red.withValues(alpha: 0.45),
         ),
       ),
       child: Row(
@@ -988,7 +1021,7 @@ class _UserEtiquetteReportPageState
               style: const TextStyle(
                 color: Colors.red,
                 fontWeight:
-                    FontWeight.w600,
+                FontWeight.w600,
               ),
             ),
           ),
@@ -1000,24 +1033,22 @@ class _UserEtiquetteReportPageState
   Widget _buildLocationCard() {
     return Container(
       padding:
-          const EdgeInsets.all(16),
+      const EdgeInsets.all(16),
       decoration:
-          _whiteCardDecoration(),
+      _whiteCardDecoration(),
       child: Row(
         crossAxisAlignment:
-            CrossAxisAlignment.start,
+        CrossAxisAlignment.start,
         children: [
           Container(
             width: 54,
             height: 54,
             decoration:
-                BoxDecoration(
+            BoxDecoration(
               color:
-                  const Color(
-                0xFFEDE7FF,
-              ),
+              _softPurpleBackground,
               borderRadius:
-                  BorderRadius.circular(
+              BorderRadius.circular(
                 16,
               ),
             ),
@@ -1030,105 +1061,105 @@ class _UserEtiquetteReportPageState
           const SizedBox(width: 14),
           Expanded(
             child:
-                _nearestAttraction ==
-                        null
-                    ? Text(
-                        _t(en: 'Unable to detect nearest attraction.', zh: '无法检测最近的景点。', ms: 'Tidak dapat mengesan tarikan terdekat.'),
-                        style:
-                            TextStyle(
-                          fontWeight:
-                              FontWeight.w600,
-                        ),
-                      )
-                    : Column(
-                        crossAxisAlignment:
-                            CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _nearestAttraction!
-                                .name,
-                            style:
-                                const TextStyle(
-                              fontSize:
-                                  18,
-                              fontWeight:
-                                  FontWeight.w800,
-                              color:
-                                  _darkText,
-                            ),
-                          ),
-                          const SizedBox(
-                            height: 6,
-                          ),
-                          Text(
-                            _categoryText(_nearestAttraction!
-                                .category),
-                            style:
-                                const TextStyle(
-                              fontSize:
-                                  13,
-                              fontWeight:
-                                  FontWeight.w600,
-                              color:
-                                  _purple,
-                            ),
-                          ),
-                          const SizedBox(
-                            height: 8,
-                          ),
-                          Text(
-                            _nearestAttraction!
-                                    .address
-                                    .isNotEmpty
-                                ? _nearestAttraction!
-                                    .address
-                                : _t(en: 'Address not available', zh: '暂无地址', ms: 'Alamat tidak tersedia'),
-                            style:
-                                const TextStyle(
-                              color:
-                                  Colors.black54,
-                              height:
-                                  1.4,
-                            ),
-                          ),
-                          const SizedBox(
-                            height: 10,
-                          ),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: [
-                              _buildInfoChip(
-                                icon:
-                                    Icons.near_me_rounded,
-                                label:
-                                    _t(en: '${_formatDistance(_nearestAttraction!.distanceInMeters)} away', zh: '距离 ${_formatDistance(_nearestAttraction!.distanceInMeters)}', ms: '${_formatDistance(_nearestAttraction!.distanceInMeters)} jauhnya'),
-                                color:
-                                    _blue,
-                              ),
-                              if (_currentPosition !=
-                                  null)
-                                _buildInfoChip(
-                                  icon:
-                                      Icons.my_location_rounded,
-                                  label:
-                                      '${_currentPosition!.latitude.toStringAsFixed(4)}, ${_currentPosition!.longitude.toStringAsFixed(4)}',
-                                  color:
-                                      const Color(0xFF00A86B),
-                                ),
-                            ],
-                          ),
-                        ],
+            _nearestAttraction ==
+                null
+                ? Text(
+              _t(en: 'Unable to detect nearest attraction.', zh: '无法检测最近的景点。', ms: 'Tidak dapat mengesan tarikan terdekat.'),
+              style:
+              TextStyle(
+                fontWeight:
+                FontWeight.w600,
+              ),
+            )
+                : Column(
+              crossAxisAlignment:
+              CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _nearestAttraction!
+                      .name,
+                  style:
+                  TextStyle(
+                    fontSize:
+                    18,
+                    fontWeight:
+                    FontWeight.w800,
+                    color:
+                    _textColor,
+                  ),
+                ),
+                const SizedBox(
+                  height: 6,
+                ),
+                Text(
+                  _categoryText(_nearestAttraction!
+                      .category),
+                  style:
+                  const TextStyle(
+                    fontSize:
+                    13,
+                    fontWeight:
+                    FontWeight.w600,
+                    color:
+                    _purple,
+                  ),
+                ),
+                const SizedBox(
+                  height: 8,
+                ),
+                Text(
+                  _nearestAttraction!
+                      .address
+                      .isNotEmpty
+                      ? _nearestAttraction!
+                      .address
+                      : _t(en: 'Address not available', zh: '暂无地址', ms: 'Alamat tidak tersedia'),
+                  style:
+                  TextStyle(
+                    color:
+                    _mutedTextColor,
+                    height:
+                    1.4,
+                  ),
+                ),
+                const SizedBox(
+                  height: 10,
+                ),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _buildInfoChip(
+                      icon:
+                      Icons.near_me_rounded,
+                      label:
+                      _t(en: '${_formatDistance(_nearestAttraction!.distanceInMeters)} away', zh: '距离 ${_formatDistance(_nearestAttraction!.distanceInMeters)}', ms: '${_formatDistance(_nearestAttraction!.distanceInMeters)} jauhnya'),
+                      color:
+                      _blue,
+                    ),
+                    if (_currentPosition !=
+                        null)
+                      _buildInfoChip(
+                        icon:
+                        Icons.my_location_rounded,
+                        label:
+                        '${_currentPosition!.latitude.toStringAsFixed(4)}, ${_currentPosition!.longitude.toStringAsFixed(4)}',
+                        color:
+                        const Color(0xFF00A86B),
                       ),
+                  ],
+                ),
+              ],
+            ),
           ),
           IconButton(
             onPressed:
-                _loadNearestAttraction,
+            _loadNearestAttraction,
             icon: const Icon(
               Icons.refresh_rounded,
             ),
             tooltip:
-                _t(en: 'Refresh location', zh: '刷新位置', ms: 'Muat semula lokasi'),
+            _t(en: 'Refresh location', zh: '刷新位置', ms: 'Muat semula lokasi'),
           ),
         ],
       ),
@@ -1138,17 +1169,17 @@ class _UserEtiquetteReportPageState
   Widget _buildMultiSelectCard() {
     return GestureDetector(
       onTap:
-          _showDontRuleSelector,
+      _showDontRuleSelector,
       child: Container(
         width:
-            double.infinity,
+        double.infinity,
         padding:
-            const EdgeInsets.all(16),
+        const EdgeInsets.all(16),
         decoration:
-            _whiteCardDecoration(),
+        _whiteCardDecoration(),
         child: Column(
           crossAxisAlignment:
-              CrossAxisAlignment.start,
+          CrossAxisAlignment.start,
           children: [
             Row(
               children: [
@@ -1156,13 +1187,11 @@ class _UserEtiquetteReportPageState
                   width: 45,
                   height: 45,
                   decoration:
-                      BoxDecoration(
+                  BoxDecoration(
                     color:
-                        const Color(
-                      0xFFFFECE8,
-                    ),
+                    _softOrangeBackground,
                     borderRadius:
-                        BorderRadius.circular(
+                    BorderRadius.circular(
                       14,
                     ),
                   ),
@@ -1170,7 +1199,7 @@ class _UserEtiquetteReportPageState
                     Icons
                         .report_problem_outlined,
                     color:
-                        Color(
+                    Color(
                       0xFFE05A3F,
                     ),
                   ),
@@ -1181,21 +1210,21 @@ class _UserEtiquetteReportPageState
                 Expanded(
                   child: Column(
                     crossAxisAlignment:
-                        CrossAxisAlignment.start,
+                    CrossAxisAlignment.start,
                     children: [
                       Text(
                         _selectedDontRules
-                                .isEmpty
+                            .isEmpty
                             ? _t(en: 'Choose violations', zh: '选择违规项目', ms: 'Pilih pelanggaran')
                             : _t(en: '${_selectedDontRules.length} violation(s) selected', zh: '已选择 ${_selectedDontRules.length} 个违规项目', ms: '${_selectedDontRules.length} pelanggaran dipilih'),
                         style:
-                            const TextStyle(
+                        TextStyle(
                           fontWeight:
-                              FontWeight.w800,
+                          FontWeight.w800,
                           color:
-                              _darkText,
+                          _textColor,
                           fontSize:
-                              15,
+                          15,
                         ),
                       ),
                       const SizedBox(
@@ -1204,11 +1233,11 @@ class _UserEtiquetteReportPageState
                       Text(
                         _t(en: 'Tap to select multiple DON’T rules', zh: '点击选择多个“不要做”规则', ms: 'Ketik untuk memilih beberapa peraturan JANGAN'),
                         style:
-                            TextStyle(
+                        TextStyle(
                           color:
-                              Colors.black54,
+                          _mutedTextColor,
                           fontSize:
-                              12,
+                          12,
                         ),
                       ),
                     ],
@@ -1231,43 +1260,41 @@ class _UserEtiquetteReportPageState
                 spacing: 7,
                 runSpacing: 7,
                 children:
-                    _selectedDontRules
-                        .map(
-                          (String rule) =>
-                              InputChip(
-                            label: Text(
-                              _localizedRuleText(rule),
-                            ),
-                            backgroundColor:
-                                const Color(
-                              0xFFF1ECFF,
-                            ),
-                            labelStyle:
-                                const TextStyle(
-                              color:
-                                  _darkText,
-                              fontWeight:
-                                  FontWeight.w600,
-                              fontSize:
-                                  12,
-                            ),
-                            deleteIcon:
-                                const Icon(
-                              Icons.close,
-                              size: 16,
-                            ),
-                            onDeleted:
-                                () {
-                              setState(() {
-                                _selectedDontRules
-                                    .remove(
-                                  rule,
-                                );
-                              });
-                            },
-                          ),
-                        )
-                        .toList(),
+                _selectedDontRules
+                    .map(
+                      (String rule) =>
+                      InputChip(
+                        label: Text(
+                          _localizedRuleText(rule),
+                        ),
+                        backgroundColor:
+                        _softPurpleBackground,
+                        labelStyle:
+                        TextStyle(
+                          color:
+                          _textColor,
+                          fontWeight:
+                          FontWeight.w600,
+                          fontSize:
+                          12,
+                        ),
+                        deleteIcon:
+                        const Icon(
+                          Icons.close,
+                          size: 16,
+                        ),
+                        onDeleted:
+                            () {
+                          setState(() {
+                            _selectedDontRules
+                                .remove(
+                              rule,
+                            );
+                          });
+                        },
+                      ),
+                )
+                    .toList(),
               ),
             ],
           ],
@@ -1279,104 +1306,104 @@ class _UserEtiquetteReportPageState
   Widget _buildEvidenceCard() {
     return GestureDetector(
       onTap:
-          _takeEvidencePhoto,
+      _takeEvidencePhoto,
       child: Container(
         width:
-            double.infinity,
+        double.infinity,
         padding:
-            const EdgeInsets.all(16),
+        const EdgeInsets.all(16),
         decoration:
-            _whiteCardDecoration(),
+        _whiteCardDecoration(),
         child:
-            _evidencePhoto == null
-                ? Column(
-                    children: [
-                      const _EvidenceIcon(),
-                      SizedBox(
-                        height: 12,
-                      ),
-                      Text(
-                        _t(en: 'Take Evidence Photo', zh: '拍摄证据照片', ms: 'Ambil Foto Bukti'),
-                        style:
-                            TextStyle(
-                          fontSize:
-                              16,
-                          fontWeight:
-                              FontWeight.w800,
-                          color:
-                              _darkText,
-                        ),
-                      ),
-                      SizedBox(
-                        height: 6,
-                      ),
-                      Text(
-                        _t(en: 'Camera only. A photo is required before submission.', zh: '仅限相机拍摄。提交前必须提供一张照片。', ms: 'Kamera sahaja. Foto diperlukan sebelum penghantaran.'),
-                        textAlign:
-                            TextAlign.center,
-                        style:
-                            TextStyle(
-                          color:
-                              Colors.black54,
-                          height: 1.4,
-                        ),
-                      ),
-                    ],
-                  )
-                : Column(
-                    children: [
-                      ClipRRect(
-                        borderRadius:
-                            BorderRadius.circular(
-                          18,
-                        ),
-                        child:
-                            Image.file(
-                          _evidencePhoto!,
-                          height: 220,
-                          width:
-                              double.infinity,
-                          fit:
-                              BoxFit.cover,
-                        ),
-                      ),
-                      const SizedBox(
-                        height: 12,
-                      ),
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons
-                                .check_circle,
-                            color:
-                                Colors.green,
-                          ),
-                          const SizedBox(
-                            width: 8,
-                          ),
-                          Expanded(
-                            child:
-                                Text(
-                              _t(en: 'Evidence photo captured.', zh: '证据照片已拍摄。', ms: 'Foto bukti telah diambil.'),
-                              style:
-                                  TextStyle(
-                                fontWeight:
-                                    FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                          TextButton(
-                            onPressed:
-                                _takeEvidencePhoto,
-                            child:
-                                Text(
-                              _t(en: 'Retake', zh: '重新拍摄', ms: 'Ambil Semula'),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+        _evidencePhoto == null
+            ? Column(
+          children: [
+            const _EvidenceIcon(),
+            SizedBox(
+              height: 12,
+            ),
+            Text(
+              _t(en: 'Take Evidence Photo', zh: '拍摄证据照片', ms: 'Ambil Foto Bukti'),
+              style:
+              TextStyle(
+                fontSize:
+                16,
+                fontWeight:
+                FontWeight.w800,
+                color:
+                _textColor,
+              ),
+            ),
+            SizedBox(
+              height: 6,
+            ),
+            Text(
+              _t(en: 'Camera only. A photo is required before submission.', zh: '仅限相机拍摄。提交前必须提供一张照片。', ms: 'Kamera sahaja. Foto diperlukan sebelum penghantaran.'),
+              textAlign:
+              TextAlign.center,
+              style:
+              TextStyle(
+                color:
+                _mutedTextColor,
+                height: 1.4,
+              ),
+            ),
+          ],
+        )
+            : Column(
+          children: [
+            ClipRRect(
+              borderRadius:
+              BorderRadius.circular(
+                18,
+              ),
+              child:
+              Image.file(
+                _evidencePhoto!,
+                height: 220,
+                width:
+                double.infinity,
+                fit:
+                BoxFit.cover,
+              ),
+            ),
+            const SizedBox(
+              height: 12,
+            ),
+            Row(
+              children: [
+                const Icon(
+                  Icons
+                      .check_circle,
+                  color:
+                  Colors.green,
+                ),
+                const SizedBox(
+                  width: 8,
+                ),
+                Expanded(
+                  child:
+                  Text(
+                    _t(en: 'Evidence photo captured.', zh: '证据照片已拍摄。', ms: 'Foto bukti telah diambil.'),
+                    style:
+                    TextStyle(
+                      fontWeight:
+                      FontWeight.w700,
+                    ),
                   ),
+                ),
+                TextButton(
+                  onPressed:
+                  _takeEvidencePhoto,
+                  child:
+                  Text(
+                    _t(en: 'Retake', zh: '重新拍摄', ms: 'Ambil Semula'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1384,56 +1411,67 @@ class _UserEtiquetteReportPageState
   Widget _buildSummaryCard() {
     return Container(
       width:
-          double.infinity,
+      double.infinity,
       padding:
-          const EdgeInsets.all(18),
+      const EdgeInsets.all(18),
       decoration: BoxDecoration(
         borderRadius:
-            BorderRadius.circular(22),
-        gradient:
-            const LinearGradient(
-          colors: [
+        BorderRadius.circular(22),
+        gradient: LinearGradient(
+          colors:
+          Theme.of(context).brightness == Brightness.dark
+              ? [
+            Color.alphaBlend(
+              _peach.withValues(alpha: 0.10),
+              Theme.of(context).colorScheme.surfaceContainerLow,
+            ),
+            Color.alphaBlend(
+              _gold.withValues(alpha: 0.08),
+              Theme.of(context).colorScheme.surfaceContainerLow,
+            ),
+          ]
+              : const [
             Color(0xFFFFF1EC),
             Color(0xFFFFE6D9),
           ],
           begin: Alignment.topLeft,
           end:
-              Alignment.bottomRight,
+          Alignment.bottomRight,
         ),
         border: Border.all(
           color:
-              const Color(
-            0xFFFFD8C7,
-          ),
+          Theme.of(context).brightness == Brightness.dark
+              ? Theme.of(context).colorScheme.outlineVariant
+              : const Color(0xFFFFD8C7),
         ),
       ),
       child: Column(
         crossAxisAlignment:
-            CrossAxisAlignment.start,
+        CrossAxisAlignment.start,
         children: [
           _buildSummaryRow(
             icon:
-                Icons.place_rounded,
+            Icons.place_rounded,
             title:
-                _t(en: 'Detected Place', zh: '检测到的地点', ms: 'Tempat Dikesan'),
+            _t(en: 'Detected Place', zh: '检测到的地点', ms: 'Tempat Dikesan'),
             value:
-                _nearestAttraction
-                        ?.name ??
-                    '-',
+            _nearestAttraction
+                ?.name ??
+                '-',
           ),
           const SizedBox(
             height: 14,
           ),
           _buildSummaryRow(
             icon:
-                Icons.rule_rounded,
+            Icons.rule_rounded,
             title:
-                _t(en: 'Selected Violations', zh: '已选择的违规项目', ms: 'Pelanggaran Dipilih'),
+            _t(en: 'Selected Violations', zh: '已选择的违规项目', ms: 'Pelanggaran Dipilih'),
             value:
-                _selectedDontRules
-                        .isEmpty
-                    ? _t(en: 'No violation selected', zh: '尚未选择违规项目', ms: 'Tiada pelanggaran dipilih')
-                    : _t(en: '${_selectedDontRules.length} selected', zh: '已选择 ${_selectedDontRules.length} 个', ms: '${_selectedDontRules.length} dipilih'),
+            _selectedDontRules
+                .isEmpty
+                ? _t(en: 'No violation selected', zh: '尚未选择违规项目', ms: 'Tiada pelanggaran dipilih')
+                : _t(en: '${_selectedDontRules.length} selected', zh: '已选择 ${_selectedDontRules.length} 个', ms: '${_selectedDontRules.length} dipilih'),
           ),
 
           if (_selectedDontRules
@@ -1442,43 +1480,43 @@ class _UserEtiquetteReportPageState
               height: 10,
             ),
             ..._selectedDontRules.map(
-              (String rule) =>
+                  (String rule) =>
                   Padding(
-                padding:
+                    padding:
                     const EdgeInsets.only(
-                  left: 30,
-                  bottom: 7,
-                ),
-                child: Row(
-                  crossAxisAlignment:
+                      left: 30,
+                      bottom: 7,
+                    ),
+                    child: Row(
+                      crossAxisAlignment:
                       CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      '• ',
-                      style:
+                      children: [
+                        const Text(
+                          '• ',
+                          style:
                           TextStyle(
-                        color:
+                            color:
                             _purple,
-                        fontWeight:
+                            fontWeight:
                             FontWeight.w900,
-                      ),
-                    ),
-                    Expanded(
-                      child:
-                          Text(
-                        _localizedRuleText(rule),
-                        style:
-                            const TextStyle(
-                          color:
-                              _darkText,
-                          height:
-                              1.35,
+                          ),
                         ),
-                      ),
+                        Expanded(
+                          child:
+                          Text(
+                            _localizedRuleText(rule),
+                            style:
+                            TextStyle(
+                              color:
+                              _textColor,
+                              height:
+                              1.35,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              ),
+                  ),
             ),
           ],
 
@@ -1490,11 +1528,11 @@ class _UserEtiquetteReportPageState
             icon: Icons
                 .photo_camera_rounded,
             title:
-                _t(en: 'Evidence Photo', zh: '证据照片', ms: 'Foto Bukti'),
+            _t(en: 'Evidence Photo', zh: '证据照片', ms: 'Foto Bukti'),
             value:
-                _evidencePhoto == null
-                    ? _t(en: 'Not captured yet', zh: '尚未拍摄', ms: 'Belum diambil')
-                    : _t(en: 'Photo ready', zh: '照片已准备好', ms: 'Foto sedia'),
+            _evidencePhoto == null
+                ? _t(en: 'Not captured yet', zh: '尚未拍摄', ms: 'Belum diambil')
+                : _t(en: 'Photo ready', zh: '照片已准备好', ms: 'Foto sedia'),
           ),
         ],
       ),
@@ -1504,119 +1542,121 @@ class _UserEtiquetteReportPageState
   Widget _buildSubmitButton() {
     return SizedBox(
       width:
-          double.infinity,
+      double.infinity,
       height: 56,
       child:
-          DecoratedBox(
+      DecoratedBox(
         decoration:
-            BoxDecoration(
+        BoxDecoration(
           borderRadius:
-              BorderRadius.circular(
+          BorderRadius.circular(
             18,
           ),
           gradient:
-              _canSubmit
-                  ? const LinearGradient(
-                      colors: [
-                        _peach,
-                        _gold,
-                      ],
-                    )
-                  : null,
+          _canSubmit
+              ? const LinearGradient(
+            colors: [
+              _peach,
+              _gold,
+            ],
+          )
+              : null,
           color:
-              _canSubmit
-                  ? null
-                  : Colors.grey.shade300,
+          _canSubmit
+              ? null
+              : Theme.of(context)
+              .colorScheme
+              .surfaceContainerHighest,
           boxShadow:
-              _canSubmit
-                  ? [
-                      BoxShadow(
-                        color:
-                            Colors.orange.withValues(
-                          alpha:
-                              0.20,
-                        ),
-                        blurRadius:
-                            14,
-                        offset:
-                            const Offset(
-                          0,
-                          6,
-                        ),
-                      ),
-                    ]
-                  : <BoxShadow>[],
+          _canSubmit
+              ? [
+            BoxShadow(
+              color:
+              Colors.orange.withValues(
+                alpha:
+                0.20,
+              ),
+              blurRadius:
+              14,
+              offset:
+              const Offset(
+                0,
+                6,
+              ),
+            ),
+          ]
+              : <BoxShadow>[],
         ),
         child:
-            ElevatedButton(
+        ElevatedButton(
           onPressed:
-              _canSubmit
-                  ? _submitReport
-                  : null,
+          _canSubmit
+              ? _submitReport
+              : null,
           style:
-              ElevatedButton.styleFrom(
+          ElevatedButton.styleFrom(
             backgroundColor:
-                Colors.transparent,
+            Colors.transparent,
             shadowColor:
-                Colors.transparent,
+            Colors.transparent,
             disabledBackgroundColor:
-                Colors.transparent,
+            Colors.transparent,
             shape:
-                RoundedRectangleBorder(
+            RoundedRectangleBorder(
               borderRadius:
-                  BorderRadius.circular(
+              BorderRadius.circular(
                 18,
               ),
             ),
           ),
           child:
-              _isSubmitting
-                  ? const SizedBox(
-                      height:
-                          22,
-                      width:
-                          22,
-                      child:
-                          CircularProgressIndicator(
-                        strokeWidth:
-                            2.6,
-                        color:
-                            Colors.white,
-                      ),
-                    )
-                  : Text(
-                      _selectedDontRules
-                              .isEmpty
-                          ? _t(en: 'Select Violations First', zh: '请先选择违规项目', ms: 'Pilih Pelanggaran Dahulu')
-                          : _evidencePhoto ==
-                                  null
-                              ? _t(en: 'Take Photo to Continue', zh: '拍照后继续', ms: 'Ambil Foto untuk Teruskan')
-                              : _t(en: 'Submit ${_selectedDontRules.length} Violation(s)', zh: '提交 ${_selectedDontRules.length} 个违规项目', ms: 'Hantar ${_selectedDontRules.length} Pelanggaran'),
-                      style:
-                          const TextStyle(
-                        color:
-                            Colors.white,
-                        fontWeight:
-                            FontWeight.w800,
-                        fontSize:
-                            15,
-                      ),
-                    ),
+          _isSubmitting
+              ? const SizedBox(
+            height:
+            22,
+            width:
+            22,
+            child:
+            CircularProgressIndicator(
+              strokeWidth:
+              2.6,
+              color:
+              Colors.white,
+            ),
+          )
+              : Text(
+            _selectedDontRules
+                .isEmpty
+                ? _t(en: 'Select Violations First', zh: '请先选择违规项目', ms: 'Pilih Pelanggaran Dahulu')
+                : _evidencePhoto ==
+                null
+                ? _t(en: 'Take Photo to Continue', zh: '拍照后继续', ms: 'Ambil Foto untuk Teruskan')
+                : _t(en: 'Submit ${_selectedDontRules.length} Violation(s)', zh: '提交 ${_selectedDontRules.length} 个违规项目', ms: 'Hantar ${_selectedDontRules.length} Pelanggaran'),
+            style:
+            const TextStyle(
+              color:
+              Colors.white,
+              fontWeight:
+              FontWeight.w800,
+              fontSize:
+              15,
+            ),
+          ),
         ),
       ),
     );
   }
 
   Widget _buildSectionTitle(
-    String text,
-  ) {
+      String text,
+      ) {
     return Text(
       text,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 17,
         fontWeight:
-            FontWeight.w800,
-        color: _darkText,
+        FontWeight.w800,
+        color: _textColor,
       ),
     );
   }
@@ -1628,23 +1668,23 @@ class _UserEtiquetteReportPageState
   }) {
     return Container(
       padding:
-          const EdgeInsets.symmetric(
+      const EdgeInsets.symmetric(
         horizontal: 10,
         vertical: 8,
       ),
       decoration:
-          BoxDecoration(
+      BoxDecoration(
         color: color.withValues(
           alpha: 0.10,
         ),
         borderRadius:
-            BorderRadius.circular(
+        BorderRadius.circular(
           14,
         ),
       ),
       child: Row(
         mainAxisSize:
-            MainAxisSize.min,
+        MainAxisSize.min,
         children: [
           Icon(
             icon,
@@ -1660,7 +1700,7 @@ class _UserEtiquetteReportPageState
               style: TextStyle(
                 color: color,
                 fontWeight:
-                    FontWeight.w700,
+                FontWeight.w700,
                 fontSize: 12,
               ),
             ),
@@ -1677,7 +1717,7 @@ class _UserEtiquetteReportPageState
   }) {
     return Row(
       crossAxisAlignment:
-          CrossAxisAlignment.start,
+      CrossAxisAlignment.start,
       children: [
         Icon(
           icon,
@@ -1691,29 +1731,29 @@ class _UserEtiquetteReportPageState
           child: RichText(
             text: TextSpan(
               style:
-                  const TextStyle(
+              TextStyle(
                 color:
-                    _darkText,
+                _textColor,
                 fontSize: 14,
                 height: 1.45,
               ),
               children: [
                 TextSpan(
                   text:
-                      '$title: ',
+                  '$title: ',
                   style:
-                      const TextStyle(
+                  const TextStyle(
                     fontWeight:
-                        FontWeight.w800,
+                    FontWeight.w800,
                   ),
                 ),
                 TextSpan(
                   text:
-                      value,
+                  value,
                   style:
-                      const TextStyle(
+                  const TextStyle(
                     fontWeight:
-                        FontWeight.w500,
+                    FontWeight.w500,
                   ),
                 ),
               ],
@@ -1725,27 +1765,30 @@ class _UserEtiquetteReportPageState
   }
 
   BoxDecoration _whiteCardDecoration() {
+    final colorScheme =
+        Theme.of(context).colorScheme;
+    final isDark =
+        Theme.of(context).brightness == Brightness.dark;
+
     return BoxDecoration(
-      color: Colors.white,
+      color: colorScheme.surfaceContainerLow,
       borderRadius:
-          BorderRadius.circular(
+      BorderRadius.circular(
         22,
       ),
       border: Border.all(
         color:
-            const Color(
-          0xFFE5DFF1,
-        ),
+        colorScheme.outlineVariant,
       ),
       boxShadow: [
         BoxShadow(
           color:
-              Colors.black.withValues(
-            alpha: 0.04,
+          Colors.black.withValues(
+            alpha: isDark ? 0.18 : 0.04,
           ),
           blurRadius: 10,
           offset:
-              const Offset(
+          const Offset(
             0,
             4,
           ),
@@ -1760,17 +1803,20 @@ class _EvidenceIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme =
+        Theme.of(context).colorScheme;
+
     return Container(
       width: 64,
       height: 64,
       decoration:
-          BoxDecoration(
-        color:
-            const Color(
-          0xFFFFF2E9,
+      BoxDecoration(
+        color: Color.alphaBlend(
+          Colors.deepOrange.withValues(alpha: 0.10),
+          colorScheme.surfaceContainerLow,
         ),
         borderRadius:
-            BorderRadius.circular(
+        BorderRadius.circular(
           18,
         ),
       ),
@@ -1778,7 +1824,7 @@ class _EvidenceIcon extends StatelessWidget {
         Icons.camera_alt_rounded,
         size: 30,
         color:
-            Colors.deepOrange,
+        Colors.deepOrange,
       ),
     );
   }
@@ -1820,15 +1866,15 @@ class _AttractionInfo {
       donts: donts,
       rankingRules: rankingRules,
       distanceInMeters:
-          distanceInMeters ??
-              this.distanceInMeters,
+      distanceInMeters ??
+          this.distanceInMeters,
     );
   }
 }
 
 double _toDouble(
-  dynamic value,
-) {
+    dynamic value,
+    ) {
   if (value is double) {
     return value;
   }
@@ -1846,18 +1892,18 @@ double _toDouble(
 }
 
 List<String> _toStringList(
-  dynamic value,
-) {
+    dynamic value,
+    ) {
   if (value is List) {
     return value
         .map(
           (dynamic e) =>
-              e.toString().trim(),
-        )
+          e.toString().trim(),
+    )
         .where(
           (String e) =>
-              e.isNotEmpty,
-        )
+      e.isNotEmpty,
+    )
         .toList();
   }
 
@@ -1874,4 +1920,5 @@ List<Map<String, dynamic>> _toMapList(dynamic value) {
       .map((item) => Map<String, dynamic>.from(item))
       .toList();
 }
+
 

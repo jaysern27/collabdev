@@ -17,20 +17,17 @@ class NotificationInboxView extends StatefulWidget {
 class _NotificationInboxViewState
     extends State<NotificationInboxView> {
   final NotificationInboxViewModel _viewModel =
-      NotificationInboxViewModel();
+  NotificationInboxViewModel();
 
   final FirebaseAuthenticationService _authService =
-      FirebaseAuthenticationService();
+  FirebaseAuthenticationService();
 
   final AppSettingsController _settings =
       AppSettingsController.instance;
 
-  static const Color _background = Color(0xFFFFFFFF);
-  static const Color _navy = Color(0xFF14213D);
   static const Color _teal = Color(0xFF18B7C8);
   static const Color _blue = Color(0xFF1E78D8);
   static const Color _orange = Color(0xFFFFA800);
-  static const Color _orangeSoft = Color(0xFFFFF0C9);
   static const Color _red = Color(0xFFFF4057);
 
   static const List<Map<String, String>> _testAttractions = [
@@ -99,11 +96,11 @@ class _NotificationInboxViewState
   }
 
   Future<void> _openNotification(
-    Map<String, dynamic> notification,
-  ) async {
+      Map<String, dynamic> notification,
+      ) async {
     final id = notification['id']?.toString();
     final attractionId =
-        notification['attractionId']?.toString();
+    notification['attractionId']?.toString();
 
     if (id != null) {
       await _viewModel.markAsRead(id);
@@ -172,15 +169,15 @@ class _NotificationInboxViewState
         content: Text(
           selectedCount == 1
               ? _t(
-                  en: 'Delete this read notification permanently?',
-                  zh: '要永久删除这则已读通知吗？',
-                  ms: 'Padam pemberitahuan yang telah dibaca ini secara kekal?',
-                )
+            en: 'Delete this read notification permanently?',
+            zh: '要永久删除这则已读通知吗？',
+            ms: 'Padam pemberitahuan yang telah dibaca ini secara kekal?',
+          )
               : _t(
-                  en: 'Delete these $selectedCount read notifications permanently?',
-                  zh: '要永久删除这 $selectedCount 则已读通知吗？',
-                  ms: 'Padam $selectedCount pemberitahuan yang telah dibaca ini secara kekal?',
-                ),
+            en: 'Delete these $selectedCount read notifications permanently?',
+            zh: '要永久删除这 $selectedCount 则已读通知吗？',
+            ms: 'Padam $selectedCount pemberitahuan yang telah dibaca ini secara kekal?',
+          ),
         ),
         actions: [
           TextButton(
@@ -218,7 +215,7 @@ class _NotificationInboxViewState
     }
 
     final idsToDelete =
-        Set<String>.from(_selectedReadNotificationIds);
+    Set<String>.from(_selectedReadNotificationIds);
 
     try {
       final deletedCount = await _viewModel
@@ -233,15 +230,15 @@ class _NotificationInboxViewState
           content: Text(
             deletedCount == 1
                 ? _t(
-                    en: '1 notification deleted.',
-                    zh: '已删除 1 则通知。',
-                    ms: '1 pemberitahuan telah dipadam.',
-                  )
+              en: '1 notification deleted.',
+              zh: '已删除 1 则通知。',
+              ms: '1 pemberitahuan telah dipadam.',
+            )
                 : _t(
-                    en: '$deletedCount notifications deleted.',
-                    zh: '已删除 $deletedCount 则通知。',
-                    ms: '$deletedCount pemberitahuan telah dipadam.',
-                  ),
+              en: '$deletedCount notifications deleted.',
+              zh: '已删除 $deletedCount 则通知。',
+              ms: '$deletedCount pemberitahuan telah dipadam.',
+            ),
           ),
         ),
       );
@@ -281,7 +278,7 @@ class _NotificationInboxViewState
     }
 
     final attraction = _testAttractions[
-        _testAttractionIndex % _testAttractions.length];
+    _testAttractionIndex % _testAttractions.length];
 
     setState(() {
       _isSendingTestAlert = true;
@@ -335,8 +332,10 @@ class _NotificationInboxViewState
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
-      backgroundColor: _background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -348,33 +347,33 @@ class _NotificationInboxViewState
       floatingActionButton: _isSelectionMode
           ? null
           : FloatingActionButton.extended(
-              backgroundColor: _orange,
-              onPressed:
-                  _isSendingTestAlert ? null : _sendTestAlert,
-              icon: _isSendingTestAlert
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
-                  : const Icon(
-                      Icons.notifications_active,
-                      color: Colors.white,
-                    ),
-              label: Text(
-                _t(
-                  en: 'Test Alert',
-                  zh: '测试提醒',
-                  ms: 'Amaran Ujian',
-                ),
-                style: const TextStyle(color: Colors.white),
-              ),
-            ),
+        backgroundColor: _orange,
+        onPressed:
+        _isSendingTestAlert ? null : _sendTestAlert,
+        icon: _isSendingTestAlert
+            ? const SizedBox(
+          width: 18,
+          height: 18,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: Colors.white,
+          ),
+        )
+            : const Icon(
+          Icons.notifications_active,
+          color: Colors.white,
+        ),
+        label: Text(
+          _t(
+            en: 'Test Alert',
+            zh: '测试提醒',
+            ms: 'Amaran Ujian',
+          ),
+          style: const TextStyle(color: Colors.white),
+        ),
+      ),
       bottomNavigationBar:
-          _isSelectionMode ? _buildSelectionBar() : null,
+      _isSelectionMode ? _buildSelectionBar() : null,
     );
   }
 
@@ -413,18 +412,18 @@ class _NotificationInboxViewState
             child: Text(
               _isSelectionMode
                   ? _t(
-                      en:
-                          '${_selectedReadNotificationIds.length} selected',
-                      zh:
-                          '已选择 ${_selectedReadNotificationIds.length} 项',
-                      ms:
-                          '${_selectedReadNotificationIds.length} dipilih',
-                    )
+                en:
+                '${_selectedReadNotificationIds.length} selected',
+                zh:
+                '已选择 ${_selectedReadNotificationIds.length} 项',
+                ms:
+                '${_selectedReadNotificationIds.length} dipilih',
+              )
                   : _t(
-                      en: 'Notifications',
-                      zh: '通知',
-                      ms: 'Pemberitahuan',
-                    ),
+                en: 'Notifications',
+                zh: '通知',
+                ms: 'Pemberitahuan',
+              ),
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 20,
@@ -440,23 +439,23 @@ class _NotificationInboxViewState
                 ms: 'Padam yang dipilih',
               ),
               onPressed:
-                  _selectedReadNotificationIds.isEmpty ||
-                          _viewModel.isDeleting
-                      ? null
-                      : _deleteSelectedNotifications,
+              _selectedReadNotificationIds.isEmpty ||
+                  _viewModel.isDeleting
+                  ? null
+                  : _deleteSelectedNotifications,
               icon: _viewModel.isDeleting
                   ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              )
                   : const Icon(
-                      Icons.delete_outline_rounded,
-                      color: Colors.white,
-                    ),
+                Icons.delete_outline_rounded,
+                color: Colors.white,
+              ),
             )
           else if (unreadCount > 0)
             Container(
@@ -466,21 +465,21 @@ class _NotificationInboxViewState
               ),
               decoration: BoxDecoration(
                 color:
-                    Colors.white.withValues(alpha: 0.18),
+                Colors.white.withValues(alpha: 0.18),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
                 unreadCount > 9
                     ? _t(
-                        en: '9+ new',
-                        zh: '9+ 新通知',
-                        ms: '9+ baharu',
-                      )
+                  en: '9+ new',
+                  zh: '9+ 新通知',
+                  ms: '9+ baharu',
+                )
                     : _t(
-                        en: '$unreadCount new',
-                        zh: '$unreadCount 则新通知',
-                        ms: '$unreadCount baharu',
-                      ),
+                  en: '$unreadCount new',
+                  zh: '$unreadCount 则新通知',
+                  ms: '$unreadCount baharu',
+                ),
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 12,
@@ -522,7 +521,9 @@ class _NotificationInboxViewState
                 _viewModel.errorMessage!,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: Colors.grey.shade700,
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurfaceVariant,
                 ),
               ),
               const SizedBox(height: 14),
@@ -565,11 +566,11 @@ class _NotificationInboxViewState
         icon: Icons.notifications_none_rounded,
         message: _t(
           en:
-              'No notifications yet.\nEtiquette reminders will appear here as you explore cultural attractions.',
+          'No notifications yet.\nEtiquette reminders will appear here as you explore cultural attractions.',
           zh:
-              '目前还没有通知。\n当您探索文化景点时，礼仪提醒会显示在这里。',
+          '目前还没有通知。\n当您探索文化景点时，礼仪提醒会显示在这里。',
           ms:
-              'Belum ada pemberitahuan.\nPeringatan etika akan muncul di sini semasa anda meneroka tarikan budaya.',
+          'Belum ada pemberitahuan.\nPeringatan etika akan muncul di sini semasa anda meneroka tarikan budaya.',
         ),
       );
     }
@@ -577,7 +578,7 @@ class _NotificationInboxViewState
     return RefreshIndicator(
       color: _teal,
       onRefresh:
-          _isSelectionMode ? () async {} : _viewModel.refresh,
+      _isSelectionMode ? () async {} : _viewModel.refresh,
       child: ListView(
         padding: const EdgeInsets.fromLTRB(18, 18, 18, 24),
         children: [
@@ -615,13 +616,15 @@ class _NotificationInboxViewState
               Text(
                 _t(
                   en:
-                      'Choose the read notifications you want to delete.',
+                  'Choose the read notifications you want to delete.',
                   zh: '选择您要删除的已读通知。',
                   ms:
-                      'Pilih pemberitahuan yang telah dibaca untuk dipadam.',
+                  'Pilih pemberitahuan yang telah dibaca untuk dipadam.',
                 ),
-                style: const TextStyle(
-                  color: Colors.black54,
+                style: TextStyle(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurfaceVariant,
                   fontSize: 12,
                 ),
               ),
@@ -644,6 +647,9 @@ class _NotificationInboxViewState
     required IconData icon,
     required String message,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -653,8 +659,10 @@ class _NotificationInboxViewState
             Container(
               width: 72,
               height: 72,
-              decoration: const BoxDecoration(
-                color: _orangeSoft,
+              decoration: BoxDecoration(
+                color: _orange.withValues(
+                  alpha: isDark ? 0.16 : 0.12,
+                ),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -668,7 +676,7 @@ class _NotificationInboxViewState
               message,
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: Colors.grey.shade600,
+                color: colorScheme.onSurfaceVariant,
                 fontSize: 14,
               ),
             ),
@@ -679,18 +687,20 @@ class _NotificationInboxViewState
   }
 
   Widget _buildSectionTitle(
-    String title, {
-    required int count,
-    bool showSelectAction = false,
-  }) {
+      String title, {
+        required int count,
+        bool showSelectAction = false,
+      }) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Row(
       children: [
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.bold,
-            color: _navy,
+            color: colorScheme.onSurface,
           ),
         ),
         const SizedBox(width: 8),
@@ -700,7 +710,7 @@ class _NotificationInboxViewState
             vertical: 2,
           ),
           decoration: BoxDecoration(
-            color: Colors.grey.shade200,
+            color: colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(10),
           ),
           child: Text(
@@ -708,7 +718,7 @@ class _NotificationInboxViewState
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w600,
-              color: Colors.grey.shade700,
+              color: colorScheme.onSurfaceVariant,
             ),
           ),
         ),
@@ -737,34 +747,34 @@ class _NotificationInboxViewState
   }
 
   Widget _buildNotificationCard(
-    Map<String, dynamic> notification, {
-    required bool isUnread,
-  }) {
+      Map<String, dynamic> notification, {
+        required bool isUnread,
+      }) {
     final id =
         notification['id']?.toString() ?? '';
 
     final attractionName =
-        notification['attractionName']?.toString().trim();
+    notification['attractionName']?.toString().trim();
 
     final displayAttractionName =
-        attractionName == null || attractionName.isEmpty
-            ? _t(
-                en: 'Attraction',
-                zh: '景点',
-                ms: 'Tarikan',
-              )
-            : attractionName;
+    attractionName == null || attractionName.isEmpty
+        ? _t(
+      en: 'Attraction',
+      zh: '景点',
+      ms: 'Tarikan',
+    )
+        : attractionName;
 
     // Do not display the stored English Firestore message directly.
     // Build the inbox message from the current app language so old
     // notifications also change immediately when the user changes language.
     final localizedMessage = _t(
       en:
-          'You are near $displayAttractionName. Tap to view etiquette guidance.',
+      'You are near $displayAttractionName. Tap to view etiquette guidance.',
       zh:
-          '您已到达 $displayAttractionName 附近。点击查看礼仪指南。',
+      '您已到达 $displayAttractionName 附近。点击查看礼仪指南。',
       ms:
-          'Anda berada berhampiran $displayAttractionName. Tekan untuk melihat panduan etika.',
+      'Anda berada berhampiran $displayAttractionName. Tekan untuk melihat panduan etika.',
     );
 
     final sentAt = DateTime.tryParse(
@@ -774,34 +784,41 @@ class _NotificationInboxViewState
     final canSelect =
         !isUnread && _isSelectionMode && id.isNotEmpty;
     final isSelected =
-        _selectedReadNotificationIds.contains(id);
+    _selectedReadNotificationIds.contains(id);
+
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final cardColor = isSelected
+        ? colorScheme.primaryContainer
+        : isUnread
+        ? _orange.withValues(alpha: isDark ? 0.14 : 0.10)
+        : colorScheme.surfaceContainerLow;
+
+    final cardBorderColor = isSelected
+        ? _blue
+        : isUnread
+        ? _orange.withValues(alpha: isDark ? 0.55 : 0.40)
+        : colorScheme.outlineVariant;
 
     return InkWell(
       onTap: canSelect
           ? () => _toggleReadNotificationSelection(id)
           : () => _openNotification(notification),
       onLongPress: !isUnread &&
-              !_isSelectionMode &&
-              id.isNotEmpty
+          !_isSelectionMode &&
+          id.isNotEmpty
           ? () => _startSelectionMode(id)
           : null,
       borderRadius: BorderRadius.circular(16),
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: isSelected
-              ? const Color(0xFFEAF4FF)
-              : isUnread
-                  ? _orangeSoft.withValues(alpha: 0.6)
-                  : Colors.white,
+          color: cardColor,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             width: isSelected ? 1.5 : 1,
-            color: isSelected
-                ? _blue
-                : isUnread
-                    ? _orange.withValues(alpha: 0.4)
-                    : Colors.grey.shade300,
+            color: cardBorderColor,
           ),
         ),
         child: Row(
@@ -824,15 +841,17 @@ class _NotificationInboxViewState
                 height: 48,
                 decoration: BoxDecoration(
                   color: isUnread
-                      ? _orangeSoft
-                      : Colors.grey.shade100,
+                      ? _orange.withValues(
+                    alpha: isDark ? 0.18 : 0.14,
+                  )
+                      : colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Icon(
                   Icons.notifications_rounded,
                   color: isUnread
                       ? _orange
-                      : Colors.grey.shade400,
+                      : colorScheme.onSurfaceVariant,
                   size: 22,
                 ),
               ),
@@ -858,7 +877,7 @@ class _NotificationInboxViewState
                             fontWeight: isUnread
                                 ? FontWeight.bold
                                 : FontWeight.w500,
-                            color: _navy,
+                            color: colorScheme.onSurface,
                           ),
                         ),
                       ),
@@ -883,7 +902,7 @@ class _NotificationInboxViewState
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: Colors.grey.shade600,
+                      color: colorScheme.onSurfaceVariant,
                       fontSize: 13,
                     ),
                   ),
@@ -894,13 +913,13 @@ class _NotificationInboxViewState
                         Icon(
                           Icons.schedule,
                           size: 13,
-                          color: Colors.grey.shade400,
+                          color: colorScheme.onSurfaceVariant,
                         ),
                         const SizedBox(width: 4),
                         Text(
                           _formatRelativeTime(sentAt),
                           style: TextStyle(
-                            color: Colors.grey.shade500,
+                            color: colorScheme.onSurfaceVariant,
                             fontSize: 11,
                           ),
                         ),
@@ -919,16 +938,17 @@ class _NotificationInboxViewState
   Widget _buildSelectionBar() {
     final selectedCount =
         _selectedReadNotificationIds.length;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return SafeArea(
       top: false,
       child: Container(
         padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: colorScheme.surface,
           border: Border(
             top: BorderSide(
-              color: Colors.grey.shade200,
+              color: colorScheme.outlineVariant,
             ),
           ),
           boxShadow: const [
@@ -941,31 +961,31 @@ class _NotificationInboxViewState
         ),
         child: FilledButton.icon(
           onPressed: selectedCount == 0 ||
-                  _viewModel.isDeleting
+              _viewModel.isDeleting
               ? null
               : _deleteSelectedNotifications,
           icon: _viewModel.isDeleting
               ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.white,
-                  ),
-                )
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: Colors.white,
+            ),
+          )
               : const Icon(Icons.delete_outline_rounded),
           label: Text(
             selectedCount == 0
                 ? _t(
-                    en: 'Select read notifications',
-                    zh: '选择已读通知',
-                    ms: 'Pilih pemberitahuan yang telah dibaca',
-                  )
+              en: 'Select read notifications',
+              zh: '选择已读通知',
+              ms: 'Pilih pemberitahuan yang telah dibaca',
+            )
                 : _t(
-                    en: 'Delete $selectedCount selected',
-                    zh: '删除已选择的 $selectedCount 项',
-                    ms: 'Padam $selectedCount yang dipilih',
-                  ),
+              en: 'Delete $selectedCount selected',
+              zh: '删除已选择的 $selectedCount 项',
+              ms: 'Padam $selectedCount yang dipilih',
+            ),
           ),
           style: FilledButton.styleFrom(
             backgroundColor: _red,
