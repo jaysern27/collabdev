@@ -195,9 +195,165 @@ class _CulturalMapViewState
           zh: '历史地标',
           ms: 'Mercu Tanda Bersejarah',
         );
+      case 'Cultural Attraction':
+        return _t(
+          en: 'Cultural Attraction',
+          zh: '文化景点',
+          ms: 'Tarikan Budaya',
+        );
       default:
         return category;
     }
+  }
+
+  String _statusText(String status) {
+    final normalized = status.trim().toLowerCase();
+
+    if (normalized.isEmpty ||
+        normalized.contains('unknown')) {
+      return _t(
+        en: 'Status Unknown',
+        zh: '状态未知',
+        ms: 'Status Tidak Diketahui',
+      );
+    }
+
+    if (normalized.contains('temporarily') &&
+        normalized.contains('closed')) {
+      return _t(
+        en: 'Temporarily Closed',
+        zh: '暂时关闭',
+        ms: 'Ditutup Sementara',
+      );
+    }
+
+    if (normalized.contains('closed')) {
+      return _t(
+        en: 'Closed',
+        zh: '已关闭',
+        ms: 'Ditutup',
+      );
+    }
+
+    if (normalized.contains('open')) {
+      return _t(
+        en: 'Open',
+        zh: '开放',
+        ms: 'Dibuka',
+      );
+    }
+
+    return status;
+  }
+
+  String _distanceText(
+      Map<String, dynamic> attraction,
+      ) {
+    final distance =
+    _viewModel.distanceKmFor(attraction);
+
+    if (distance == null) {
+      return _t(
+        en: 'Distance unavailable',
+        zh: '距离不可用',
+        ms: 'Jarak tidak tersedia',
+      );
+    }
+
+    return _viewModel.distanceTextFor(
+      attraction,
+    );
+  }
+
+  String _addressText(
+      Map<String, dynamic> attraction,
+      ) {
+    final address =
+        attraction['address']?.toString().trim() ?? '';
+
+    if (address.isEmpty) {
+      return _t(
+        en: 'Location information unavailable.',
+        zh: '暂无地点信息。',
+        ms: 'Maklumat lokasi tidak tersedia.',
+      );
+    }
+
+    return address;
+  }
+
+  String _nameText(
+      Map<String, dynamic> attraction,
+      ) {
+    final name =
+        attraction['name']?.toString().trim() ?? '';
+
+    if (name.isEmpty) {
+      return _t(
+        en: 'Unknown attraction',
+        zh: '未知景点',
+        ms: 'Tarikan tidak diketahui',
+      );
+    }
+
+    return name;
+  }
+
+  String _errorText(String? error) {
+    final raw = error?.trim() ?? '';
+
+    if (raw.isEmpty) {
+      return _t(
+        en: 'Unable to load map.',
+        zh: '无法加载地图。',
+        ms: 'Tidak dapat memuatkan peta.',
+      );
+    }
+
+    switch (raw) {
+      case 'Unable to obtain current location.':
+        return _t(
+          en: raw,
+          zh: '无法获取当前位置。',
+          ms: 'Tidak dapat mendapatkan lokasi semasa.',
+        );
+      case 'Unable to load saved attractions.':
+        return _t(
+          en: raw,
+          zh: '无法加载已保存的景点。',
+          ms: 'Tidak dapat memuatkan tarikan yang disimpan.',
+        );
+      case 'Please sign in to save favourites.':
+        return _t(
+          en: raw,
+          zh: '请先登录以保存收藏。',
+          ms: 'Sila log masuk untuk menyimpan kegemaran.',
+        );
+      case 'Attraction ID is missing.':
+        return _t(
+          en: raw,
+          zh: '缺少景点 ID。',
+          ms: 'ID tarikan tiada.',
+        );
+      case 'Unable to update favourite.':
+        return _t(
+          en: raw,
+          zh: '无法更新收藏。',
+          ms: 'Tidak dapat mengemas kini kegemaran.',
+        );
+    }
+
+    if (raw.startsWith(
+      'Current location is outside the supported Malaysia area.',
+    )) {
+      return _t(
+        en: raw,
+        zh: '当前位置不在支持的马来西亚区域内。正在显示默认的吉隆坡试点区域。',
+        ms: 'Lokasi semasa berada di luar kawasan Malaysia yang disokong. Kawasan perintis Kuala Lumpur lalai sedang dipaparkan.',
+      );
+    }
+
+    return raw;
   }
 
   @override
@@ -369,7 +525,7 @@ class _CulturalMapViewState
     _initialAttractionHandled = true;
 
     final name =
-    _viewModel.attractionName(
+    _nameText(
       attraction,
     );
 
@@ -428,8 +584,16 @@ class _CulturalMapViewState
 
     final message =
     _viewModel.usingDefaultArea
-        ? 'Current location unavailable. Showing Kuala Lumpur pilot area.'
-        : 'Map centred on your current location.';
+        ? _t(
+      en: 'Current location unavailable. Showing Kuala Lumpur pilot area.',
+      zh: '无法获取当前位置。正在显示吉隆坡试点区域。',
+      ms: 'Lokasi semasa tidak tersedia. Kawasan perintis Kuala Lumpur sedang dipaparkan.',
+    )
+        : _t(
+      en: 'Map centred on your current location.',
+      zh: '地图已定位到您的当前位置。',
+      ms: 'Peta dipusatkan pada lokasi semasa anda.',
+    );
 
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
@@ -485,12 +649,14 @@ class _CulturalMapViewState
           infoWindow:
           InfoWindow(
             title:
-            viewModel.attractionName(
+            _nameText(
               attraction,
             ),
             snippet:
-            viewModel.attractionCategory(
-              attraction,
+            _categoryText(
+              viewModel.attractionCategory(
+                attraction,
+              ),
             ),
           ),
           onTap: () {
@@ -532,8 +698,12 @@ class _CulturalMapViewState
             size: 36,
           ),
           title:
-          const Text(
-            'Sign In Required',
+          Text(
+            _t(
+              en: 'Sign In Required',
+              zh: '需要登录',
+              ms: 'Log Masuk Diperlukan',
+            ),
           ),
           content:
           Text(
@@ -549,8 +719,12 @@ class _CulturalMapViewState
                 ).pop();
               },
               child:
-              const Text(
-                'OK',
+              Text(
+                _t(
+                  en: 'OK',
+                  zh: '确定',
+                  ms: 'OK',
+                ),
               ),
             ),
           ],
@@ -566,7 +740,11 @@ class _CulturalMapViewState
   Future<void> _openSavedPlacesPage() async {
     if (!_viewModel.isLoggedIn) {
       await _showSignInRequiredDialog(
-        'Please sign in to view your saved places.',
+        _t(
+          en: 'Please sign in to view your saved places.',
+          zh: '请先登录以查看已保存的地点。',
+          ms: 'Sila log masuk untuk melihat tempat yang disimpan.',
+        ),
       );
 
       return;
@@ -593,7 +771,11 @@ class _CulturalMapViewState
       ) async {
     if (!_viewModel.isLoggedIn) {
       await _showSignInRequiredDialog(
-        'Please sign in to save favourites.',
+        _t(
+          en: 'Please sign in to save favourites.',
+          zh: '请先登录以保存收藏。',
+          ms: 'Sila log masuk untuk menyimpan kegemaran.',
+        ),
       );
 
       return;
@@ -622,10 +804,19 @@ class _CulturalMapViewState
     final message =
     success
         ? wasFavourite
-        ? 'Removed from favourites.'
-        : 'Saved to favourites.'
-        : _viewModel.errorMessage ??
-        'Unable to update favourite.';
+        ? _t(
+      en: 'Removed from favourites.',
+      zh: '已从收藏中移除。',
+      ms: 'Dialih keluar daripada kegemaran.',
+    )
+        : _t(
+      en: 'Saved to favourites.',
+      zh: '已保存到收藏。',
+      ms: 'Disimpan ke kegemaran.',
+    )
+        : _errorText(
+      _viewModel.errorMessage,
+    );
 
     if (!success) {
       _viewModel.clearError();
@@ -726,7 +917,7 @@ class _CulturalMapViewState
         builder: (_) =>
             _FullEtiquetteGuidePage(
               name:
-              _viewModel.attractionName(
+              _nameText(
                 attraction,
               ),
               category:
@@ -750,7 +941,7 @@ class _CulturalMapViewState
       Map<String, dynamic> attraction,
       ) async {
     final name =
-    _viewModel.attractionName(
+    _nameText(
       attraction,
     );
 
@@ -775,8 +966,10 @@ class _CulturalMapViewState
     );
 
     final status =
-    _viewModel.attractionStatus(
-      attraction,
+    _statusText(
+      _viewModel.attractionStatus(
+        attraction,
+      ),
     );
 
     final rating =
@@ -843,7 +1036,7 @@ class _CulturalMapViewState
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor:
-      Theme.of(context).scaffoldBackgroundColor,
+      Theme.of(context).colorScheme.surface,
       builder: (
           sheetContext,
           ) {
@@ -854,6 +1047,9 @@ class _CulturalMapViewState
               context,
               child,
               ) {
+            final colorScheme =
+                Theme.of(context).colorScheme;
+
             final isFavourite =
                 attractionId.isNotEmpty &&
                     _viewModel.isFavourite(
@@ -907,10 +1103,10 @@ class _CulturalMapViewState
                             child: SafeArea(
                               child: CircleAvatar(
                                 backgroundColor:
-                                Theme.of(context)
-                                    .colorScheme
-                                    .surfaceContainerHigh,
+                                colorScheme.surfaceContainerHighest,
                                 child: IconButton(
+                                  color:
+                                  colorScheme.onSurface,
                                   icon:
                                   const Icon(
                                     Icons.arrow_back,
@@ -983,9 +1179,7 @@ class _CulturalMapViewState
                                 fontWeight:
                                 FontWeight.bold,
                                 color:
-                                Theme.of(context)
-                                    .colorScheme
-                                    .onSurface,
+                                colorScheme.onSurface,
                               ),
                             ),
 
@@ -1005,9 +1199,7 @@ class _CulturalMapViewState
                               decoration:
                               BoxDecoration(
                                 color:
-                                Theme.of(context)
-                                    .colorScheme
-                                    .surfaceContainerLow,
+                                colorScheme.surfaceContainerLow,
                                 borderRadius:
                                 BorderRadius.circular(
                                   14,
@@ -1015,9 +1207,7 @@ class _CulturalMapViewState
                                 border:
                                 Border.all(
                                   color:
-                                  Theme.of(context)
-                                      .colorScheme
-                                      .outlineVariant,
+                                  colorScheme.outlineVariant,
                                 ),
                               ),
                               child:
@@ -1032,8 +1222,7 @@ class _CulturalMapViewState
                                           zh: '直线距离',
                                           ms: 'Jarak Lurus',
                                         ),
-                                        _viewModel
-                                            .distanceTextFor(
+                                        _distanceText(
                                           attraction,
                                         ),
                                         const Color(
@@ -1047,7 +1236,11 @@ class _CulturalMapViewState
                                     Expanded(
                                       child:
                                       _buildMetric(
-                                        'Status',
+                                        _t(
+                                          en: 'Status',
+                                          zh: '状态',
+                                          ms: 'Status',
+                                        ),
                                         status,
                                         _viewModel
                                             .attractionIsOpen(
@@ -1073,9 +1266,7 @@ class _CulturalMapViewState
                                             style:
                                             TextStyle(
                                               color:
-                                              Theme.of(context)
-                                                  .colorScheme
-                                                  .onSurfaceVariant,
+                                              colorScheme.onSurfaceVariant,
                                               fontSize: 11,
                                             ),
                                           ),
@@ -1102,9 +1293,7 @@ class _CulturalMapViewState
                                                   fontWeight:
                                                   FontWeight.bold,
                                                   color:
-                                                  Theme.of(context)
-                                                      .colorScheme
-                                                      .onSurface,
+                                                  colorScheme.onSurface,
                                                 ),
                                               ),
                                             ],
@@ -1131,9 +1320,7 @@ class _CulturalMapViewState
                               decoration:
                               BoxDecoration(
                                 color:
-                                Theme.of(context)
-                                    .colorScheme
-                                    .surfaceContainerLow,
+                                colorScheme.surfaceContainerLow,
                                 borderRadius:
                                 BorderRadius.circular(
                                   16,
@@ -1343,9 +1530,7 @@ class _CulturalMapViewState
                                           style:
                                           TextStyle(
                                             color:
-                                            Theme.of(context)
-                                                .colorScheme
-                                                .onSurfaceVariant,
+                                            colorScheme.onSurfaceVariant,
                                             fontSize: 10.5,
                                             height: 1.35,
                                           ),
@@ -1411,9 +1596,7 @@ class _CulturalMapViewState
                               decoration:
                               BoxDecoration(
                                 color:
-                                Theme.of(context)
-                                    .colorScheme
-                                    .surfaceContainerLow,
+                                colorScheme.surfaceContainerLow,
                                 borderRadius:
                                 BorderRadius.circular(
                                   16,
@@ -1421,9 +1604,7 @@ class _CulturalMapViewState
                                 border:
                                 Border.all(
                                   color:
-                                  Theme.of(context)
-                                      .colorScheme
-                                      .outlineVariant,
+                                  colorScheme.outlineVariant,
                                 ),
                               ),
                               child: Column(
@@ -1438,9 +1619,7 @@ class _CulturalMapViewState
                                     decoration:
                                     BoxDecoration(
                                       color:
-                                      Theme.of(context)
-                                          .colorScheme
-                                          .secondaryContainer,
+                                      colorScheme.secondaryContainer,
                                       borderRadius:
                                       const BorderRadius.vertical(
                                         top:
@@ -1478,9 +1657,7 @@ class _CulturalMapViewState
                                                 style:
                                                 TextStyle(
                                                   color:
-                                                  Theme.of(context)
-                                                      .colorScheme
-                                                      .onSecondaryContainer,
+                                                  colorScheme.onSecondaryContainer,
                                                   fontWeight:
                                                   FontWeight.bold,
                                                 ),
@@ -1494,9 +1671,7 @@ class _CulturalMapViewState
                                                 style:
                                                 TextStyle(
                                                   color:
-                                                  Theme.of(context)
-                                                      .colorScheme
-                                                      .onSecondaryContainer,
+                                                  colorScheme.onSecondaryContainer,
                                                   fontSize:
                                                   11,
                                                 ),
@@ -1598,7 +1773,7 @@ class _CulturalMapViewState
                                 ms: 'Lokasi',
                               ),
                               content:
-                              _viewModel.attractionAddress(
+                              _addressText(
                                 attraction,
                               ),
                             ),
@@ -1648,9 +1823,7 @@ class _CulturalMapViewState
                                 decoration:
                                 BoxDecoration(
                                   color:
-                                  Theme.of(context)
-                                      .colorScheme
-                                      .surfaceContainerHighest,
+                                  colorScheme.surfaceContainerHighest,
                                   borderRadius:
                                   BorderRadius.circular(
                                     12,
@@ -1658,24 +1831,33 @@ class _CulturalMapViewState
                                   border:
                                   Border.all(
                                     color:
-                                    Theme.of(context)
-                                        .colorScheme
-                                        .outlineVariant,
+                                    colorScheme.outlineVariant,
                                   ),
                                 ),
                                 child:
-                                const Row(
+                                Row(
                                   children: [
                                     Icon(
                                       Icons.info_outline,
+                                      color:
+                                      colorScheme.onSurfaceVariant,
                                     ),
-                                    SizedBox(
+                                    const SizedBox(
                                       width: 10,
                                     ),
                                     Expanded(
                                       child:
                                       Text(
-                                        'Sign in to save this attraction to your Favourites.',
+                                        _t(
+                                          en: 'Sign in to save this attraction to your Favourites.',
+                                          zh: '登录后即可将此景点保存到收藏。',
+                                          ms: 'Log masuk untuk menyimpan tarikan ini ke Kegemaran anda.',
+                                        ),
+                                        style:
+                                        TextStyle(
+                                          color:
+                                          colorScheme.onSurfaceVariant,
+                                        ),
                                       ),
                                     ),
                                   ],
@@ -1831,7 +2013,11 @@ class _CulturalMapViewState
             height: 8,
           ),
           Text(
-            'Cultural Attraction',
+            _t(
+              en: 'Cultural Attraction',
+              zh: '文化景点',
+              ms: 'Tarikan Budaya',
+            ),
             style:
             TextStyle(
               color:
@@ -2351,10 +2537,6 @@ class _CulturalMapViewState
           hintStyle: TextStyle(
             color: colorScheme.onSurfaceVariant,
           ),
-          prefixIcon: Icon(
-            Icons.search_rounded,
-            color: colorScheme.primary,
-          ),
           suffixIcon: _searchController.text.isEmpty
               ? Icon(
             Icons.travel_explore_rounded,
@@ -2443,9 +2625,9 @@ class _CulturalMapViewState
           Center(
             child: Text(
               _t(
-                en: 'Drag up for more places â€¢ drag down to view the map',
+                en: 'Drag up for more places • drag down to view the map',
                 zh: '向上拖查看更多景点 • 向下拖动查看地图',
-                ms: 'Tarik ke atas untuk lebih banyak tempat â€¢ tarik ke bawah untuk melihat peta',
+                ms: 'Tarik ke atas untuk lebih banyak tempat • tarik ke bawah untuk melihat peta',
               ),
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -2778,7 +2960,7 @@ class _CulturalMapViewState
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      viewModel.attractionName(attraction),
+                      _nameText(attraction),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context)
@@ -2813,7 +2995,7 @@ class _CulturalMapViewState
                         const SizedBox(width: 4),
                         Flexible(
                           child: Text(
-                            viewModel.distanceTextFor(
+                            _distanceText(
                               attraction,
                             ),
                             maxLines: 1,
@@ -2951,7 +3133,11 @@ class _CulturalMapViewState
           ),
           const SizedBox(height: 10),
           Text(
-            'No matching cultural attractions',
+            _t(
+              en: 'No matching cultural attractions',
+              zh: '没有符合条件的文化景点',
+              ms: 'Tiada tarikan budaya yang sepadan',
+            ),
             textAlign: TextAlign.center,
             style: Theme.of(context)
                 .textTheme
@@ -2963,8 +3149,16 @@ class _CulturalMapViewState
           const SizedBox(height: 5),
           Text(
             viewModel.hasActiveFilter
-                ? 'Try changing or clearing your filters.'
-                : 'No supported attraction is available in this area yet.',
+                ? _t(
+              en: 'Try changing or clearing your filters.',
+              zh: '请尝试更改或清除筛选条件。',
+              ms: 'Cuba ubah atau kosongkan penapis anda.',
+            )
+                : _t(
+              en: 'No supported attraction is available in this area yet.',
+              zh: '此区域目前没有受支持的文化景点。',
+              ms: 'Belum ada tarikan yang disokong di kawasan ini.',
+            ),
             textAlign: TextAlign.center,
             style: Theme.of(context)
                 .textTheme
@@ -3004,8 +3198,9 @@ class _CulturalMapViewState
           ),
           const SizedBox(height: 10),
           Text(
-            viewModel.errorMessage ??
-                'Unable to load map.',
+            _errorText(
+              viewModel.errorMessage,
+            ),
             textAlign: TextAlign.center,
             style: TextStyle(
               color: colorScheme.onErrorContainer,
@@ -3018,7 +3213,13 @@ class _CulturalMapViewState
               await viewModel.refreshAttractions();
             },
             icon: const Icon(Icons.refresh_rounded),
-            label: const Text('Try Again'),
+            label: Text(
+              _t(
+                en: 'Try Again',
+                zh: '重试',
+                ms: 'Cuba Lagi',
+              ),
+            ),
           ),
         ],
       ),
@@ -3037,12 +3238,27 @@ class _FullEtiquetteGuidePage
   final List<Map<String, dynamic>> dos;
   final List<Map<String, dynamic>> donts;
 
-  const _FullEtiquetteGuidePage({
+  final AppSettingsController _settings =
+      AppSettingsController.instance;
+
+  _FullEtiquetteGuidePage({
     required this.name,
     required this.category,
     required this.dos,
     required this.donts,
   });
+
+  String _t({
+    required String en,
+    required String zh,
+    required String ms,
+  }) {
+    return _settings.text(
+      en: en,
+      zh: zh,
+      ms: ms,
+    );
+  }
 
   @override
   Widget build(
@@ -3055,12 +3271,16 @@ class _FullEtiquetteGuidePage
       appBar:
       AppBar(
         title:
-        const Text(
-          'Etiquette Guide',
+        Text(
+          _t(
+            en: 'Etiquette Guide',
+            zh: '礼仪指南',
+            ms: 'Panduan Etika',
+          ),
         ),
       ),
       backgroundColor:
-      colorScheme.surface,
+      Theme.of(context).colorScheme.surface,
       body:
       ListView(
         padding:
@@ -3071,9 +3291,9 @@ class _FullEtiquetteGuidePage
           Text(
             category,
             style:
-            TextStyle(
+            const TextStyle(
               color:
-              colorScheme.primary,
+              Color(0xFF6C4DB5),
               fontWeight:
               FontWeight.w600,
             ),
@@ -3100,7 +3320,11 @@ class _FullEtiquetteGuidePage
           ),
 
           Text(
-            'Ranked specifically for this attraction.',
+            _t(
+              en: 'Ranked specifically for this attraction.',
+              zh: '此排名专门针对这个景点。',
+              ms: 'Kedudukan ini khusus untuk tarikan ini.',
+            ),
             style:
             TextStyle(
               color:
@@ -3114,7 +3338,11 @@ class _FullEtiquetteGuidePage
           ),
 
           _RankedGuideSection(
-            title: '✅ DO',
+            title: _t(
+              en: '✅ DO',
+              zh: '✅ 应该做',
+              ms: '✅ BOLEH',
+            ),
             titleColor:
             Colors.green,
             items: dos,
@@ -3125,7 +3353,11 @@ class _FullEtiquetteGuidePage
           ),
 
           _RankedGuideSection(
-            title: "❌ DON'T",
+            title: _t(
+              en: "❌ DON'T",
+              zh: '❌ 不应该做',
+              ms: '❌ JANGAN',
+            ),
             titleColor:
             Colors.red,
             items: donts,
@@ -3142,11 +3374,40 @@ class _RankedGuideSection
   final Color titleColor;
   final List<Map<String, dynamic>> items;
 
-  const _RankedGuideSection({
+  final AppSettingsController _settings =
+      AppSettingsController.instance;
+
+  _RankedGuideSection({
     required this.title,
     required this.titleColor,
     required this.items,
   });
+
+  String _ruleText(
+      Map<String, dynamic> item,
+      ) {
+    final english =
+    (item['ruleName'] ?? 'Etiquette rule')
+        .toString()
+        .trim();
+    final chinese =
+    (item['ruleNameZh'] ?? '').toString().trim();
+    final malay =
+    (item['ruleNameMs'] ?? '').toString().trim();
+
+    switch (_settings.language) {
+      case AppLanguage.chinese:
+        return chinese.isNotEmpty
+            ? chinese
+            : english;
+      case AppLanguage.malay:
+        return malay.isNotEmpty
+            ? malay
+            : english;
+      case AppLanguage.english:
+        return english;
+    }
+  }
 
   int _intValue(
       dynamic value,
@@ -3209,8 +3470,12 @@ class _RankedGuideSection
           ),
 
           if (items.isEmpty)
-            const Text(
-              'No information available.',
+            Text(
+              _settings.text(
+                en: 'No information available.',
+                zh: '暂无相关信息。',
+                ms: 'Tiada maklumat tersedia.',
+              ),
             )
           else
             ...items.map(
@@ -3221,9 +3486,9 @@ class _RankedGuideSection
                 );
 
                 final ruleName =
-                    item['ruleName']
-                        ?.toString() ??
-                        'Etiquette rule';
+                _ruleText(
+                  item,
+                );
 
                 return Padding(
                   padding:
