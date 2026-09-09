@@ -5,6 +5,7 @@ import '../../../data_layer/model/services/outfit_recognition/outfit_recognition
 import '../../../data_layer/model/services/firebase_authentication/firebase_authentication_service.dart';
 import '../../view_model/outfit_recognition/outfit_recognition_view_model.dart';
 import '../../view_model/settings/app_settings_controller.dart';
+import '../cultural_map/cultural_map.dart';
 import '../shared/culture_guide_bottom_nav.dart';
 
 class OutfitRecognitionView extends StatefulWidget {
@@ -787,7 +788,6 @@ class _OutfitRecognitionViewState
   Widget _buildEmptyPhotoBox() {
     return Container(
       width: double.infinity,
-      height: 260,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(
@@ -799,20 +799,40 @@ class _OutfitRecognitionViewState
           ),
         ),
       ),
+      padding: const EdgeInsets.symmetric(
+        vertical: 18,
+      ),
       child: Column(
-        mainAxisAlignment:
-        MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
+          // Standing-pose outline so the user knows roughly how to
+          // frame themselves -- an AI reference, not a strict template.
+          CustomPaint(
+            size: const Size(
+              90,
+              150,
+            ),
+            painter: _HumanOutlinePainter(
+              color: const Color(
+                0xFF00A6A6,
+              ),
+            ),
+          ),
+
+          SizedBox(
+            height: 10,
+          ),
+
           Icon(
             Icons.add_a_photo_outlined,
-            size: 55,
+            size: 30,
             color: Color(
               0xFF00A6A6,
             ),
           ),
 
           SizedBox(
-            height: 12,
+            height: 8,
           ),
 
           Text(
@@ -846,6 +866,82 @@ class _OutfitRecognitionViewState
                   0xFF777777,
                 ),
                 fontSize: 12,
+                height: 1.4,
+              ),
+            ),
+          ),
+
+          SizedBox(
+            height: 10,
+          ),
+
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 20,
+            ),
+            child: Column(
+              crossAxisAlignment:
+              CrossAxisAlignment.start,
+              children: [
+                _buildPhotoTip(
+                  _settings.text(
+                    en: 'Use a plain background and good lighting for best results.',
+                    zh: '请使用简单背景并确保光线充足，以获得最佳效果。',
+                    ms: 'Gunakan latar belakang yang ringkas dan pencahayaan yang baik untuk hasil terbaik.',
+                  ),
+                ),
+                _buildPhotoTip(
+                  _settings.text(
+                    en: 'Please include only one person in the photo.',
+                    zh: '请确保照片中只有一个人。',
+                    ms: 'Sila pastikan hanya seorang sahaja dalam foto.',
+                  ),
+                ),
+                _buildPhotoTip(
+                  _settings.text(
+                    en: 'This is an AI estimate only and may not be 100% accurate.',
+                    zh: '这仅为人工智能估计结果，可能并非百分之百准确。',
+                    ms: 'Ini hanyalah anggaran AI dan mungkin tidak 100% tepat.',
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPhotoTip(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(
+        bottom: 4,
+      ),
+      child: Row(
+        crossAxisAlignment:
+        CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(
+              top: 4,
+              right: 6,
+            ),
+            child: Icon(
+              Icons.info_outline,
+              size: 12,
+              color: Color(
+                0xFF999999,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                color: Color(
+                  0xFF999999,
+                ),
+                fontSize: 11,
                 height: 1.4,
               ),
             ),
@@ -1351,6 +1447,16 @@ class _OutfitRecognitionViewState
     );
   }
 
+  void _openAttractionOnMap(Map<String, dynamic> attraction) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => CulturalMapView(
+          initialAttraction: attraction,
+        ),
+      ),
+    );
+  }
+
   Widget _buildPlaceRecommendationTile(
       Map<String, dynamic> attraction,
       ) {
@@ -1374,7 +1480,10 @@ class _OutfitRecognitionViewState
         ?.toString()
         .trim();
 
-    return Row(
+    return InkWell(
+      onTap: () => _openAttractionOnMap(attraction),
+      borderRadius: BorderRadius.circular(12),
+      child: Row(
       crossAxisAlignment:
       CrossAxisAlignment.start,
       children: [
@@ -1526,6 +1635,7 @@ class _OutfitRecognitionViewState
           ),
         ),
       ],
+      ),
     );
   }
 
@@ -1723,5 +1833,148 @@ class _OutfitRecognitionViewState
       default:
         return value;
     }
+  }
+}
+
+// ==============================================================
+// STANDING-POSE OUTLINE
+//
+// A simple dashed silhouette shown in the empty photo box so the
+// user has a rough idea of how to frame themselves (facing forward,
+// arms relaxed at the sides, legs slightly apart). It's only a
+// loose visual reference -- the AI analysis doesn't require the
+// user's exact pose to match it.
+// ==============================================================
+
+class _HumanOutlinePainter extends CustomPainter {
+  final Color color;
+
+  const _HumanOutlinePainter({
+    required this.color,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color.withValues(alpha: 0.55)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2
+      ..strokeCap = StrokeCap.round;
+
+    final width = size.width;
+    final height = size.height;
+
+    final headRadius = width * 0.16;
+    final headCenter = Offset(
+      width / 2,
+      headRadius + 2,
+    );
+
+    final shoulderY = headCenter.dy + headRadius + 4;
+    final hipY = height * 0.58;
+    final footY = height - 4;
+
+    final shoulderLeft = Offset(width * 0.28, shoulderY);
+    final shoulderRight = Offset(width * 0.72, shoulderY);
+    final hipLeft = Offset(width * 0.36, hipY);
+    final hipRight = Offset(width * 0.64, hipY);
+    final handLeft = Offset(width * 0.16, hipY - 6);
+    final handRight = Offset(width * 0.84, hipY - 6);
+    final footLeft = Offset(width * 0.30, footY);
+    final footRight = Offset(width * 0.70, footY);
+
+    _drawDashedCircle(canvas, paint, headCenter, headRadius);
+
+    // Torso.
+    _drawDashedPath(
+      canvas,
+      paint,
+      Path()
+        ..moveTo(shoulderLeft.dx, shoulderLeft.dy)
+        ..lineTo(shoulderRight.dx, shoulderRight.dy)
+        ..lineTo(hipRight.dx, hipRight.dy)
+        ..lineTo(hipLeft.dx, hipLeft.dy)
+        ..close(),
+    );
+
+    // Arms (relaxed at the sides).
+    _drawDashedPath(
+      canvas,
+      paint,
+      Path()
+        ..moveTo(shoulderLeft.dx, shoulderLeft.dy)
+        ..lineTo(handLeft.dx, handLeft.dy),
+    );
+    _drawDashedPath(
+      canvas,
+      paint,
+      Path()
+        ..moveTo(shoulderRight.dx, shoulderRight.dy)
+        ..lineTo(handRight.dx, handRight.dy),
+    );
+
+    // Legs (slightly apart).
+    _drawDashedPath(
+      canvas,
+      paint,
+      Path()
+        ..moveTo(width * 0.44, hipY)
+        ..lineTo(footLeft.dx, footLeft.dy),
+    );
+    _drawDashedPath(
+      canvas,
+      paint,
+      Path()
+        ..moveTo(width * 0.56, hipY)
+        ..lineTo(footRight.dx, footRight.dy),
+    );
+  }
+
+  void _drawDashedCircle(
+      Canvas canvas,
+      Paint paint,
+      Offset center,
+      double radius,
+      ) {
+    _drawDashedPath(
+      canvas,
+      paint,
+      Path()
+        ..addOval(
+          Rect.fromCircle(center: center, radius: radius),
+        ),
+    );
+  }
+
+  void _drawDashedPath(
+      Canvas canvas,
+      Paint paint,
+      Path path, {
+        double dashLength = 4,
+        double gapLength = 3,
+      }) {
+    for (final metric in path.computeMetrics()) {
+      var distance = 0.0;
+      var draw = true;
+      while (distance < metric.length) {
+        final next = distance + (draw ? dashLength : gapLength);
+        if (draw) {
+          canvas.drawPath(
+            metric.extractPath(
+              distance,
+              next.clamp(0, metric.length),
+            ),
+            paint,
+          );
+        }
+        distance = next;
+        draw = !draw;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _HumanOutlinePainter oldDelegate) {
+    return oldDelegate.color != color;
   }
 }
