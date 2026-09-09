@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import '../../../data_layer/model/services/firebase_authentication/firebase_authentication_service.dart';
 import '../../../data_layer/model/services/geofence_alert_monitor/geofence_alert_monitor_service.dart';
 import '../../view_model/settings/app_settings_controller.dart';
-import '../violation_dashboard_report/user_etiquette_report_page.dart';
+import '../profile_view/user_etiquette_report_page.dart';
 import '../shared/culture_guide_bottom_nav.dart';
 import 'change_password_page.dart';
 import 'edit_profile_page.dart';

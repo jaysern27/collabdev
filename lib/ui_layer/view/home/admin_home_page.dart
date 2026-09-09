@@ -4,7 +4,7 @@ import '../../../data_layer/model/repositories/ranking_report/ranking_report_rep
 import '../../../data_layer/model/services/firebase_authentication/firebase_authentication_service.dart';
 import '../../view_model/settings/app_settings_controller.dart';
 import '../environment_parameter/environment_parameter.dart';
-import '../violation_dashboard_report/violation_dashboard_report.dart';
+import '../profile_view/violation_dashboard_report.dart';
 import 'admin_report_management_page.dart';
 import 'login_page.dart';
 

@@ -11,7 +11,7 @@ import '../../view_model/settings/app_settings_controller.dart';
 import '../../view_model/violation_dashboard_report/violation_dashboard_report_view_model.dart';
 import '../notification_inbox/notification_inbox.dart';
 import '../outfit_recognition/outfit_recognition.dart';
-import '../violation_dashboard_report/violation_ranking_page.dart';
+import '../profile_view/violation_ranking_page.dart';
 import 'profile.dart';
 
 class HomeView extends StatefulWidget {
