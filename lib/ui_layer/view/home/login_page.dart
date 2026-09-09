@@ -10,7 +10,9 @@ import 'home.dart';
 import 'register_page.dart';
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+  final String? initialEmail;
+
+  const LoginPage({super.key, this.initialEmail});
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -21,27 +23,17 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController passwordController = TextEditingController();
 
   final FirebaseAuthenticationService authService =
-  FirebaseAuthenticationService();
+      FirebaseAuthenticationService();
 
   final UserRoleService roleService = UserRoleService();
 
-  final AppSettingsController _settings =
-      AppSettingsController.instance;
+  final AppSettingsController _settings = AppSettingsController.instance;
 
   bool loading = false;
   bool obscurePassword = true;
 
-
-  String _t({
-    required String en,
-    required String zh,
-    required String ms,
-  }) {
-    return _settings.text(
-      en: en,
-      zh: zh,
-      ms: ms,
-    );
+  String _t({required String en, required String zh, required String ms}) {
+    return _settings.text(en: en, zh: zh, ms: ms);
   }
 
   void _onSettingsChanged() {
@@ -53,6 +45,12 @@ class _LoginPageState extends State<LoginPage> {
   @override
   void initState() {
     super.initState();
+
+    final initialEmail = widget.initialEmail?.trim() ?? '';
+    if (initialEmail.isNotEmpty) {
+      emailController.text = initialEmail;
+    }
+
     _settings.addListener(_onSettingsChanged);
   }
 
@@ -82,14 +80,11 @@ class _LoginPageState extends State<LoginPage> {
     setState(() => loading = true);
 
     try {
-      final result = await authService.login(
-        email: email,
-        password: password,
-      );
+      final result = await authService.login(email: email, password: password);
 
-      final uid = result.user?.uid;
+      final signedInUser = result.user;
 
-      if (uid == null) {
+      if (signedInUser == null) {
         throw Exception(
           _t(
             en: 'Unable to read user account.',
@@ -98,6 +93,29 @@ class _LoginPageState extends State<LoginPage> {
           ),
         );
       }
+
+      // Reload so emailVerified reflects the latest verification result.
+      await authService.reloadCurrentUser();
+
+      final refreshedUser = authService.currentUser;
+
+      if (refreshedUser == null) {
+        await authService.logout();
+        throw Exception(
+          _t(
+            en: 'Unable to read user account.',
+            zh: '无法读取用户账户。',
+            ms: 'Tidak dapat membaca akaun pengguna.',
+          ),
+        );
+      }
+
+      if (!refreshedUser.emailVerified) {
+        await authService.logout();
+        throw Exception('EMAIL_NOT_VERIFIED');
+      }
+
+      final uid = refreshedUser.uid;
 
       final role = await roleService.getUserRole(uid);
 
@@ -131,10 +149,8 @@ class _LoginPageState extends State<LoginPage> {
 
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(
-          builder: (_) => const HomeView(),
-        ),
-            (route) => false,
+        MaterialPageRoute(builder: (_) => const HomeView()),
+        (route) => false,
       );
     } catch (e) {
       _showMessage(_cleanError(e));
@@ -173,16 +189,100 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
+  Future<void> resendVerificationEmail() async {
+    FocusScope.of(context).unfocus();
+
+    final email = emailController.text.trim();
+    final password = passwordController.text;
+
+    if (email.isEmpty || password.isEmpty) {
+      _showMessage(
+        _t(
+          en: 'Enter your email and password first, then tap Resend Verification Email.',
+          zh: '请先输入电子邮箱和密码，然后点击“重新发送验证邮件”。',
+          ms: 'Masukkan e-mel dan kata laluan anda dahulu, kemudian tekan Hantar Semula E-mel Pengesahan.',
+        ),
+      );
+      return;
+    }
+
+    setState(() => loading = true);
+
+    try {
+      final result = await authService.login(email: email, password: password);
+
+      if (result.user == null) {
+        throw Exception(
+          _t(
+            en: 'Unable to read user account.',
+            zh: '无法读取用户账户。',
+            ms: 'Tidak dapat membaca akaun pengguna.',
+          ),
+        );
+      }
+
+      await authService.reloadCurrentUser();
+
+      final user = authService.currentUser;
+
+      if (user == null) {
+        throw Exception(
+          _t(
+            en: 'Unable to read user account.',
+            zh: '无法读取用户账户。',
+            ms: 'Tidak dapat membaca akaun pengguna.',
+          ),
+        );
+      }
+
+      if (user.emailVerified) {
+        await authService.logout();
+
+        if (!mounted) return;
+
+        _showMessage(
+          _t(
+            en: 'Your email is already verified. You can sign in now.',
+            zh: '您的邮箱已经验证，可以直接登录。',
+            ms: 'E-mel anda telah disahkan. Anda boleh log masuk sekarang.',
+          ),
+        );
+        return;
+      }
+
+      await authService.sendEmailVerification();
+      await authService.logout();
+
+      if (!mounted) return;
+
+      _showMessage(
+        _t(
+          en: 'Verification email sent to $email. Check your inbox and spam folder.',
+          zh: '验证邮件已发送至 $email。请检查收件箱和垃圾邮件。',
+          ms: 'E-mel pengesahan telah dihantar ke $email. Semak peti masuk dan folder spam anda.',
+        ),
+      );
+    } catch (e) {
+      if (authService.isLoggedIn) {
+        await authService.logout();
+      }
+
+      if (!mounted) return;
+      _showMessage(_cleanError(e));
+    } finally {
+      if (mounted) {
+        setState(() => loading = false);
+      }
+    }
+  }
+
   void _showMessage(String message) {
     if (!mounted) return;
 
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
-        SnackBar(
-          content: Text(message),
-          behavior: SnackBarBehavior.floating,
-        ),
+        SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
       );
   }
 
@@ -193,6 +293,13 @@ class _LoginPageState extends State<LoginPage> {
     // Firebase error text.
     final raw = error.toString().replaceFirst('Exception: ', '').trim();
     final message = raw.toLowerCase();
+    if (message.contains('email_not_verified')) {
+      return _t(
+        en: 'Please verify your email before login. Check your inbox, then try again. You can also tap Resend Verification Email.',
+        zh: '请先验证您的邮箱再登录。请检查收件箱并完成验证，然后重试；也可以点击“重新发送验证邮件”。',
+        ms: 'Sila sahkan e-mel anda sebelum log masuk. Semak peti masuk, lengkapkan pengesahan, kemudian cuba lagi. Anda juga boleh tekan Hantar Semula E-mel Pengesahan.',
+      );
+    }
 
     if (message.contains('invalid-email') ||
         message.contains('badly formatted') ||
@@ -211,9 +318,9 @@ class _LoginPageState extends State<LoginPage> {
         message.contains('incorrect password') ||
         message.contains('password is invalid')) {
       return _t(
-        en: 'Invalid password.',
-        zh: '密码错误。',
-        ms: 'Kata laluan tidak sah.',
+        en: 'Invalid email or password. If you just registered, verify your email first and then try again.',
+        zh: '电子邮箱或密码不正确。如果您刚注册，请先完成邮箱验证后再重试。',
+        ms: 'E-mel atau kata laluan tidak betul. Jika anda baru mendaftar, sahkan e-mel anda dahulu kemudian cuba lagi.',
       );
     }
 
@@ -268,9 +375,9 @@ class _LoginPageState extends State<LoginPage> {
               height: 260,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFF7ADBCB).withValues(
-                  alpha: isDark ? 0.08 : 0.18,
-                ),
+                color: const Color(
+                  0xFF7ADBCB,
+                ).withValues(alpha: isDark ? 0.08 : 0.18),
               ),
             ),
           ),
@@ -282,9 +389,9 @@ class _LoginPageState extends State<LoginPage> {
               height: 220,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFFFFD98A).withValues(
-                  alpha: isDark ? 0.05 : 0.14,
-                ),
+                color: const Color(
+                  0xFFFFD98A,
+                ).withValues(alpha: isDark ? 0.05 : 0.14),
               ),
             ),
           ),
@@ -315,9 +422,7 @@ class _LoginPageState extends State<LoginPage> {
                           },
                     style: OutlinedButton.styleFrom(
                       foregroundColor: colorScheme.onSurface,
-                      side: BorderSide(
-                        color: colorScheme.outlineVariant,
-                      ),
+                      side: BorderSide(color: colorScheme.outlineVariant),
                       minimumSize: const Size.fromHeight(50),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(18),
@@ -330,9 +435,7 @@ class _LoginPageState extends State<LoginPage> {
                         zh: '以访客身份继续',
                         ms: 'Teruskan sebagai Tetamu',
                       ),
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                      ),
+                      style: const TextStyle(fontWeight: FontWeight.w700),
                     ),
                   ),
                   const SizedBox(height: 18),
@@ -369,32 +472,19 @@ class _LoginPageState extends State<LoginPage> {
         borderRadius: BorderRadius.circular(18),
         child: PopupMenuButton<AppLanguage>(
           initialValue: _settings.language,
-          tooltip: _t(
-            en: 'Change language',
-            zh: '更改语言',
-            ms: 'Tukar bahasa',
-          ),
+          tooltip: _t(en: 'Change language', zh: '更改语言', ms: 'Tukar bahasa'),
           onSelected: (language) {
             _settings.setLanguage(language);
           },
           itemBuilder: (context) => const [
-            PopupMenuItem(
-              value: AppLanguage.english,
-              child: Text('English'),
-            ),
-            PopupMenuItem(
-              value: AppLanguage.chinese,
-              child: Text('中文'),
-            ),
+            PopupMenuItem(value: AppLanguage.english, child: Text('English')),
+            PopupMenuItem(value: AppLanguage.chinese, child: Text('中文')),
             PopupMenuItem(
               value: AppLanguage.malay,
               child: Text('Bahasa Melayu'),
             ),
           ],
-          icon: const Icon(
-            Icons.language_rounded,
-            color: Color(0xFF00A77E),
-          ),
+          icon: const Icon(Icons.language_rounded, color: Color(0xFF00A77E)),
         ),
       ),
     );
@@ -413,20 +503,14 @@ class _LoginPageState extends State<LoginPage> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: isDark
-              ? const [
-                  Color(0xFF102D45),
-                  Color(0xFF0D5F5A),
-                ]
-              : const [
-                  Color(0xFFDDF4FF),
-                  Color(0xFFE7FBF5),
-                ],
+              ? const [Color(0xFF102D45), Color(0xFF0D5F5A)]
+              : const [Color(0xFFDDF4FF), Color(0xFFE7FBF5)],
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF00A77E).withValues(
-              alpha: isDark ? 0.12 : 0.16,
-            ),
+            color: const Color(
+              0xFF00A77E,
+            ).withValues(alpha: isDark ? 0.12 : 0.16),
             blurRadius: 24,
             offset: const Offset(0, 10),
           ),
@@ -440,9 +524,9 @@ class _LoginPageState extends State<LoginPage> {
             child: Icon(
               Icons.travel_explore_rounded,
               size: 130,
-              color: const Color(0xFF00A77E).withValues(
-                alpha: isDark ? 0.17 : 0.13,
-              ),
+              color: const Color(
+                0xFF00A77E,
+              ).withValues(alpha: isDark ? 0.17 : 0.13),
             ),
           ),
           Positioned(
@@ -475,9 +559,7 @@ class _LoginPageState extends State<LoginPage> {
                     ms: 'Rakan Budaya Malaysia',
                   ),
                   style: TextStyle(
-                    color: isDark
-                        ? Colors.white
-                        : const Color(0xFF176E75),
+                    color: isDark ? Colors.white : const Color(0xFF176E75),
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
                   ),
@@ -487,9 +569,7 @@ class _LoginPageState extends State<LoginPage> {
               Text(
                 'CultureGuide',
                 style: TextStyle(
-                  color: isDark
-                      ? Colors.white
-                      : const Color(0xFF123B61),
+                  color: isDark ? Colors.white : const Color(0xFF123B61),
                   fontSize: 30,
                   fontWeight: FontWeight.w900,
                   letterSpacing: -0.8,
@@ -527,14 +607,10 @@ class _LoginPageState extends State<LoginPage> {
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(
-          color: colorScheme.outlineVariant,
-        ),
+        border: Border.all(color: colorScheme.outlineVariant),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(
-              alpha: isDark ? 0.20 : 0.07,
-            ),
+            color: Colors.black.withValues(alpha: isDark ? 0.20 : 0.07),
             blurRadius: 24,
             offset: const Offset(0, 9),
           ),
@@ -544,11 +620,7 @@ class _LoginPageState extends State<LoginPage> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            _t(
-              en: 'Welcome back 👋',
-              zh: '欢迎回来 👋',
-              ms: 'Selamat kembali 👋',
-            ),
+            _t(en: 'Welcome back 👋', zh: '欢迎回来 👋', ms: 'Selamat kembali 👋'),
             style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.w900,
@@ -574,11 +646,7 @@ class _LoginPageState extends State<LoginPage> {
             keyboardType: TextInputType.emailAddress,
             textInputAction: TextInputAction.next,
             decoration: _inputDecoration(
-              label: _t(
-                en: 'Email address',
-                zh: '电子邮箱',
-                ms: 'Alamat e-mel',
-              ),
+              label: _t(en: 'Email address', zh: '电子邮箱', ms: 'Alamat e-mel'),
               icon: Icons.mail_outline_rounded,
             ),
           ),
@@ -591,11 +659,7 @@ class _LoginPageState extends State<LoginPage> {
               if (!loading) login();
             },
             decoration: _inputDecoration(
-              label: _t(
-                en: 'Password',
-                zh: '密码',
-                ms: 'Kata laluan',
-              ),
+              label: _t(en: 'Password', zh: '密码', ms: 'Kata laluan'),
               icon: Icons.lock_outline_rounded,
               suffix: IconButton(
                 tooltip: obscurePassword
@@ -622,18 +686,33 @@ class _LoginPageState extends State<LoginPage> {
               ),
             ),
           ),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(
-              onPressed: loading ? null : forgotPassword,
-              child: Text(
-                _t(
-                  en: 'Forgot Password?',
-                  zh: '忘记密码？',
-                  ms: 'Lupa Kata Laluan?',
+          Wrap(
+            alignment: WrapAlignment.end,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 2,
+            runSpacing: 0,
+            children: [
+              TextButton(
+                onPressed: loading ? null : resendVerificationEmail,
+                child: Text(
+                  _t(
+                    en: 'Resend Verification Email',
+                    zh: '重新发送验证邮件',
+                    ms: 'Hantar Semula E-mel Pengesahan',
+                  ),
                 ),
               ),
-            ),
+              TextButton(
+                onPressed: loading ? null : forgotPassword,
+                child: Text(
+                  _t(
+                    en: 'Forgot Password?',
+                    zh: '忘记密码？',
+                    ms: 'Lupa Kata Laluan?',
+                  ),
+                ),
+              ),
+            ],
           ),
           SizedBox(
             height: 52,
@@ -641,10 +720,7 @@ class _LoginPageState extends State<LoginPage> {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(17),
                 gradient: const LinearGradient(
-                  colors: [
-                    Color(0xFF00A77E),
-                    Color(0xFF3CC8AE),
-                  ],
+                  colors: [Color(0xFF00A77E), Color(0xFF3CC8AE)],
                 ),
               ),
               child: FilledButton(
@@ -667,11 +743,7 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                       )
                     : Text(
-                        _t(
-                          en: 'Sign In',
-                          zh: '登录',
-                          ms: 'Log Masuk',
-                        ),
+                        _t(en: 'Sign In', zh: '登录', ms: 'Log Masuk'),
                         style: const TextStyle(
                           fontWeight: FontWeight.w800,
                           fontSize: 15.5,
@@ -717,11 +789,7 @@ class _LoginPageState extends State<LoginPage> {
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
                 child: Text(
-                  _t(
-                    en: 'Create Account',
-                    zh: '创建账户',
-                    ms: 'Cipta Akaun',
-                  ),
+                  _t(en: 'Create Account', zh: '创建账户', ms: 'Cipta Akaun'),
                   style: const TextStyle(
                     color: Color(0xFF00A77E),
                     fontWeight: FontWeight.w800,
@@ -748,9 +816,7 @@ class _LoginPageState extends State<LoginPage> {
             : () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (_) => const AdminLoginPage(),
-                  ),
+                  MaterialPageRoute(builder: (_) => const AdminLoginPage()),
                 );
               },
         child: Ink(
@@ -759,18 +825,10 @@ class _LoginPageState extends State<LoginPage> {
             borderRadius: BorderRadius.circular(22),
             gradient: LinearGradient(
               colors: isDark
-                  ? const [
-                      Color(0xFF15283B),
-                      Color(0xFF183D45),
-                    ]
-                  : const [
-                      Color(0xFFFFF4DE),
-                      Color(0xFFEAFBF5),
-                    ],
+                  ? const [Color(0xFF15283B), Color(0xFF183D45)]
+                  : const [Color(0xFFFFF4DE), Color(0xFFEAFBF5)],
             ),
-            border: Border.all(
-              color: colorScheme.outlineVariant,
-            ),
+            border: Border.all(color: colorScheme.outlineVariant),
           ),
           child: Row(
             children: [
@@ -778,9 +836,9 @@ class _LoginPageState extends State<LoginPage> {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFFB744).withValues(
-                    alpha: isDark ? 0.18 : 0.22,
-                  ),
+                  color: const Color(
+                    0xFFFFB744,
+                  ).withValues(alpha: isDark ? 0.18 : 0.22),
                   borderRadius: BorderRadius.circular(15),
                 ),
                 child: const Icon(
@@ -819,10 +877,7 @@ class _LoginPageState extends State<LoginPage> {
                   ],
                 ),
               ),
-              const Icon(
-                Icons.chevron_right_rounded,
-                color: Color(0xFF00A77E),
-              ),
+              const Icon(Icons.chevron_right_rounded, color: Color(0xFF00A77E)),
             ],
           ),
         ),
@@ -843,26 +898,16 @@ class _LoginPageState extends State<LoginPage> {
       suffixIcon: suffix,
       filled: true,
       fillColor: colorScheme.surfaceContainerHighest,
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 17,
-      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 17),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(
-          color: colorScheme.outlineVariant,
-        ),
+        borderSide: BorderSide(color: colorScheme.outlineVariant),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(
-          color: colorScheme.primary,
-          width: 1.7,
-        ),
+        borderSide: BorderSide(color: colorScheme.primary, width: 1.7),
       ),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
     );
   }
 }
