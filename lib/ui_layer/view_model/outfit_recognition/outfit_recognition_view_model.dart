@@ -4,6 +4,19 @@
   import '../../../data_layer/model/repositories/outfit/outfit_place_recommendation_repository.dart';
   import '../../../data_layer/model/repositories/outfit/outfit_repository.dart';
   import '../../../data_layer/model/services/outfit_recognition/outfit_recognition_service.dart';
+  import '../settings/app_settings_controller.dart';
+
+  String _t({
+    required String en,
+    required String zh,
+    required String ms,
+  }) {
+    return AppSettingsController.instance.text(
+      en: en,
+      zh: zh,
+      ms: ms,
+    );
+  }
 
   class OutfitRecognitionViewModel extends ChangeNotifier {
     final OutfitRepository _outfitRepository;
@@ -273,8 +286,11 @@
           _selectedAttractionId;
 
       if (attractionId == null) {
-        _errorMessage =
-        'Please select a destination first.';
+        _errorMessage = _t(
+          en: 'Please select a destination first.',
+          zh: '请先选择目的地。',
+          ms: 'Sila pilih destinasi dahulu.',
+        );
 
         notifyListeners();
 
@@ -502,14 +518,21 @@
                 .areOutfitModelsReady;
 
         if (!_isModelReady) {
-          _errorMessage =
-          'One or more AI models failed to become ready.';
+          _errorMessage = _t(
+            en: 'One or more AI models failed to become ready.',
+            zh: '一个或多个 AI 模型未能成功加载。',
+            ms: 'Satu atau lebih model AI gagal disediakan.',
+          );
         }
       } catch (e) {
         _isModelReady = false;
 
         _errorMessage =
-        'Failed to initialize outfit models: $e';
+        '${_t(
+          en: 'Failed to initialize outfit models',
+          zh: '初始化穿搭模型失败',
+          ms: 'Gagal memulakan model pakaian',
+        )}: $e';
       } finally {
         _isLoading = false;
 
@@ -526,8 +549,11 @@
         ) {
       if (!_outfitRepository
           .isHumanDetectionModelReady) {
-        _errorMessage =
-        'Human detection model is not ready.';
+        _errorMessage = _t(
+          en: 'Human detection model is not ready.',
+          zh: '人体检测模型尚未就绪。',
+          ms: 'Model pengesanan orang belum sedia.',
+        );
 
         return false;
       }
@@ -594,18 +620,25 @@
         _detectedAttributes.clear();
 
         _advisoryResult =
-        const OutfitAdvisoryResult(
+        OutfitAdvisoryResult(
           status:
           OutfitAdvisoryStatus
               .unableToDetermine,
-          checks: [],
-          message:
-          'No person was detected confidently in this image.',
+          checks: const [],
+          message: _t(
+            en: 'No person was detected confidently in this image.',
+            zh: '未能在此照片中确认检测到人物。',
+            ms: 'Tiada orang dikesan dengan yakin dalam gambar ini.',
+          ),
         );
 
-        _errorMessage =
-        'No person detected. Please take or upload '
-            'a clear photo showing a person.';
+        _errorMessage = _t(
+          en: 'No person detected. Please take or upload '
+              'a clear photo showing a person.',
+          zh: '未检测到人物。请拍摄或上传一张能清楚看到人物的照片。',
+          ms: 'Tiada orang dikesan. Sila ambil atau muat naik foto '
+              'jelas yang menunjukkan seseorang.',
+        );
 
         return false;
       }
@@ -671,8 +704,11 @@
           _selectedImage;
 
       if (image == null) {
-        _errorMessage =
-        'Please take or upload an outfit photo first.';
+        _errorMessage = _t(
+          en: 'Please take or upload an outfit photo first.',
+          zh: '请先拍摄或上传一张穿搭照片。',
+          ms: 'Sila ambil atau muat naik foto pakaian dahulu.',
+        );
 
         notifyListeners();
 
@@ -683,8 +719,11 @@
           .isHumanDetectionModelReady ||
           !_outfitRepository
               .isModelReady) {
-        _errorMessage =
-        'Outfit recognition models are not ready.';
+        _errorMessage = _t(
+          en: 'Outfit recognition models are not ready.',
+          zh: '穿搭识别模型尚未就绪。',
+          ms: 'Model pengecaman pakaian belum sedia.',
+        );
 
         notifyListeners();
 
@@ -777,24 +816,33 @@
       final image = _selectedImage;
 
       if (image == null) {
-        _errorMessage =
-        'Please take or upload an outfit photo first.';
+        _errorMessage = _t(
+          en: 'Please take or upload an outfit photo first.',
+          zh: '请先拍摄或上传一张穿搭照片。',
+          ms: 'Sila ambil atau muat naik foto pakaian dahulu.',
+        );
 
         notifyListeners();
         return;
       }
 
       if (!_outfitRepository.areOutfitModelsReady) {
-        _errorMessage =
-        'Outfit recognition models are not ready.';
+        _errorMessage = _t(
+          en: 'Outfit recognition models are not ready.',
+          zh: '穿搭识别模型尚未就绪。',
+          ms: 'Model pengecaman pakaian belum sedia.',
+        );
 
         notifyListeners();
         return;
       }
 
       if (!hasSelectedGender) {
-        _errorMessage =
-        'Please select your gender before analysing your outfit.';
+        _errorMessage = _t(
+          en: 'Please select your gender before analysing your outfit.',
+          zh: '请先选择性别再分析您的穿搭。',
+          ms: 'Sila pilih jantina anda sebelum menganalisis pakaian anda.',
+        );
 
         notifyListeners();
         return;
@@ -959,8 +1007,11 @@
       if (_detectedAttributes.isEmpty ||
           !hasValidHuman ||
           !hasValidFullBody) {
-        _placeRecommendationMessage =
-        'Analyse a clear full-body outfit photo first.';
+        _placeRecommendationMessage = _t(
+          en: 'Analyse a clear full-body outfit photo first.',
+          zh: '请先分析一张清晰的全身穿搭照片。',
+          ms: 'Analisis foto pakaian sepenuh badan yang jelas dahulu.',
+        );
 
         notifyListeners();
 
@@ -1006,15 +1057,29 @@
             nearbyResult.attractions;
 
         if (nearbyAttractions.isEmpty) {
+          final radiusText =
+          recommendationRadiusKm.toStringAsFixed(0);
+
           _placeRecommendationMessage =
-          nearbyResult
-              .usingDefaultArea
-              ? 'No supported cultural attractions were found '
-              'within ${recommendationRadiusKm.toStringAsFixed(0)} km '
-              'of the default Kuala Lumpur pilot area.'
-              : 'No supported cultural attractions were found '
-              'within ${recommendationRadiusKm.toStringAsFixed(0)} km '
-              'of your current location.';
+          nearbyResult.usingDefaultArea
+              ? _t(
+            en: 'No supported cultural attractions were found '
+                'within $radiusText km of the default Kuala '
+                'Lumpur pilot area.',
+            zh: '在默认的吉隆坡试点区域 $radiusText 公里范围内，'
+                '未找到受支持的文化景点。',
+            ms: 'Tiada tarikan budaya yang disokong ditemui dalam '
+                'jarak $radiusText km dari kawasan perintis Kuala '
+                'Lumpur lalai.',
+          )
+              : _t(
+            en: 'No supported cultural attractions were found '
+                'within $radiusText km of your current location.',
+            zh: '在您当前位置 $radiusText 公里范围内，'
+                '未找到受支持的文化景点。',
+            ms: 'Tiada tarikan budaya yang disokong ditemui dalam '
+                'jarak $radiusText km dari lokasi semasa anda.',
+          );
 
           return;
         }
@@ -1205,18 +1270,25 @@
 
         if (_placeRecommendations
             .isEmpty) {
-          _placeRecommendationMessage =
-          'No nearby cultural attraction matched '
-              'your current outfit requirements.';
+          _placeRecommendationMessage = _t(
+            en: 'No nearby cultural attraction matched '
+                'your current outfit requirements.',
+            zh: '附近没有符合您当前穿搭要求的文化景点。',
+            ms: 'Tiada tarikan budaya berdekatan yang sepadan '
+                'dengan keperluan pakaian anda semasa ini.',
+          );
         } else {
           final count =
               _placeRecommendations
                   .length;
 
-          _placeRecommendationMessage =
-          '$count nearby '
-              '${count == 1 ? 'place matches' : 'places match'} '
-              'your current outfit.';
+          _placeRecommendationMessage = _t(
+            en: '$count nearby '
+                '${count == 1 ? 'place matches' : 'places match'} '
+                'your current outfit.',
+            zh: '附近有 $count 个地点符合您的穿搭。',
+            ms: '$count tempat berdekatan sepadan dengan pakaian anda.',
+          );
         }
       } catch (e, stackTrace) {
       debugPrint(
@@ -1229,9 +1301,11 @@
 
       _placeRecommendations = [];
 
-      _placeRecommendationMessage =
-      'Unable to load nearby place '
-      'recommendations right now.';
+      _placeRecommendationMessage = _t(
+        en: 'Unable to load nearby place recommendations right now.',
+        zh: '目前无法加载附近的地点推荐。',
+        ms: 'Tidak dapat memuatkan cadangan tempat berdekatan buat masa ini.',
+      );
       } finally {
       _isFindingPlaceRecommendations =
       false;
@@ -1249,8 +1323,11 @@
           _selectedImage;
 
       if (image == null) {
-        _errorMessage =
-        'Please take or upload an outfit photo first.';
+        _errorMessage = _t(
+          en: 'Please take or upload an outfit photo first.',
+          zh: '请先拍摄或上传一张穿搭照片。',
+          ms: 'Sila ambil atau muat naik foto pakaian dahulu.',
+        );
 
         notifyListeners();
 
@@ -1261,8 +1338,11 @@
           .isHumanDetectionModelReady ||
           !_outfitRepository
               .isModelReady) {
-        _errorMessage =
-        'Outfit recognition models are not ready.';
+        _errorMessage = _t(
+          en: 'Outfit recognition models are not ready.',
+          zh: '穿搭识别模型尚未就绪。',
+          ms: 'Model pengecaman pakaian belum sedia.',
+        );
 
         notifyListeners();
 
@@ -1338,9 +1418,13 @@
       double minimumConfidence = 0.75,
     }) async {
       if (!hasValidHuman) {
-        _errorMessage =
-        'A valid person photo is required before '
-            'evaluating outfit etiquette.';
+        _errorMessage = _t(
+          en: 'A valid person photo is required before '
+              'evaluating outfit etiquette.',
+          zh: '在评估穿搭礼仪之前，需要一张有效的人物照片。',
+          ms: 'Foto seseorang yang sah diperlukan sebelum '
+              'menilai etika pakaian.',
+        );
 
         notifyListeners();
 
@@ -1351,8 +1435,13 @@
         _errorMessage =
             _fullBodyValidationResult
                 ?.message ??
-                'A clear full-body photo is required before '
-                    'evaluating outfit etiquette.';
+                _t(
+                  en: 'A clear full-body photo is required before '
+                      'evaluating outfit etiquette.',
+                  zh: '在评估穿搭礼仪之前，需要一张清晰的全身照片。',
+                  ms: 'Foto sepenuh badan yang jelas diperlukan '
+                      'sebelum menilai etika pakaian.',
+                );
 
         notifyListeners();
 
@@ -1360,8 +1449,11 @@
       }
 
       if (_detectedAttributes.isEmpty) {
-        _errorMessage =
-        'No confident outfit attributes were detected.';
+        _errorMessage = _t(
+          en: 'No confident outfit attributes were detected.',
+          zh: '未能可靠地检测到任何穿搭特征。',
+          ms: 'Tiada ciri pakaian yang dikesan dengan yakin.',
+        );
 
         notifyListeners();
 
@@ -1369,8 +1461,11 @@
       }
 
       if (_selectedAttractionId == null) {
-        _errorMessage =
-        'Please select a destination first.';
+        _errorMessage = _t(
+          en: 'Please select a destination first.',
+          zh: '请先选择目的地。',
+          ms: 'Sila pilih destinasi dahulu.',
+        );
 
         notifyListeners();
 
@@ -1485,9 +1580,12 @@
         return true;
       }
 
-      _errorMessage =
-      'Please provide consent before using '
-          'outfit recognition.';
+      _errorMessage = _t(
+        en: 'Please provide consent before using outfit recognition.',
+        zh: '请先同意使用条款，才能使用穿搭识别功能。',
+        ms: 'Sila berikan persetujuan sebelum menggunakan '
+            'pengecaman pakaian.',
+      );
 
       notifyListeners();
 

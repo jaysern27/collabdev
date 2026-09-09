@@ -6,6 +6,19 @@ import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
 
 import '../../../../external_data_sources/ml_kit_tensorflow_lite/ml_kit_tensorflow_lite_data_source.dart';
+import '../../../../ui_layer/view_model/settings/app_settings_controller.dart';
+
+String _t({
+  required String en,
+  required String zh,
+  required String ms,
+}) {
+  return AppSettingsController.instance.text(
+    en: en,
+    zh: zh,
+    ms: ms,
+  );
+}
 
 // ============================================================
 // OUTFIT GENDER
@@ -487,14 +500,17 @@ class OutfitRecognitionService {
     }
 
     if (outfitImage.path.trim().isEmpty) {
-      return const FullBodyValidationResult(
+      return FullBodyValidationResult(
         poseDetected: false,
         fullBodyVisible: false,
         armsVisible: false,
         bodyHeightRatio: 0,
-        missingLandmarks: [],
-        message:
-        'Unable to validate body visibility for this image.',
+        missingLandmarks: const [],
+        message: _t(
+          en: 'Unable to validate body visibility for this image.',
+          zh: '无法验证此照片中的身体可见度。',
+          ms: 'Tidak dapat mengesahkan keterlihatan badan untuk imej ini.',
+        ),
       );
     }
 
@@ -504,14 +520,18 @@ class OutfitRecognitionService {
     );
 
     if (decodedImage == null) {
-      return const FullBodyValidationResult(
+      return FullBodyValidationResult(
         poseDetected: false,
         fullBodyVisible: false,
         armsVisible: false,
         bodyHeightRatio: 0,
-        missingLandmarks: [],
-        message:
-        'Unable to read the selected image for full-body validation.',
+        missingLandmarks: const [],
+        message: _t(
+          en: 'Unable to read the selected image for full-body validation.',
+          zh: '无法读取所选照片以验证全身可见度。',
+          ms: 'Tidak dapat membaca imej yang dipilih untuk pengesahan '
+              'sepenuh badan.',
+        ),
       );
     }
 
@@ -537,15 +557,19 @@ class OutfitRecognitionService {
     );
 
     if (poses.isEmpty) {
-      return const FullBodyValidationResult(
+      return FullBodyValidationResult(
         poseDetected: false,
         fullBodyVisible: false,
         armsVisible: false,
         bodyHeightRatio: 0,
-        missingLandmarks: [],
-        message:
-        'A person was detected, but body landmarks could not be identified. '
-            'Please use a clear full-body photo.',
+        missingLandmarks: const [],
+        message: _t(
+          en: 'A person was detected, but body landmarks could not be '
+              'identified. Please use a clear full-body photo.',
+          zh: '检测到了人物，但无法识别身体关键点。请使用清晰的全身照片。',
+          ms: 'Seseorang dikesan, tetapi titik badan tidak dapat dikenal '
+              'pasti. Sila gunakan foto sepenuh badan yang jelas.',
+        ),
       );
     }
 
@@ -790,10 +814,16 @@ class OutfitRecognitionService {
           bodyHeightRatio,
           missingLandmarks:
           allMissing,
-          message:
-          'Your full body is visible, but you are too small in the frame. '
-              'Move closer while keeping your head, shoulders, hips, knees '
-              'and ankles visible.',
+          message: _t(
+            en: 'Your full body is visible, but you are too small in the '
+                'frame. Move closer while keeping your head, shoulders, '
+                'hips, knees and ankles visible.',
+            zh: '您的全身都在画面中，但人物太小。请靠近一些，同时保持头部、'
+                '肩膀、臀部、膝盖和脚踝清晰可见。',
+            ms: 'Seluruh badan anda kelihatan, tetapi terlalu kecil dalam '
+                'bingkai. Dekatkan diri sambil memastikan kepala, bahu, '
+                'pinggul, lutut dan buku lali kelihatan.',
+          ),
         );
       }
 
@@ -805,9 +835,13 @@ class OutfitRecognitionService {
         bodyHeightRatio,
         missingLandmarks:
         allMissing,
-        message:
-        'Full body not visible. Please make sure your head, shoulders, '
-            'hips, knees and ankles are inside the photo.',
+        message: _t(
+          en: 'Full body not visible. Please make sure your head, '
+              'shoulders, hips, knees and ankles are inside the photo.',
+          zh: '未能看到全身。请确保头部、肩膀、臀部、膝盖和脚踝都在照片范围内。',
+          ms: 'Sepenuh badan tidak kelihatan. Pastikan kepala, bahu, '
+              'pinggul, lutut dan buku lali anda berada dalam foto.',
+        ),
       );
     }
 
@@ -824,9 +858,16 @@ class OutfitRecognitionService {
         bodyHeightRatio,
         missingLandmarks:
         allMissing,
-        message:
-        'Your full body is visible, but your arms are not clear enough. '
-            'Please keep both elbows and wrists visible for sleeve analysis.',
+        message: _t(
+          en: 'Your full body is visible, but your arms are not clear '
+              'enough. Please keep both elbows and wrists visible for '
+              'sleeve analysis.',
+          zh: '您的全身可见，但手臂不够清晰。请保持双肘和双手腕清晰可见，'
+              '以便分析袖子。',
+          ms: 'Seluruh badan anda kelihatan, tetapi lengan anda tidak '
+              'cukup jelas. Sila pastikan kedua-dua siku dan pergelangan '
+              'tangan kelihatan untuk analisis lengan baju.',
+        ),
       );
     }
 
@@ -837,8 +878,11 @@ class OutfitRecognitionService {
       bodyHeightRatio:
       bodyHeightRatio,
       missingLandmarks: const [],
-      message:
-      'Full body and arms are clearly visible.',
+      message: _t(
+        en: 'Full body and arms are clearly visible.',
+        zh: '全身和手臂都清晰可见。',
+        ms: 'Sepenuh badan dan lengan kelihatan dengan jelas.',
+      ),
     );
   }
 
