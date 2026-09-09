@@ -1901,6 +1901,248 @@ class OutfitRecognitionService {
 
 
   // ==========================================================
+  // DERIVE DRESS-CODE RULES FROM DOS/DON'TS TEXT
+  //
+  // Many attractions only carry free-text dos/donts (shown on the
+  // Cultural Map) rather than a structured etiquette_outfit
+  // document for their category. This maps common phrasing onto
+  // the same attribute/acceptedValues shape compareWithDressCode()
+  // expects, keyed to the exact labels each model outputs, so
+  // outfit matching still works from the dress code that has
+  // already been authored instead of requiring every category to
+  // have a structured entry.
+  // ==========================================================
+
+  List<Map<String, dynamic>>
+  deriveDressCodeRulesFromText({
+    required List<dynamic> dos,
+    required List<dynamic> donts,
+    // Dress codes for the same attraction can differ by gender
+    // (e.g. only female visitors are asked to cover their hair).
+    // Pass the visitor's selected gender so a phrase written for
+    // the other gender is skipped; leave null to apply every
+    // phrase regardless of gender.
+    OutfitGender? gender,
+  }) {
+    final Map<String, Set<String>> allowedValues = {};
+
+    void restrictTo(
+        String attribute,
+        List<String> values,
+        ) {
+      final current =
+      allowedValues[attribute];
+
+      if (current == null) {
+        allowedValues[attribute] =
+            values.toSet();
+      } else {
+        current.retainWhere(
+          values.contains,
+        );
+      }
+    }
+
+    final genderName = gender?.name;
+
+    bool appliesToSelectedGender(
+        String phrase,
+        ) {
+      if (genderName == null) {
+        return true;
+      }
+
+      final phraseGender =
+      _genderScopeOfPhrase(phrase);
+
+      return phraseGender == null ||
+          phraseGender == genderName;
+    }
+
+    for (final phrase in _normalisedPhrases(dos)) {
+      if (!appliesToSelectedGender(
+        phrase,
+      )) {
+        continue;
+      }
+
+      if (phrase.contains('cover') &&
+          phrase.contains('shoulder')) {
+        restrictTo(
+          'shoulderCoverage',
+          ['covered'],
+        );
+      }
+
+      if (phrase.contains('long sleeve')) {
+        restrictTo(
+          'sleeveCoverage',
+          ['long'],
+        );
+      }
+
+      if (phrase.contains('knee-length') ||
+          phrase.contains('knee length') ||
+          phrase.contains('below the knee') ||
+          phrase.contains('past the knee')) {
+        restrictTo(
+          'lowerBodyCoverage',
+          ['medium', 'long'],
+        );
+      }
+
+      if (phrase.contains('long pants') ||
+          phrase.contains('long trousers') ||
+          phrase.contains('long skirt') ||
+          phrase.contains('ankle-length') ||
+          phrase.contains('ankle length')) {
+        restrictTo(
+          'lowerBodyCoverage',
+          ['long'],
+        );
+      }
+
+      if ((phrase.contains('cover') ||
+          phrase.contains('wear')) &&
+          (phrase.contains('head covering') ||
+              phrase.contains('headscarf') ||
+              phrase.contains('head scarf') ||
+              phrase.contains('cover your head') ||
+              phrase.contains('cover head'))) {
+        restrictTo(
+          'headwearPresence',
+          ['headwear'],
+        );
+      }
+    }
+
+    for (final phrase in _normalisedPhrases(donts)) {
+      if (!appliesToSelectedGender(
+        phrase,
+      )) {
+        continue;
+      }
+
+      if (phrase.contains('sleeveless')) {
+        restrictTo(
+          'sleeveCoverage',
+          ['long', 'short'],
+        );
+      }
+
+      if (phrase.contains('shoulder')) {
+        // A dress-code "don't" mentioning shoulders is
+        // consistently about bare/exposed shoulders.
+        restrictTo(
+          'shoulderCoverage',
+          ['covered'],
+        );
+      }
+
+      if (phrase.contains('shorts') ||
+          phrase.contains('short skirt') ||
+          phrase.contains('mini skirt') ||
+          phrase.contains('above the knee')) {
+        restrictTo(
+          'lowerBodyCoverage',
+          ['medium', 'long'],
+        );
+      }
+
+      if (phrase.contains('head') &&
+          phrase.contains('uncovered')) {
+        restrictTo(
+          'headwearPresence',
+          ['headwear'],
+        );
+      } else if (phrase.contains('hat') ||
+          phrase.contains('cap') ||
+          phrase.contains('headwear')) {
+        restrictTo(
+          'headwearPresence',
+          ['no_headwear'],
+        );
+      }
+    }
+
+    const titles = {
+      'sleeveCoverage': 'Sleeve length',
+      'lowerBodyCoverage': 'Lower-body coverage',
+      'shoulderCoverage': 'Shoulder coverage',
+      'headwearPresence': 'Headwear',
+    };
+
+    final derivedRules =
+    <Map<String, dynamic>>[];
+
+    allowedValues.forEach(
+          (attribute, values) {
+        // A phrase combination that narrows a value set down to
+        // nothing describes an impossible outfit; skip it rather
+        // than produce a rule nothing could ever satisfy.
+        if (values.isEmpty) {
+          return;
+        }
+
+        derivedRules.add({
+          'attribute': attribute,
+          'acceptedValues': values.toList(),
+          'title':
+          titles[attribute] ??
+              'Dress Code Rule',
+          'isActive': true,
+        });
+      },
+    );
+
+    return derivedRules;
+  }
+
+  List<String> _normalisedPhrases(
+      List<dynamic> values,
+      ) {
+    return values
+        .map(
+          (value) => value
+        ?.toString()
+        .trim()
+        .toLowerCase() ??
+          '',
+    )
+        .where(
+          (value) => value.isNotEmpty,
+    )
+        .toList();
+  }
+
+  static final RegExp _femaleWordPattern =
+  RegExp(r'\bfemale\b|\bwomen\b|\bwoman\b');
+
+  static final RegExp _maleWordPattern =
+  RegExp(r'\bmale\b|\bmen\b|\bman\b');
+
+  // Returns 'female'/'male' when a dos/donts phrase is explicitly
+  // scoped to one gender, or null when it applies to everyone.
+  String? _genderScopeOfPhrase(
+      String phrase,
+      ) {
+    if (_femaleWordPattern.hasMatch(
+      phrase,
+    )) {
+      return 'female';
+    }
+
+    if (_maleWordPattern.hasMatch(
+      phrase,
+    )) {
+      return 'male';
+    }
+
+    return null;
+  }
+
+
+  // ==========================================================
   // MODEL INFORMATION
   // ==========================================================
   List<int> getHumanDetectionInputShape() {

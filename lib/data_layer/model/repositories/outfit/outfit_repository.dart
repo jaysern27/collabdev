@@ -273,6 +273,23 @@ class OutfitRepository {
   }
 
   // =========================================================
+  // DERIVE DRESS-CODE RULES FROM DOS/DON'TS TEXT
+  // =========================================================
+
+  List<Map<String, dynamic>> deriveDressCodeRulesFromText({
+    required List<dynamic> dos,
+    required List<dynamic> donts,
+    OutfitGender? gender,
+  }) {
+    return _outfitRecognitionService
+        .deriveDressCodeRulesFromText(
+      dos: dos,
+      donts: donts,
+      gender: gender,
+    );
+  }
+
+  // =========================================================
   // MODEL INFORMATION
   // =========================================================
   List<int> getHumanDetectionInputShape() {

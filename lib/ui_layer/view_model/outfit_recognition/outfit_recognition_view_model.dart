@@ -35,7 +35,15 @@
 
     // Recommendations remain conservative even though the UI
     // always displays the classifier's highest-scoring label.
-    static const double recommendationMinimumConfidence = 0.75;
+    //
+    // Lowered from 0.75 -- the shoulder model in particular
+    // regularly sits around ~50-55% confidence even on correct
+    // predictions (it hasn't been retrained/improved like the
+    // other models), so 0.75 was excluding almost every place from
+    // recommendations regardless of whether the outfit actually
+    // matched. Revisit this once the shoulder model itself is
+    // retrained to be more confident.
+    static const double recommendationMinimumConfidence = 0.5;
 
     static const int maximumPlaceRecommendations = 5;
 
@@ -1047,7 +1055,7 @@
           // headwear = optional
           // =====================================================
 
-          final dressCodeRules =
+          var dressCodeRules =
           await _placeRecommendationRepository
               .getStructuredDressCodeRulesForCategory(
             category,
@@ -1075,7 +1083,28 @@
                 '${dressCodeRules.length}',
           );
 
-          // No category-level outfit rule exists.
+          // No category-level outfit rule exists yet -- fall back to
+          // this specific attraction's free-text dos/donts (shown on
+          // the Cultural Map) rather than skipping it outright.
+          if (dressCodeRules.isEmpty) {
+            dressCodeRules =
+                _outfitRepository
+                    .deriveDressCodeRulesFromText(
+                  dos: attraction['dos'] is List
+                      ? attraction['dos'] as List
+                      : const [],
+                  donts: attraction['donts'] is List
+                      ? attraction['donts'] as List
+                      : const [],
+                  gender: _selectedGender,
+                );
+
+            debugPrint(
+              'derived rules from dos/donts = '
+                  '${dressCodeRules.length}',
+            );
+          }
+
           if (dressCodeRules.isEmpty) {
             debugPrint(
               'SKIPPED: no outfit etiquette found.',
