@@ -25,15 +25,15 @@ class _HomeViewState extends State<HomeView> {
   final HomeViewModel _viewModel = HomeViewModel();
 
   final EtiquetteNotificationRepository _etiquetteNotificationRepository =
-  EtiquetteNotificationRepository();
+      EtiquetteNotificationRepository();
 
   final FirebaseAuthenticationService _authService =
-  FirebaseAuthenticationService();
+      FirebaseAuthenticationService();
 
   final AppSettingsController _settings = AppSettingsController.instance;
 
   final ViolationDashboardReportViewModel _rankingViewModel =
-  ViolationDashboardReportViewModel();
+      ViolationDashboardReportViewModel();
 
   final TextEditingController _searchController = TextEditingController();
 
@@ -55,14 +55,11 @@ class _HomeViewState extends State<HomeView> {
     _viewModel.loadHomeData();
     _rankingViewModel.loadDashboard();
 
-    _greetingTimer = Timer.periodic(
-      const Duration(minutes: 1),
-          (_) {
-        if (mounted) {
-          setState(() {});
-        }
-      },
-    );
+    _greetingTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+      if (mounted) {
+        setState(() {});
+      }
+    });
   }
 
   void _onViewModelChanged() {
@@ -148,17 +145,13 @@ class _HomeViewState extends State<HomeView> {
 
         await Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (_) => CulturalMapView(
-              initialAttraction: attraction,
-            ),
+            builder: (_) => CulturalMapView(initialAttraction: attraction),
           ),
         );
       } else {
         await Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (_) => CulturalMapView(
-              initialQuery: query,
-            ),
+            builder: (_) => CulturalMapView(initialQuery: query),
           ),
         );
       }
@@ -196,25 +189,19 @@ class _HomeViewState extends State<HomeView> {
 
   void _openOutfitPage() {
     Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const OutfitRecognitionView(),
-      ),
+      MaterialPageRoute(builder: (context) => const OutfitRecognitionView()),
     );
   }
 
   void _openExplorePage() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const CulturalMapView(),
-      ),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (context) => const CulturalMapView()));
   }
 
   void _openViolationRankingPage() {
     Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const ViolationRankingPage(),
-      ),
+      MaterialPageRoute(builder: (context) => const ViolationRankingPage()),
     );
   }
 
@@ -274,11 +261,7 @@ class _HomeViewState extends State<HomeView> {
       }
     }
 
-    return _settings.text(
-      en: 'Traveller',
-      zh: '旅客',
-      ms: 'Pelancong',
-    );
+    return _settings.text(en: 'Traveller', zh: '旅客', ms: 'Pelancong');
   }
 
   String _timeBasedGreeting() {
@@ -389,9 +372,7 @@ class _HomeViewState extends State<HomeView> {
           decoration: BoxDecoration(
             color: colorScheme.surface,
             shape: BoxShape.circle,
-            border: Border.all(
-              color: colorScheme.outlineVariant,
-            ),
+            border: Border.all(color: colorScheme.outlineVariant),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(
@@ -469,9 +450,7 @@ class _HomeViewState extends State<HomeView> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final colorScheme = Theme.of(context).colorScheme;
 
-    final heroTop = isDark
-        ? const Color(0xFF0E2B4A)
-        : const Color(0xFFDDF3FF);
+    final heroTop = isDark ? const Color(0xFF0E2B4A) : const Color(0xFFDDF3FF);
     final heroBottom = isDark
         ? const Color(0xFF0D4A58)
         : const Color(0xFFE8FFF7);
@@ -484,10 +463,7 @@ class _HomeViewState extends State<HomeView> {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            heroTop,
-            heroBottom,
-          ],
+          colors: [heroTop, heroBottom],
         ),
         boxShadow: [
           BoxShadow(
@@ -502,23 +478,11 @@ class _HomeViewState extends State<HomeView> {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            CustomPaint(
-              painter: _ScenicBackgroundPainter(
-                dark: isDark,
-              ),
-            ),
+            CustomPaint(painter: _ScenicBackgroundPainter(dark: isDark)),
 
-            Positioned(
-              left: 18,
-              top: 18,
-              child: _buildHeroLabel(),
-            ),
+            Positioned(left: 18, top: 18, child: _buildHeroLabel()),
 
-            Positioned(
-              right: 20,
-              top: 26,
-              child: _buildHeroSideWords(),
-            ),
+            Positioned(right: 20, top: 26, child: _buildHeroSideWords()),
 
             Positioned(
               left: 4,
@@ -577,18 +541,13 @@ class _HomeViewState extends State<HomeView> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 12,
-        vertical: 8,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: isDark
             ? Colors.white.withValues(alpha: 0.10)
             : Colors.white.withValues(alpha: 0.72),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.36),
-        ),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.36)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -596,9 +555,7 @@ class _HomeViewState extends State<HomeView> {
           Icon(
             Icons.favorite_rounded,
             size: 14,
-            color: isDark
-                ? const Color(0xFFFFC9D2)
-                : const Color(0xFFFF5A74),
+            color: isDark ? const Color(0xFFFFC9D2) : const Color(0xFFFF5A74),
           ),
           const SizedBox(width: 6),
           Text(
@@ -629,9 +586,7 @@ class _HomeViewState extends State<HomeView> {
       ),
       textAlign: TextAlign.right,
       style: TextStyle(
-        color: isDark
-            ? const Color(0xFFFFD978)
-            : const Color(0xFF176E75),
+        color: isDark ? const Color(0xFFFFD978) : const Color(0xFF176E75),
         fontSize: 13,
         height: 1.08,
         fontWeight: FontWeight.w800,
@@ -654,15 +609,10 @@ class _HomeViewState extends State<HomeView> {
                 ? const Color(0xFF142A3E).withValues(alpha: 0.96)
                 : const Color(0xFFFFFBF4).withValues(alpha: 0.97),
             borderRadius: BorderRadius.circular(26),
-            border: Border.all(
-              color: const Color(0xFFFFC456),
-              width: 1.7,
-            ),
+            border: Border.all(color: const Color(0xFFFFC456), width: 1.7),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(
-                  alpha: isDark ? 0.24 : 0.07,
-                ),
+                color: Colors.black.withValues(alpha: isDark ? 0.24 : 0.07),
                 blurRadius: 16,
                 offset: const Offset(0, 7),
               ),
@@ -696,10 +646,7 @@ class _HomeViewState extends State<HomeView> {
                     ? const Color(0xFF142A3E)
                     : const Color(0xFFFFFBF4),
                 border: Border(
-                  left: const BorderSide(
-                    color: Color(0xFFFFC456),
-                    width: 1.7,
-                  ),
+                  left: const BorderSide(color: Color(0xFFFFC456), width: 1.7),
                   bottom: const BorderSide(
                     color: Color(0xFFFFC456),
                     width: 1.7,
@@ -725,9 +672,7 @@ class _HomeViewState extends State<HomeView> {
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: colorScheme.outlineVariant,
-        ),
+        border: Border.all(color: colorScheme.outlineVariant),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(
@@ -743,11 +688,7 @@ class _HomeViewState extends State<HomeView> {
       child: Row(
         children: [
           const SizedBox(width: 16),
-          Icon(
-            Icons.search_rounded,
-            color: colorScheme.onSurface,
-            size: 27,
-          ),
+          Icon(Icons.search_rounded, color: colorScheme.onSurface, size: 27),
           const SizedBox(width: 12),
           Expanded(
             child: TextField(
@@ -776,30 +717,17 @@ class _HomeViewState extends State<HomeView> {
               ),
             ),
           ),
-          Container(
-            width: 1,
-            height: 26,
-            color: colorScheme.outlineVariant,
-          ),
+          Container(width: 1, height: 26, color: colorScheme.outlineVariant),
           IconButton(
-            tooltip: _settings.text(
-              en: 'Search',
-              zh: '搜索',
-              ms: 'Cari',
-            ),
+            tooltip: _settings.text(en: 'Search', zh: '搜索', ms: 'Cari'),
             onPressed: _isSearching ? null : _showEtiquette,
             icon: _isSearching
                 ? const SizedBox(
-              width: 19,
-              height: 19,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-              ),
-            )
-                : Icon(
-              Icons.tune_rounded,
-              color: colorScheme.primary,
-            ),
+                    width: 19,
+                    height: 19,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Icon(Icons.tune_rounded, color: colorScheme.primary),
           ),
           const SizedBox(width: 4),
         ],
@@ -811,12 +739,8 @@ class _HomeViewState extends State<HomeView> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final colorScheme = Theme.of(context).colorScheme;
 
-    final start = isDark
-        ? const Color(0xFF143E43)
-        : const Color(0xFFE6FFF9);
-    final end = isDark
-        ? const Color(0xFF0E6259)
-        : const Color(0xFFD7F5E8);
+    final start = isDark ? const Color(0xFF143E43) : const Color(0xFFE6FFF9);
+    final end = isDark ? const Color(0xFF0E6259) : const Color(0xFFD7F5E8);
 
     return Material(
       color: Colors.transparent,
@@ -826,9 +750,7 @@ class _HomeViewState extends State<HomeView> {
         child: Ink(
           height: 126,
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [start, end],
-            ),
+            gradient: LinearGradient(colors: [start, end]),
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
               color: colorScheme.primary.withValues(alpha: 0.10),
@@ -931,13 +853,9 @@ class _HomeViewState extends State<HomeView> {
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final rows = List<Map<String, dynamic>>.from(
-      _rankingViewModel.rankings,
-    );
+    final rows = List<Map<String, dynamic>>.from(_rankingViewModel.rankings);
 
-    rows.sort(
-          (a, b) => _rankingScore(b).compareTo(_rankingScore(a)),
-    );
+    rows.sort((a, b) => _rankingScore(b).compareTo(_rankingScore(a)));
 
     final topThree = rows.take(3).toList();
 
@@ -950,9 +868,7 @@ class _HomeViewState extends State<HomeView> {
             : const Color(0xFFFFFAF6),
         borderRadius: BorderRadius.circular(26),
         border: Border.all(
-          color: isDark
-              ? colorScheme.outlineVariant
-              : const Color(0xFFF4E7DC),
+          color: isDark ? colorScheme.outlineVariant : const Color(0xFFF4E7DC),
         ),
       ),
       child: Column(
@@ -964,9 +880,9 @@ class _HomeViewState extends State<HomeView> {
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFFC145).withValues(
-                    alpha: isDark ? 0.16 : 0.20,
-                  ),
+                  color: const Color(
+                    0xFFFFC145,
+                  ).withValues(alpha: isDark ? 0.16 : 0.20),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: const Icon(
@@ -1026,10 +942,7 @@ class _HomeViewState extends State<HomeView> {
                       ),
                     ),
                     const SizedBox(width: 2),
-                    const Icon(
-                      Icons.chevron_right_rounded,
-                      size: 18,
-                    ),
+                    const Icon(Icons.chevron_right_rounded, size: 18),
                   ],
                 ),
               ),
@@ -1050,29 +963,20 @@ class _HomeViewState extends State<HomeView> {
     );
   }
 
-  Widget _buildRankingCards(
-      List<Map<String, dynamic>> topThree,
-      ) {
+  Widget _buildRankingCards(List<Map<String, dynamic>> topThree) {
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final frequencies = topThree
-        .map(
-          (row) => _rankingFrequency(row),
-    )
-        .toList();
+    final frequencies = topThree.map((row) => _rankingFrequency(row)).toList();
 
     final maxFrequency = frequencies.isEmpty
         ? 1
-        : frequencies.reduce(
-          (a, b) => a > b ? a : b,
-    );
+        : frequencies.reduce((a, b) => a > b ? a : b);
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final gap = 9.0;
-        final cardWidth =
-            (constraints.maxWidth - gap * 2) / 3;
+        final cardWidth = (constraints.maxWidth - gap * 2) / 3;
 
         return Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1097,27 +1001,26 @@ class _HomeViewState extends State<HomeView> {
   }
 
   Widget _buildRankingCard(
-      Map<String, dynamic> row,
-      int rank,
-      int maxFrequency,
-      bool isDark,
-      ColorScheme colorScheme,
-      ) {
+    Map<String, dynamic> row,
+    int rank,
+    int maxFrequency,
+    bool isDark,
+    ColorScheme colorScheme,
+  ) {
     final frequency = _rankingFrequency(row);
     final score = _rankingScore(row);
     final title = _localizedViolationTitle(row);
 
-    final rawLocation =
-    (row['attractionName'] ?? row['attractionId'])
+    final rawLocation = (row['attractionName'] ?? row['attractionId'])
         ?.toString()
         .trim();
 
     final displayLocation = rawLocation == null || rawLocation.isEmpty
         ? _settings.text(
-      en: 'Unknown attraction',
-      zh: '未知景点',
-      ms: 'Tarikan tidak diketahui',
-    )
+            en: 'Unknown attraction',
+            zh: '未知景点',
+            ms: 'Tarikan tidak diketahui',
+          )
         : rawLocation;
 
     final progress = maxFrequency <= 0
@@ -1136,13 +1039,9 @@ class _HomeViewState extends State<HomeView> {
       child: Container(
         padding: const EdgeInsets.fromLTRB(10, 10, 10, 12),
         decoration: BoxDecoration(
-          color: isDark
-              ? colorScheme.surfaceContainerHighest
-              : Colors.white,
+          color: isDark ? colorScheme.surfaceContainerHighest : Colors.white,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: colorScheme.outlineVariant,
-          ),
+          border: Border.all(color: colorScheme.outlineVariant),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1159,9 +1058,7 @@ class _HomeViewState extends State<HomeView> {
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [
-                        accent.withValues(
-                          alpha: isDark ? 0.30 : 0.16,
-                        ),
+                        accent.withValues(alpha: isDark ? 0.30 : 0.16),
                         colorScheme.primary.withValues(
                           alpha: isDark ? 0.10 : 0.05,
                         ),
@@ -1273,17 +1170,11 @@ class _HomeViewState extends State<HomeView> {
 
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(
-          vertical: 38,
-        ),
+        padding: const EdgeInsets.symmetric(vertical: 38),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.bar_chart_rounded,
-              color: colorScheme.primary,
-              size: 42,
-            ),
+            Icon(Icons.bar_chart_rounded, color: colorScheme.primary, size: 42),
             const SizedBox(height: 10),
             Text(
               _settings.text(
@@ -1315,9 +1206,7 @@ class _HomeViewState extends State<HomeView> {
     );
   }
 
-  int _rankingFrequency(
-      Map<String, dynamic> row,
-      ) {
+  int _rankingFrequency(Map<String, dynamic> row) {
     final value = row['frequency'] ?? 0;
 
     if (value is int) {
@@ -1331,13 +1220,9 @@ class _HomeViewState extends State<HomeView> {
     return int.tryParse(value.toString()) ?? 0;
   }
 
-  double _rankingScore(
-      Map<String, dynamic> row,
-      ) {
-    final value = row['priorityScore'] ??
-        row['score'] ??
-        row['rankingScore'] ??
-        0;
+  double _rankingScore(Map<String, dynamic> row) {
+    final value =
+        row['priorityScore'] ?? row['score'] ?? row['rankingScore'] ?? 0;
 
     if (value is num) {
       return value.toDouble();
@@ -1346,23 +1231,16 @@ class _HomeViewState extends State<HomeView> {
     return double.tryParse(value.toString()) ?? 0;
   }
 
-  String _localizedViolationTitle(
-      Map<String, dynamic> row,
-      ) {
+  String _localizedViolationTitle(Map<String, dynamic> row) {
     final english = (row['ruleName'] ?? row['category'] ?? '')
         .toString()
         .trim();
 
-    final chinese = (row['ruleNameZh'] ?? '')
-        .toString()
-        .trim();
+    final chinese = (row['ruleNameZh'] ?? '').toString().trim();
 
-    final malay = (row['ruleNameMs'] ?? '')
-        .toString()
-        .trim();
+    final malay = (row['ruleNameMs'] ?? '').toString().trim();
 
-    final fallbackEnglish =
-    english.isNotEmpty ? english : 'Etiquette issue';
+    final fallbackEnglish = english.isNotEmpty ? english : 'Etiquette issue';
 
     return _settings.text(
       en: fallbackEnglish,
@@ -1388,28 +1266,16 @@ class _HomeViewState extends State<HomeView> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: isDark
-              ? const [
-            Color(0xFF10273A),
-            Color(0xFF163F46),
-          ]
-              : const [
-            Color(0xFFF6FBFF),
-            Color(0xFFE9FFF4),
-          ],
+              ? const [Color(0xFF10273A), Color(0xFF163F46)]
+              : const [Color(0xFFF6FBFF), Color(0xFFE9FFF4)],
         ),
-        border: Border.all(
-          color: colorScheme.outlineVariant,
-        ),
+        border: Border.all(color: colorScheme.outlineVariant),
       ),
       child: Stack(
         clipBehavior: Clip.none,
         children: [
           Positioned.fill(
-            child: CustomPaint(
-              painter: _SloganPainter(
-                dark: isDark,
-              ),
-            ),
+            child: CustomPaint(painter: _SloganPainter(dark: isDark)),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 20, 112, 18),
@@ -1422,9 +1288,7 @@ class _HomeViewState extends State<HomeView> {
                   ms: 'Hormati Budaya,\nKekalkan Keindahan Malaysia ❤️',
                 ),
                 style: TextStyle(
-                  color: isDark
-                      ? Colors.white
-                      : const Color(0xFF123B61),
+                  color: isDark ? Colors.white : const Color(0xFF123B61),
                   fontSize: 17,
                   height: 1.25,
                   fontWeight: FontWeight.w900,
@@ -1460,18 +1324,12 @@ class _HomeViewState extends State<HomeView> {
     return Container(
       margin: const EdgeInsets.fromLTRB(14, 0, 14, 10),
       decoration: BoxDecoration(
-        color: isDark
-            ? colorScheme.surfaceContainer
-            : Colors.white,
+        color: isDark ? colorScheme.surfaceContainer : Colors.white,
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(
-          color: colorScheme.outlineVariant,
-        ),
+        border: Border.all(color: colorScheme.outlineVariant),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(
-              alpha: isDark ? 0.24 : 0.08,
-            ),
+            color: Colors.black.withValues(alpha: isDark ? 0.24 : 0.08),
             blurRadius: 22,
             offset: const Offset(0, 8),
           ),
@@ -1486,38 +1344,22 @@ class _HomeViewState extends State<HomeView> {
             children: [
               _navItem(
                 icon: Icons.home_rounded,
-                label: _settings.text(
-                  en: 'Home',
-                  zh: '主页',
-                  ms: 'Utama',
-                ),
+                label: _settings.text(en: 'Home', zh: '主页', ms: 'Utama'),
                 selected: true,
               ),
               _navItem(
                 icon: Icons.explore_outlined,
-                label: _settings.text(
-                  en: 'Explore',
-                  zh: '探索',
-                  ms: 'Teroka',
-                ),
+                label: _settings.text(en: 'Explore', zh: '探索', ms: 'Teroka'),
                 onTap: _openExplorePage,
               ),
               _navItem(
                 icon: Icons.checkroom_outlined,
-                label: _settings.text(
-                  en: 'Outfit',
-                  zh: '穿搭',
-                  ms: 'Pakaian',
-                ),
+                label: _settings.text(en: 'Outfit', zh: '穿搭', ms: 'Pakaian'),
                 onTap: _openOutfitPage,
               ),
               _navItem(
                 icon: Icons.person_outline_rounded,
-                label: _settings.text(
-                  en: 'Profile',
-                  zh: '我的',
-                  ms: 'Profil',
-                ),
+                label: _settings.text(en: 'Profile', zh: '我的', ms: 'Profil'),
                 onTap: () {
                   Navigator.push(
                     context,
@@ -1564,11 +1406,7 @@ class _HomeViewState extends State<HomeView> {
                     : Colors.transparent,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(
-                icon,
-                size: 23,
-                color: color,
-              ),
+              child: Icon(icon, size: 23, color: color),
             ),
             const SizedBox(height: 2),
             Text(
@@ -1576,8 +1414,7 @@ class _HomeViewState extends State<HomeView> {
               style: TextStyle(
                 color: color,
                 fontSize: 10,
-                fontWeight:
-                selected ? FontWeight.w800 : FontWeight.w500,
+                fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
               ),
             ),
           ],
@@ -1594,9 +1431,7 @@ class _HomeViewState extends State<HomeView> {
 class _ScenicBackgroundPainter extends CustomPainter {
   final bool dark;
 
-  const _ScenicBackgroundPainter({
-    required this.dark,
-  });
+  const _ScenicBackgroundPainter({required this.dark});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -1665,28 +1500,17 @@ class _ScenicBackgroundPainter extends CustomPainter {
     canvas.drawPath(front, mountainPaint);
 
     canvas.drawRect(
-      Rect.fromLTWH(
-        0,
-        size.height * 0.70,
-        size.width,
-        size.height * 0.30,
-      ),
+      Rect.fromLTWH(0, size.height * 0.70, size.width, size.height * 0.30),
       waterPaint,
     );
 
     // Decorative foliage
     for (var i = 0; i < 8; i++) {
-      final x = i.isEven
-          ? 12.0 + i * 3
-          : size.width - 20.0 - i * 2;
+      final x = i.isEven ? 12.0 + i * 3 : size.width - 20.0 - i * 2;
       final y = size.height * (0.20 + i * 0.075);
 
       canvas.drawOval(
-        Rect.fromCenter(
-          center: Offset(x, y),
-          width: 42,
-          height: 20,
-        ),
+        Rect.fromCenter(center: Offset(x, y), width: 42, height: 20),
         foliagePaint,
       );
     }
@@ -1724,21 +1548,11 @@ class _ScenicBackgroundPainter extends CustomPainter {
     );
   }
 
-  void _drawTower(
-      Canvas canvas,
-      Paint paint,
-      Offset base,
-      double height,
-      ) {
+  void _drawTower(Canvas canvas, Paint paint, Offset base, double height) {
     final bodyWidth = 18.0;
 
     canvas.drawRect(
-      Rect.fromLTWH(
-        base.dx,
-        base.dy - height,
-        bodyWidth,
-        height,
-      ),
+      Rect.fromLTWH(base.dx, base.dy - height, bodyWidth, height),
       paint,
     );
 
@@ -1772,9 +1586,7 @@ class _ScenicBackgroundPainter extends CustomPainter {
 class _SloganPainter extends CustomPainter {
   final bool dark;
 
-  const _SloganPainter({
-    required this.dark,
-  });
+  const _SloganPainter({required this.dark});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -1813,36 +1625,15 @@ class _SloganPainter extends CustomPainter {
       final x = size.width * 0.58 + i * 14;
       final h = 16.0 + (i % 3) * 9;
 
-      canvas.drawRect(
-        Rect.fromLTWH(
-          x,
-          baseline - h,
-          8,
-          h,
-        ),
-        skylinePaint,
-      );
+      canvas.drawRect(Rect.fromLTWH(x, baseline - h, 8, h), skylinePaint);
     }
 
     final towerX = size.width * 0.80;
 
-    canvas.drawRect(
-      Rect.fromLTWH(
-        towerX,
-        baseline - 52,
-        8,
-        52,
-      ),
-      skylinePaint,
-    );
+    canvas.drawRect(Rect.fromLTWH(towerX, baseline - 52, 8, 52), skylinePaint);
 
     canvas.drawRect(
-      Rect.fromLTWH(
-        towerX + 18,
-        baseline - 58,
-        8,
-        58,
-      ),
+      Rect.fromLTWH(towerX + 18, baseline - 58, 8, 58),
       skylinePaint,
     );
 
@@ -1878,10 +1669,10 @@ class _NoScrollbarBehavior extends MaterialScrollBehavior {
 
   @override
   Widget buildScrollbar(
-      BuildContext context,
-      Widget child,
-      ScrollableDetails details,
-      ) {
+    BuildContext context,
+    Widget child,
+    ScrollableDetails details,
+  ) {
     return child;
   }
 }

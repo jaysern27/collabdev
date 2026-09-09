@@ -3,41 +3,35 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 
 import '../../../external_data_sources/google_maps/google_maps_data_source.dart';
+import '../../../external_data_sources/google_places/google_places_data_source.dart';
 import '../../../data_layer/model/repositories/ranking_report/ranking_report_repository.dart';
 import '../../view_model/cultural_map/cultural_map_view_model.dart';
 import '../../view_model/settings/app_settings_controller.dart';
 import '../saved_places/saved_places_page.dart';
+import '../home/home.dart';
 
 class CulturalMapView extends StatefulWidget {
   final Map<String, dynamic>? initialAttraction;
   final String? initialQuery;
 
-  const CulturalMapView({
-    super.key,
-    this.initialAttraction,
-    this.initialQuery,
-  });
+  const CulturalMapView({super.key, this.initialAttraction, this.initialQuery});
 
   @override
-  State<CulturalMapView> createState() =>
-      _CulturalMapViewState();
+  State<CulturalMapView> createState() => _CulturalMapViewState();
 }
 
-class _CulturalMapViewState
-    extends State<CulturalMapView> {
+class _CulturalMapViewState extends State<CulturalMapView> {
   late final CulturalMapViewModel _viewModel;
 
-  final GoogleMapsDataSource _googleMapsDataSource =
-  GoogleMapsDataSource();
+  final GoogleMapsDataSource _googleMapsDataSource = GoogleMapsDataSource();
+  final GooglePlacesDataSource _googlePlacesDataSource =
+      GooglePlacesDataSource();
 
-  final RankingReportRepository _rankingRepository =
-  RankingReportRepository();
+  final RankingReportRepository _rankingRepository = RankingReportRepository();
 
-  final AppSettingsController _settings =
-      AppSettingsController.instance;
+  final AppSettingsController _settings = AppSettingsController.instance;
 
-  final TextEditingController _searchController =
-  TextEditingController();
+  final TextEditingController _searchController = TextEditingController();
 
   GoogleMapController? _mapController;
 
@@ -48,40 +42,32 @@ class _CulturalMapViewState
   void initState() {
     super.initState();
 
+    _settings.addListener(_onSettingsChanged);
+    _viewModel = CulturalMapViewModel();
 
-    _settings.addListener(
-      _onSettingsChanged,
-    );
-    _viewModel =
-        CulturalMapViewModel();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _viewModel.initialise();
 
-    WidgetsBinding.instance.addPostFrameCallback(
-          (_) async {
-        await _viewModel.initialise();
+      if (!mounted) {
+        return;
+      }
 
-        if (!mounted) {
-          return;
-        }
+      _viewModelReady = true;
 
-        _viewModelReady = true;
+      if (widget.initialAttraction != null) {
+        await _focusInitialAttractionIfReady();
+      } else if (widget.initialQuery != null &&
+          widget.initialQuery!.trim().isNotEmpty) {
+        // Set the search state now; the camera is fitted to the
+        // matching markers once onMapCreated fires below, since
+        // _mapController is not ready yet at this point.
+        _searchController.text = widget.initialQuery!;
 
-        if (widget.initialAttraction != null) {
-          await _focusInitialAttractionIfReady();
-        } else if (widget.initialQuery != null &&
-            widget.initialQuery!.trim().isNotEmpty) {
-          // Set the search state now; the camera is fitted to the
-          // matching markers once onMapCreated fires below, since
-          // _mapController is not ready yet at this point.
-          _searchController.text = widget.initialQuery!;
-
-          _viewModel.setSearchQuery(
-            widget.initialQuery!,
-          );
-        } else {
-          await _moveMapToCurrentArea();
-        }
-      },
-    );
+        _viewModel.setSearchQuery(widget.initialQuery!);
+      } else {
+        await _moveMapToCurrentArea();
+      }
+    });
   }
 
   void _onSettingsChanged() {
@@ -90,68 +76,38 @@ class _CulturalMapViewState
     }
   }
 
-  String _t({
-    required String en,
-    required String zh,
-    required String ms,
-  }) {
-    return _settings.text(
-      en: en,
-      zh: zh,
-      ms: ms,
-    );
+  String _t({required String en, required String zh, required String ms}) {
+    return _settings.text(en: en, zh: zh, ms: ms);
   }
 
   String _localizedText(
-      Map source, {
-        required String enKey,
-        required String zhKey,
-        required String msKey,
-      }) {
-    final english =
-    (source[enKey] ?? '')
-        .toString()
-        .trim();
+    Map source, {
+    required String enKey,
+    required String zhKey,
+    required String msKey,
+  }) {
+    final english = (source[enKey] ?? '').toString().trim();
 
-    final chinese =
-    (source[zhKey] ?? '')
-        .toString()
-        .trim();
+    final chinese = (source[zhKey] ?? '').toString().trim();
 
-    final malay =
-    (source[msKey] ?? '')
-        .toString()
-        .trim();
+    final malay = (source[msKey] ?? '').toString().trim();
 
     return _t(
       en: english,
-      zh: chinese.isNotEmpty
-          ? chinese
-          : english,
-      ms: malay.isNotEmpty
-          ? malay
-          : english,
+      zh: chinese.isNotEmpty ? chinese : english,
+      ms: malay.isNotEmpty ? malay : english,
     );
   }
 
   String _ruleText(Map<String, dynamic> rule) {
     final english =
-    (rule['ruleName'] ??
-        rule['title'] ??
-        rule['description'] ??
-        '')
-        .toString()
-        .trim();
+        (rule['ruleName'] ?? rule['title'] ?? rule['description'] ?? '')
+            .toString()
+            .trim();
 
-    final chinese =
-    (rule['ruleNameZh'] ?? '')
-        .toString()
-        .trim();
+    final chinese = (rule['ruleNameZh'] ?? '').toString().trim();
 
-    final malay =
-    (rule['ruleNameMs'] ?? '')
-        .toString()
-        .trim();
+    final malay = (rule['ruleNameMs'] ?? '').toString().trim();
 
     switch (_settings.language) {
       case AppLanguage.chinese:
@@ -166,29 +122,13 @@ class _CulturalMapViewState
   String _categoryText(String category) {
     switch (category) {
       case 'Islamic Culture':
-        return _t(
-          en: 'Islamic Culture',
-          zh: '伊斯兰文化',
-          ms: 'Budaya Islam',
-        );
+        return _t(en: 'Islamic Culture', zh: '伊斯兰文化', ms: 'Budaya Islam');
       case 'Chinese Culture':
-        return _t(
-          en: 'Chinese Culture',
-          zh: '中华文化',
-          ms: 'Budaya Cina',
-        );
+        return _t(en: 'Chinese Culture', zh: '中华文化', ms: 'Budaya Cina');
       case 'Indian Culture':
-        return _t(
-          en: 'Indian Culture',
-          zh: '印度文化',
-          ms: 'Budaya India',
-        );
+        return _t(en: 'Indian Culture', zh: '印度文化', ms: 'Budaya India');
       case 'Places of Worship':
-        return _t(
-          en: 'Places of Worship',
-          zh: '宗教场所',
-          ms: 'Tempat Ibadat',
-        );
+        return _t(en: 'Places of Worship', zh: '宗教场所', ms: 'Tempat Ibadat');
       case 'Historical Landmarks':
         return _t(
           en: 'Historical Landmarks',
@@ -196,11 +136,7 @@ class _CulturalMapViewState
           ms: 'Mercu Tanda Bersejarah',
         );
       case 'Cultural Attraction':
-        return _t(
-          en: 'Cultural Attraction',
-          zh: '文化景点',
-          ms: 'Tarikan Budaya',
-        );
+        return _t(en: 'Cultural Attraction', zh: '文化景点', ms: 'Tarikan Budaya');
       default:
         return category;
     }
@@ -209,48 +145,31 @@ class _CulturalMapViewState
   String _statusText(String status) {
     final normalized = status.trim().toLowerCase();
 
-    if (normalized.isEmpty ||
-        normalized.contains('unknown')) {
-      return _t(
-        en: 'Status Unknown',
-        zh: '状态未知',
-        ms: 'Status Tidak Diketahui',
-      );
+    if (normalized.isEmpty || normalized.contains('unknown')) {
+      return _t(en: 'Status Unknown', zh: '状态未知', ms: 'Status Tidak Diketahui');
     }
 
-    if (normalized.contains('temporarily') &&
-        normalized.contains('closed')) {
-      return _t(
-        en: 'Temporarily Closed',
-        zh: '暂时关闭',
-        ms: 'Ditutup Sementara',
-      );
+    if (normalized.contains('permanently') && normalized.contains('closed')) {
+      return _t(en: 'Permanently Closed', zh: '永久关闭', ms: 'Ditutup Kekal');
+    }
+
+    if (normalized.contains('temporarily') && normalized.contains('closed')) {
+      return _t(en: 'Temporarily Closed', zh: '暂时关闭', ms: 'Ditutup Sementara');
     }
 
     if (normalized.contains('closed')) {
-      return _t(
-        en: 'Closed',
-        zh: '已关闭',
-        ms: 'Ditutup',
-      );
+      return _t(en: 'Closed', zh: '已关闭', ms: 'Ditutup');
     }
 
     if (normalized.contains('open')) {
-      return _t(
-        en: 'Open',
-        zh: '开放',
-        ms: 'Dibuka',
-      );
+      return _t(en: 'Open', zh: '开放', ms: 'Dibuka');
     }
 
     return status;
   }
 
-  String _distanceText(
-      Map<String, dynamic> attraction,
-      ) {
-    final distance =
-    _viewModel.distanceKmFor(attraction);
+  String _distanceText(Map<String, dynamic> attraction) {
+    final distance = _viewModel.distanceKmFor(attraction);
 
     if (distance == null) {
       return _t(
@@ -260,16 +179,11 @@ class _CulturalMapViewState
       );
     }
 
-    return _viewModel.distanceTextFor(
-      attraction,
-    );
+    return _viewModel.distanceTextFor(attraction);
   }
 
-  String _addressText(
-      Map<String, dynamic> attraction,
-      ) {
-    final address =
-        attraction['address']?.toString().trim() ?? '';
+  String _addressText(Map<String, dynamic> attraction) {
+    final address = attraction['address']?.toString().trim() ?? '';
 
     if (address.isEmpty) {
       return _t(
@@ -282,11 +196,8 @@ class _CulturalMapViewState
     return address;
   }
 
-  String _nameText(
-      Map<String, dynamic> attraction,
-      ) {
-    final name =
-        attraction['name']?.toString().trim() ?? '';
+  String _nameText(Map<String, dynamic> attraction) {
+    final name = attraction['name']?.toString().trim() ?? '';
 
     if (name.isEmpty) {
       return _t(
@@ -330,11 +241,7 @@ class _CulturalMapViewState
           ms: 'Sila log masuk untuk menyimpan kegemaran.',
         );
       case 'Attraction ID is missing.':
-        return _t(
-          en: raw,
-          zh: '缺少景点 ID。',
-          ms: 'ID tarikan tiada.',
-        );
+        return _t(en: raw, zh: '缺少景点 ID。', ms: 'ID tarikan tiada.');
       case 'Unable to update favourite.':
         return _t(
           en: raw,
@@ -358,9 +265,7 @@ class _CulturalMapViewState
 
   @override
   void dispose() {
-    _settings.removeListener(
-      _onSettingsChanged,
-    );
+    _settings.removeListener(_onSettingsChanged);
 
     _mapController?.dispose();
     _searchController.dispose();
@@ -370,8 +275,7 @@ class _CulturalMapViewState
   }
 
   Future<void> _moveMapToCurrentArea() async {
-    final controller =
-        _mapController;
+    final controller = _mapController;
 
     if (controller == null) {
       return;
@@ -379,10 +283,8 @@ class _CulturalMapViewState
 
     await _googleMapsDataSource.moveCamera(
       controller: controller,
-      latitude:
-      _viewModel.currentLatitude,
-      longitude:
-      _viewModel.currentLongitude,
+      latitude: _viewModel.currentLatitude,
+      longitude: _viewModel.currentLongitude,
       zoom: 13,
     );
   }
@@ -396,8 +298,7 @@ class _CulturalMapViewState
   // ============================================================
 
   Future<void> _fitMapToVisibleAttractions() async {
-    final controller =
-        _mapController;
+    final controller = _mapController;
 
     if (controller == null) {
       return;
@@ -405,26 +306,13 @@ class _CulturalMapViewState
 
     final points = <LatLng>[];
 
-    for (final attraction
-    in _viewModel.visibleAttractions) {
-      final latitude =
-      _viewModel.attractionLatitude(
-        attraction,
-      );
+    for (final attraction in _viewModel.visibleAttractions) {
+      final latitude = _viewModel.attractionLatitude(attraction);
 
-      final longitude =
-      _viewModel.attractionLongitude(
-        attraction,
-      );
+      final longitude = _viewModel.attractionLongitude(attraction);
 
-      if (latitude != null &&
-          longitude != null) {
-        points.add(
-          LatLng(
-            latitude,
-            longitude,
-          ),
-        );
+      if (latitude != null && longitude != null) {
+        points.add(LatLng(latitude, longitude));
       }
     }
 
@@ -434,35 +322,24 @@ class _CulturalMapViewState
 
     if (points.length == 1) {
       await controller.animateCamera(
-        CameraUpdate.newLatLngZoom(
-          points.first,
-          15,
-        ),
+        CameraUpdate.newLatLngZoom(points.first, 15),
       );
 
       return;
     }
 
-    var minLatitude =
-        points.first.latitude;
+    var minLatitude = points.first.latitude;
 
-    var maxLatitude =
-        points.first.latitude;
+    var maxLatitude = points.first.latitude;
 
-    var minLongitude =
-        points.first.longitude;
+    var minLongitude = points.first.longitude;
 
-    var maxLongitude =
-        points.first.longitude;
+    var maxLongitude = points.first.longitude;
 
     for (final point in points) {
-      minLatitude = point.latitude < minLatitude
-          ? point.latitude
-          : minLatitude;
+      minLatitude = point.latitude < minLatitude ? point.latitude : minLatitude;
 
-      maxLatitude = point.latitude > maxLatitude
-          ? point.latitude
-          : maxLatitude;
+      maxLatitude = point.latitude > maxLatitude ? point.latitude : maxLatitude;
 
       minLongitude = point.longitude < minLongitude
           ? point.longitude
@@ -476,14 +353,8 @@ class _CulturalMapViewState
     await controller.animateCamera(
       CameraUpdate.newLatLngBounds(
         LatLngBounds(
-          southwest: LatLng(
-            minLatitude,
-            minLongitude,
-          ),
-          northeast: LatLng(
-            maxLatitude,
-            maxLongitude,
-          ),
+          southwest: LatLng(minLatitude, minLongitude),
+          northeast: LatLng(maxLatitude, maxLongitude),
         ),
         60,
       ),
@@ -497,25 +368,17 @@ class _CulturalMapViewState
       return;
     }
 
-    final attraction =
-        widget.initialAttraction;
+    final attraction = widget.initialAttraction;
 
     if (attraction == null) {
       return;
     }
 
-    final latitude =
-    _viewModel.attractionLatitude(
-      attraction,
-    );
+    final latitude = _viewModel.attractionLatitude(attraction);
 
-    final longitude =
-    _viewModel.attractionLongitude(
-      attraction,
-    );
+    final longitude = _viewModel.attractionLongitude(attraction);
 
-    if (latitude == null ||
-        longitude == null) {
+    if (latitude == null || longitude == null) {
       _initialAttractionHandled = true;
       return;
     }
@@ -524,31 +387,19 @@ class _CulturalMapViewState
     // the same attraction twice.
     _initialAttractionHandled = true;
 
-    final name =
-    _nameText(
-      attraction,
-    );
+    final name = _nameText(attraction);
 
-    _searchController.text =
-        name;
+    _searchController.text = name;
 
-    _viewModel.setSearchQuery(
-      name,
-    );
+    _viewModel.setSearchQuery(name);
 
-    _viewModel.selectAttraction(
-      attraction,
-    );
+    _viewModel.selectAttraction(attraction);
 
     await _googleMapsDataSource.moveCamera(
-      controller:
-      _mapController!,
-      latitude:
-      latitude,
-      longitude:
-      longitude,
-      zoom:
-      16,
+      controller: _mapController!,
+      latitude: latitude,
+      longitude: longitude,
+      zoom: 16,
     );
 
     if (!mounted) {
@@ -557,24 +408,17 @@ class _CulturalMapViewState
 
     // Give the Google Map a short moment to finish its camera move,
     // then immediately show the selected place.
-    await Future<void>.delayed(
-      const Duration(
-        milliseconds: 250,
-      ),
-    );
+    await Future<void>.delayed(const Duration(milliseconds: 250));
 
     if (!mounted) {
       return;
     }
 
-    await _showAttractionDetails(
-      attraction,
-    );
+    await _showAttractionDetails(attraction);
   }
 
   Future<void> _refreshLocation() async {
-    await _viewModel
-        .refreshCurrentLocation();
+    await _viewModel.refreshCurrentLocation();
 
     await _moveMapToCurrentArea();
 
@@ -582,91 +426,54 @@ class _CulturalMapViewState
       return;
     }
 
-    final message =
-    _viewModel.usingDefaultArea
+    final message = _viewModel.usingDefaultArea
         ? _t(
-      en: 'Current location unavailable. Showing Kuala Lumpur pilot area.',
-      zh: '无法获取当前位置。正在显示吉隆坡试点区域。',
-      ms: 'Lokasi semasa tidak tersedia. Kawasan perintis Kuala Lumpur sedang dipaparkan.',
-    )
+            en: 'Current location unavailable. Showing Kuala Lumpur pilot area.',
+            zh: '无法获取当前位置。正在显示吉隆坡试点区域。',
+            ms: 'Lokasi semasa tidak tersedia. Kawasan perintis Kuala Lumpur sedang dipaparkan.',
+          )
         : _t(
-      en: 'Map centred on your current location.',
-      zh: '地图已定位到您的当前位置。',
-      ms: 'Peta dipusatkan pada lokasi semasa anda.',
-    );
+            en: 'Map centred on your current location.',
+            zh: '地图已定位到您的当前位置。',
+            ms: 'Peta dipusatkan pada lokasi semasa anda.',
+          );
 
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(message),
-        ),
-      );
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 
   // ============================================================
   // MARKERS
   // ============================================================
 
-  Set<Marker> _buildMarkers(
-      CulturalMapViewModel viewModel,
-      ) {
-    final markers =
-    <Marker>{};
+  Set<Marker> _buildMarkers(CulturalMapViewModel viewModel) {
+    final markers = <Marker>{};
 
-    for (final attraction
-    in viewModel.visibleAttractions) {
-      final latitude =
-      viewModel.attractionLatitude(
-        attraction,
-      );
+    for (final attraction in viewModel.visibleAttractions) {
+      final latitude = viewModel.attractionLatitude(attraction);
 
-      final longitude =
-      viewModel.attractionLongitude(
-        attraction,
-      );
+      final longitude = viewModel.attractionLongitude(attraction);
 
-      if (latitude == null ||
-          longitude == null) {
+      if (latitude == null || longitude == null) {
         continue;
       }
 
       final id =
-          attraction['id']
-              ?.toString()
-              .trim() ??
-              '${latitude}_$longitude';
+          attraction['id']?.toString().trim() ?? '${latitude}_$longitude';
 
       markers.add(
         Marker(
-          markerId:
-          MarkerId(id),
-          position:
-          LatLng(
-            latitude,
-            longitude,
-          ),
-          infoWindow:
-          InfoWindow(
-            title:
-            _nameText(
-              attraction,
-            ),
-            snippet:
-            _categoryText(
-              viewModel.attractionCategory(
-                attraction,
-              ),
-            ),
+          markerId: MarkerId(id),
+          position: LatLng(latitude, longitude),
+          infoWindow: InfoWindow(
+            title: _nameText(attraction),
+            snippet: _categoryText(viewModel.attractionCategory(attraction)),
           ),
           onTap: () {
-            viewModel.selectAttraction(
-              attraction,
-            );
+            viewModel.selectAttraction(attraction);
 
-            _showAttractionDetails(
-              attraction,
-            );
+            _showAttractionDetails(attraction);
           },
         ),
       );
@@ -679,53 +486,26 @@ class _CulturalMapViewState
   // SIGN IN DIALOG
   // ============================================================
 
-  Future<void> _showSignInRequiredDialog(
-      String message,
-      ) async {
+  Future<void> _showSignInRequiredDialog(String message) async {
     if (!mounted) {
       return;
     }
 
     await showDialog<void>(
       context: context,
-      builder: (
-          dialogContext,
-          ) {
+      builder: (dialogContext) {
         return AlertDialog(
-          icon:
-          const Icon(
-            Icons.login,
-            size: 36,
+          icon: const Icon(Icons.login, size: 36),
+          title: Text(
+            _t(en: 'Sign In Required', zh: '需要登录', ms: 'Log Masuk Diperlukan'),
           ),
-          title:
-          Text(
-            _t(
-              en: 'Sign In Required',
-              zh: '需要登录',
-              ms: 'Log Masuk Diperlukan',
-            ),
-          ),
-          content:
-          Text(
-            message,
-            textAlign:
-            TextAlign.center,
-          ),
+          content: Text(message, textAlign: TextAlign.center),
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.of(
-                  dialogContext,
-                ).pop();
+                Navigator.of(dialogContext).pop();
               },
-              child:
-              Text(
-                _t(
-                  en: 'OK',
-                  zh: '确定',
-                  ms: 'OK',
-                ),
-              ),
+              child: Text(_t(en: 'OK', zh: '确定', ms: 'OK')),
             ),
           ],
         );
@@ -754,21 +534,16 @@ class _CulturalMapViewState
       return;
     }
 
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) =>
-        const SavedPlacesPage(),
-      ),
-    );
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const SavedPlacesPage()));
   }
 
   // ============================================================
   // FAVOURITE
   // ============================================================
 
-  Future<void> _toggleFavourite(
-      Map<String, dynamic> attraction,
-      ) async {
+  Future<void> _toggleFavourite(Map<String, dynamic> attraction) async {
     if (!_viewModel.isLoggedIn) {
       await _showSignInRequiredDialog(
         _t(
@@ -781,42 +556,29 @@ class _CulturalMapViewState
       return;
     }
 
-    final attractionId =
-        attraction['id']
-            ?.toString()
-            .trim() ??
-            '';
+    final attractionId = attraction['id']?.toString().trim() ?? '';
 
-    final wasFavourite =
-    _viewModel.isFavourite(
-      attractionId,
-    );
+    final wasFavourite = _viewModel.isFavourite(attractionId);
 
-    final success =
-    await _viewModel.toggleFavourite(
-      attraction,
-    );
+    final success = await _viewModel.toggleFavourite(attraction);
 
     if (!mounted) {
       return;
     }
 
-    final message =
-    success
+    final message = success
         ? wasFavourite
-        ? _t(
-      en: 'Removed from favourites.',
-      zh: '已从收藏中移除。',
-      ms: 'Dialih keluar daripada kegemaran.',
-    )
-        : _t(
-      en: 'Saved to favourites.',
-      zh: '已保存到收藏。',
-      ms: 'Disimpan ke kegemaran.',
-    )
-        : _errorText(
-      _viewModel.errorMessage,
-    );
+              ? _t(
+                  en: 'Removed from favourites.',
+                  zh: '已从收藏中移除。',
+                  ms: 'Dialih keluar daripada kegemaran.',
+                )
+              : _t(
+                  en: 'Saved to favourites.',
+                  zh: '已保存到收藏。',
+                  ms: 'Disimpan ke kegemaran.',
+                )
+        : _errorText(_viewModel.errorMessage);
 
     if (!success) {
       _viewModel.clearError();
@@ -824,12 +586,7 @@ class _CulturalMapViewState
 
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content:
-          Text(message),
-        ),
-      );
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 
   // ============================================================
@@ -855,11 +612,8 @@ class _CulturalMapViewState
   }) async {
     if (attractionId.isNotEmpty) {
       try {
-        final ranked =
-        await _rankingRepository
-            .getEtiquetteGuideRankingByAttraction(
-          attractionId,
-        );
+        final ranked = await _rankingRepository
+            .getEtiquetteGuideRankingByAttraction(attractionId);
 
         if ((ranked['dos']?.isNotEmpty ?? false) ||
             (ranked['donts']?.isNotEmpty ?? false)) {
@@ -872,9 +626,7 @@ class _CulturalMapViewState
 
     return {
       'dos': [
-        for (var i = 0;
-        i < dos.length;
-        i++)
+        for (var i = 0; i < dos.length; i++)
           {
             'ruleId': 'do_${i + 1}',
             'ruleName': dos[i],
@@ -886,9 +638,7 @@ class _CulturalMapViewState
           },
       ],
       'donts': [
-        for (var i = 0;
-        i < donts.length;
-        i++)
+        for (var i = 0; i < donts.length; i++)
           {
             'ruleId': 'dont_${i + 1}',
             'ruleName': donts[i],
@@ -907,28 +657,19 @@ class _CulturalMapViewState
   // ============================================================
 
   void _openFullEtiquetteGuide(
-      Map<String, dynamic> attraction, {
-        required List<Map<String, dynamic>> rankedDos,
-        required List<Map<String, dynamic>> rankedDonts,
-      }) {
+    Map<String, dynamic> attraction, {
+    required List<Map<String, dynamic>> rankedDos,
+    required List<Map<String, dynamic>> rankedDonts,
+  }) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) =>
-            _FullEtiquetteGuidePage(
-              name:
-              _nameText(
-                attraction,
-              ),
-              category:
-              _categoryText(
-                _viewModel.attractionCategory(
-                  attraction,
-                ),
-              ),
-              dos: rankedDos,
-              donts: rankedDonts,
-            ),
+        builder: (_) => _FullEtiquetteGuidePage(
+          name: _nameText(attraction),
+          category: _categoryText(_viewModel.attractionCategory(attraction)),
+          dos: rankedDos,
+          donts: rankedDonts,
+        ),
       ),
     );
   }
@@ -937,66 +678,60 @@ class _CulturalMapViewState
   // ATTRACTION DETAILS
   // ============================================================
 
-  Future<void> _showAttractionDetails(
-      Map<String, dynamic> attraction,
-      ) async {
-    final name =
-    _nameText(
+  Future<void> _showAttractionDetails(Map<String, dynamic> attraction) async {
+    final liveDetails = await _googlePlacesDataSource.getDisplayData(
       attraction,
     );
 
-    final category =
-    _viewModel.attractionCategory(
-      attraction,
-    );
+    if (!mounted) {
+      return;
+    }
 
-    final imageUrl =
-    _viewModel.attractionImageUrl(
-      attraction,
-    );
+    final name = _nameText(attraction);
 
-    final latitude =
-    _viewModel.attractionLatitude(
-      attraction,
-    );
+    final category = _viewModel.attractionCategory(attraction);
 
-    final longitude =
-    _viewModel.attractionLongitude(
-      attraction,
-    );
+    final storedImageUrl = _viewModel.attractionImageUrl(attraction);
 
-    final status =
-    _statusText(
-      _viewModel.attractionStatus(
-        attraction,
-      ),
-    );
+    final liveImageUrl = (liveDetails['imageUrl'] ?? '').toString().trim();
 
-    final rating =
-    _viewModel.attractionRatingText(
-      attraction,
-    );
+    final imageUrl = liveImageUrl.isNotEmpty ? liveImageUrl : storedImageUrl;
 
-    final dos =
-    _viewModel.attractionDos(
-      attraction,
-    );
+    final photoAttribution = liveImageUrl.isNotEmpty
+        ? (liveDetails['photoAttribution'] ?? '').toString().trim()
+        : '';
 
-    final donts =
-    _viewModel.attractionDonts(
-      attraction,
-    );
+    final latitude = _viewModel.attractionLatitude(attraction);
 
-    final activities =
-    _viewModel.attractionActivities(
-      attraction,
-    );
+    final longitude = _viewModel.attractionLongitude(attraction);
 
-    final attractionId =
-        attraction['id']
-            ?.toString()
-            .trim() ??
-            '';
+    final liveStatus = (liveDetails['status'] ?? '').toString().trim();
+
+    final rawStatus = liveStatus.isNotEmpty
+        ? liveStatus
+        : _viewModel.attractionStatus(attraction);
+
+    final status = _statusText(rawStatus);
+
+    final normalizedRawStatus = rawStatus.toLowerCase();
+
+    final isOpen =
+        normalizedRawStatus.contains('open') &&
+        !normalizedRawStatus.contains('closed');
+
+    final liveRating = liveDetails['rating'];
+
+    final rating = liveRating is num
+        ? liveRating.toDouble().toStringAsFixed(1)
+        : _viewModel.attractionRatingText(attraction);
+
+    final dos = _viewModel.attractionDos(attraction);
+
+    final donts = _viewModel.attractionDonts(attraction);
+
+    final activities = _viewModel.attractionActivities(attraction);
+
+    final attractionId = attraction['id']?.toString().trim() ?? '';
 
     // Load the COMPLETE per-place ranking first.
     //
@@ -1006,26 +741,19 @@ class _CulturalMapViewState
     // DON'T:
     //   default rank for every rule, dynamically reprioritised only by
     //   Admin-approved reports belonging to THIS attraction.
-    final rankedEtiquette =
-    await _loadRankedEtiquetteForAttraction(
+    final rankedEtiquette = await _loadRankedEtiquetteForAttraction(
       attractionId: attractionId,
       dos: dos,
       donts: donts,
     );
 
-    final rankedDos =
-        rankedEtiquette['dos'] ??
-            <Map<String, dynamic>>[];
+    final rankedDos = rankedEtiquette['dos'] ?? <Map<String, dynamic>>[];
 
-    final rankedDonts =
-        rankedEtiquette['donts'] ??
-            <Map<String, dynamic>>[];
+    final rankedDonts = rankedEtiquette['donts'] ?? <Map<String, dynamic>>[];
 
-    final previewDos =
-    rankedDos.take(3).toList();
+    final previewDos = rankedDos.take(3).toList();
 
-    final previewDonts =
-    rankedDonts.take(3).toList();
+    final previewDonts = rankedDonts.take(3).toList();
 
     if (!mounted) {
       return;
@@ -1035,62 +763,39 @@ class _CulturalMapViewState
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor:
-      Theme.of(context).colorScheme.surface,
-      builder: (
-          sheetContext,
-          ) {
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      builder: (sheetContext) {
         return AnimatedBuilder(
-          animation:
-          _viewModel,
-          builder: (
-              context,
-              child,
-              ) {
-            final colorScheme =
-                Theme.of(context).colorScheme;
+          animation: _viewModel,
+          builder: (context, child) {
+            final colorScheme = Theme.of(context).colorScheme;
 
             final isFavourite =
-                attractionId.isNotEmpty &&
-                    _viewModel.isFavourite(
-                      attractionId,
-                    );
+                attractionId.isNotEmpty && _viewModel.isFavourite(attractionId);
 
             return DraggableScrollableSheet(
               expand: false,
               initialChildSize: 0.92,
               minChildSize: 0.65,
               maxChildSize: 0.97,
-              builder: (
-                  context,
-                  scrollController,
-                  ) {
+              builder: (context, scrollController) {
                 return SingleChildScrollView(
-                  controller:
-                  scrollController,
+                  controller: scrollController,
                   child: Column(
-                    crossAxisAlignment:
-                    CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // ==================================================
                       // TOP IMAGE
                       // ==================================================
-
                       Stack(
                         children: [
                           if (imageUrl != null)
                             Image.network(
                               imageUrl,
-                              width:
-                              double.infinity,
+                              width: double.infinity,
                               height: 220,
                               fit: BoxFit.cover,
-                              errorBuilder:
-                                  (
-                                  context,
-                                  error,
-                                  stackTrace,
-                                  ) {
+                              errorBuilder: (context, error, stackTrace) {
                                 return _buildHeroPlaceholder();
                               },
                             )
@@ -1103,51 +808,64 @@ class _CulturalMapViewState
                             child: SafeArea(
                               child: CircleAvatar(
                                 backgroundColor:
-                                colorScheme.surfaceContainerHighest,
+                                    colorScheme.surfaceContainerHighest,
                                 child: IconButton(
-                                  color:
-                                  colorScheme.onSurface,
-                                  icon:
-                                  const Icon(
-                                    Icons.arrow_back,
-                                  ),
+                                  color: colorScheme.onSurface,
+                                  icon: const Icon(Icons.arrow_back),
                                   onPressed: () {
-                                    Navigator.of(
-                                      sheetContext,
-                                    ).pop();
+                                    Navigator.of(sheetContext).pop();
                                   },
                                 ),
                               ),
                             ),
                           ),
 
+                          if (photoAttribution.isNotEmpty)
+                            Positioned(
+                              bottom: 14,
+                              right: 18,
+                              child: Container(
+                                constraints: const BoxConstraints(
+                                  maxWidth: 160,
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.black54,
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                child: Text(
+                                  'Photo: $photoAttribution',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 9,
+                                  ),
+                                ),
+                              ),
+                            ),
+
                           Positioned(
                             bottom: 14,
                             left: 18,
                             child: Container(
-                              padding:
-                              const EdgeInsets.symmetric(
+                              padding: const EdgeInsets.symmetric(
                                 horizontal: 10,
                                 vertical: 5,
                               ),
-                              decoration:
-                              BoxDecoration(
-                                color:
-                                Colors.black54,
-                                borderRadius:
-                                BorderRadius.circular(
-                                  20,
-                                ),
+                              decoration: BoxDecoration(
+                                color: Colors.black54,
+                                borderRadius: BorderRadius.circular(20),
                               ),
                               child: Text(
                                 _categoryText(category),
-                                style:
-                                const TextStyle(
-                                  color:
-                                  Colors.white,
+                                style: const TextStyle(
+                                  color: Colors.white,
                                   fontSize: 12,
-                                  fontWeight:
-                                  FontWeight.w600,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ),
@@ -1156,106 +874,69 @@ class _CulturalMapViewState
                       ),
 
                       Padding(
-                        padding:
-                        const EdgeInsets.fromLTRB(
-                          18,
-                          18,
-                          18,
-                          30,
-                        ),
+                        padding: const EdgeInsets.fromLTRB(18, 18, 18, 30),
                         child: Column(
-                          crossAxisAlignment:
-                          CrossAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             // ============================================
                             // NAME
                             // ============================================
-
                             Text(
                               name,
-                              style:
-                              TextStyle(
+                              style: TextStyle(
                                 fontSize: 24,
-                                fontWeight:
-                                FontWeight.bold,
-                                color:
-                                colorScheme.onSurface,
+                                fontWeight: FontWeight.bold,
+                                color: colorScheme.onSurface,
                               ),
                             ),
 
-                            const SizedBox(
-                              height: 18,
-                            ),
+                            const SizedBox(height: 18),
 
                             // ============================================
                             // DISTANCE / STATUS / RATING
                             // ============================================
-
                             Container(
-                              padding:
-                              const EdgeInsets.symmetric(
-                                vertical: 12,
-                              ),
-                              decoration:
-                              BoxDecoration(
-                                color:
-                                colorScheme.surfaceContainerLow,
-                                borderRadius:
-                                BorderRadius.circular(
-                                  14,
-                                ),
-                                border:
-                                Border.all(
-                                  color:
-                                  colorScheme.outlineVariant,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              decoration: BoxDecoration(
+                                color: colorScheme.surfaceContainerLow,
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                  color: colorScheme.outlineVariant,
                                 ),
                               ),
-                              child:
-                              IntrinsicHeight(
+                              child: IntrinsicHeight(
                                 child: Row(
                                   children: [
                                     Expanded(
-                                      child:
-                                      _buildMetric(
+                                      child: _buildMetric(
                                         _t(
                                           en: 'Direct Distance',
                                           zh: '直线距离',
                                           ms: 'Jarak Lurus',
                                         ),
-                                        _distanceText(
-                                          attraction,
-                                        ),
-                                        const Color(
-                                          0xFF00A77E,
-                                        ),
+                                        _distanceText(attraction),
+                                        const Color(0xFF00A77E),
                                       ),
                                     ),
 
                                     const VerticalDivider(),
 
                                     Expanded(
-                                      child:
-                                      _buildMetric(
+                                      child: _buildMetric(
                                         _t(
                                           en: 'Status',
                                           zh: '状态',
                                           ms: 'Status',
                                         ),
                                         status,
-                                        _viewModel
-                                            .attractionIsOpen(
-                                          attraction,
-                                        )
-                                            ? Colors.green
-                                            : Colors.orange,
+                                        isOpen ? Colors.green : Colors.orange,
                                       ),
                                     ),
 
                                     const VerticalDivider(),
 
                                     Expanded(
-                                      child:
-                                      Column(
+                                      child: Column(
                                         children: [
                                           Text(
                                             _t(
@@ -1263,37 +944,28 @@ class _CulturalMapViewState
                                               zh: '评分',
                                               ms: 'Penilaian',
                                             ),
-                                            style:
-                                            TextStyle(
+                                            style: TextStyle(
                                               color:
-                                              colorScheme.onSurfaceVariant,
+                                                  colorScheme.onSurfaceVariant,
                                               fontSize: 11,
                                             ),
                                           ),
-                                          const SizedBox(
-                                            height: 5,
-                                          ),
+                                          const SizedBox(height: 5),
                                           Row(
                                             mainAxisAlignment:
-                                            MainAxisAlignment.center,
+                                                MainAxisAlignment.center,
                                             children: [
                                               const Icon(
                                                 Icons.star,
-                                                color:
-                                                Colors.amber,
+                                                color: Colors.amber,
                                                 size: 18,
                                               ),
-                                              const SizedBox(
-                                                width: 3,
-                                              ),
+                                              const SizedBox(width: 3),
                                               Text(
                                                 rating,
-                                                style:
-                                                TextStyle(
-                                                  fontWeight:
-                                                  FontWeight.bold,
-                                                  color:
-                                                  colorScheme.onSurface,
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  color: colorScheme.onSurface,
                                                 ),
                                               ),
                                             ],
@@ -1306,109 +978,71 @@ class _CulturalMapViewState
                               ),
                             ),
 
-                            const SizedBox(
-                              height: 20,
-                            ),
+                            const SizedBox(height: 20),
 
                             // ============================================
                             // KNOW BEFORE YOU ENTER
                             // ============================================
-
                             Container(
-                              width:
-                              double.infinity,
-                              decoration:
-                              BoxDecoration(
-                                color:
-                                colorScheme.surfaceContainerLow,
-                                borderRadius:
-                                BorderRadius.circular(
-                                  16,
-                                ),
-                                border:
-                                Border.all(
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                color: colorScheme.surfaceContainerLow,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
                                   color: const Color(0xFF00A77E),
                                 ),
                               ),
                               child: Column(
-                                crossAxisAlignment:
-                                CrossAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Container(
-                                    width:
-                                    double.infinity,
-                                    padding:
-                                    const EdgeInsets.all(
-                                      14,
-                                    ),
-                                    decoration:
-                                    const BoxDecoration(
-                                      gradient:
-                                      LinearGradient(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.all(14),
+                                    decoration: const BoxDecoration(
+                                      gradient: LinearGradient(
                                         colors: [
-                                          Color(
-                                            0xFF00A77E,
-                                          ),
-                                          Color(
-                                            0xFF3CC8AE,
-                                          ),
+                                          Color(0xFF00A77E),
+                                          Color(0xFF3CC8AE),
                                         ],
                                       ),
-                                      borderRadius:
-                                      BorderRadius.vertical(
-                                        top:
-                                        Radius.circular(
-                                          15,
-                                        ),
+                                      borderRadius: BorderRadius.vertical(
+                                        top: Radius.circular(15),
                                       ),
                                     ),
-                                    child:
-                                    Column(
+                                    child: Column(
                                       crossAxisAlignment:
-                                      CrossAxisAlignment.start,
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Row(
                                           children: [
                                             Text(
                                               '🙏',
-                                              style:
-                                              TextStyle(
-                                                fontSize: 20,
-                                              ),
+                                              style: TextStyle(fontSize: 20),
                                             ),
-                                            SizedBox(
-                                              width: 8,
-                                            ),
+                                            SizedBox(width: 8),
                                             Text(
                                               _t(
                                                 en: 'Know Before You Enter',
                                                 zh: '进入前须知',
                                                 ms: 'Sebelum Anda Masuk',
                                               ),
-                                              style:
-                                              TextStyle(
-                                                color:
-                                                Colors.white,
-                                                fontWeight:
-                                                FontWeight.bold,
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold,
                                                 fontSize: 16,
                                               ),
                                             ),
                                           ],
                                         ),
-                                        const SizedBox(
-                                          height: 3,
-                                        ),
+                                        const SizedBox(height: 3),
                                         Text(
                                           _t(
                                             en: 'Essential etiquette for $name',
                                             zh: '$name 的重要礼仪',
                                             ms: 'Etika penting untuk $name',
                                           ),
-                                          style:
-                                          const TextStyle(
-                                            color:
-                                            Colors.white,
+                                          style: const TextStyle(
+                                            color: Colors.white,
                                             fontSize: 11,
                                           ),
                                         ),
@@ -1417,14 +1051,10 @@ class _CulturalMapViewState
                                   ),
 
                                   Padding(
-                                    padding:
-                                    const EdgeInsets.all(
-                                      14,
-                                    ),
-                                    child:
-                                    Column(
+                                    padding: const EdgeInsets.all(14),
+                                    child: Column(
                                       crossAxisAlignment:
-                                      CrossAxisAlignment.start,
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           _t(
@@ -1438,9 +1068,7 @@ class _CulturalMapViewState
                                           ),
                                         ),
 
-                                        const SizedBox(
-                                          height: 8,
-                                        ),
+                                        const SizedBox(height: 8),
 
                                         if (previewDos.isEmpty)
                                           Text(
@@ -1452,26 +1080,20 @@ class _CulturalMapViewState
                                           )
                                         else
                                           ...previewDos.map(
-                                                (item) =>
-                                                _buildRankedRuleItem(
-                                                  rank:
-                                                  _rankValue(item),
-                                                  text:
-                                                  _ruleText(item).isNotEmpty
-                                                      ? _ruleText(item)
-                                                      : _t(
-                                                    en: 'Etiquette rule',
-                                                    zh: '礼仪规则',
-                                                    ms: 'Peraturan etika',
-                                                  ),
-                                                  color:
-                                                  Colors.green,
-                                                ),
+                                            (item) => _buildRankedRuleItem(
+                                              rank: _rankValue(item),
+                                              text: _ruleText(item).isNotEmpty
+                                                  ? _ruleText(item)
+                                                  : _t(
+                                                      en: 'Etiquette rule',
+                                                      zh: '礼仪规则',
+                                                      ms: 'Peraturan etika',
+                                                    ),
+                                              color: Colors.green,
+                                            ),
                                           ),
 
-                                        const Divider(
-                                          height: 28,
-                                        ),
+                                        const Divider(height: 28),
 
                                         Text(
                                           _t(
@@ -1485,9 +1107,7 @@ class _CulturalMapViewState
                                           ),
                                         ),
 
-                                        const SizedBox(
-                                          height: 8,
-                                        ),
+                                        const SizedBox(height: 8),
 
                                         if (previewDonts.isEmpty)
                                           Text(
@@ -1499,26 +1119,20 @@ class _CulturalMapViewState
                                           )
                                         else
                                           ...previewDonts.map(
-                                                (item) =>
-                                                _buildRankedRuleItem(
-                                                  rank:
-                                                  _rankValue(item),
-                                                  text:
-                                                  _ruleText(item).isNotEmpty
-                                                      ? _ruleText(item)
-                                                      : _t(
-                                                    en: 'Etiquette rule',
-                                                    zh: '礼仪规则',
-                                                    ms: 'Peraturan etika',
-                                                  ),
-                                                  color:
-                                                  Colors.red,
-                                                ),
+                                            (item) => _buildRankedRuleItem(
+                                              rank: _rankValue(item),
+                                              text: _ruleText(item).isNotEmpty
+                                                  ? _ruleText(item)
+                                                  : _t(
+                                                      en: 'Etiquette rule',
+                                                      zh: '礼仪规则',
+                                                      ms: 'Peraturan etika',
+                                                    ),
+                                              color: Colors.red,
+                                            ),
                                           ),
 
-                                        const SizedBox(
-                                          height: 10,
-                                        ),
+                                        const SizedBox(height: 10),
 
                                         Text(
                                           _t(
@@ -1526,61 +1140,47 @@ class _CulturalMapViewState
                                             zh: '此地点显示排名前三的礼仪规则。管理员批准的报告可能会调整“不应该做”的优先顺序。打开完整指南可查看所有规则。',
                                             ms: 'Tiga peraturan etika teratas untuk tempat ini. Laporan yang diluluskan boleh mengubah keutamaan kedudukan JANGAN. Buka panduan penuh untuk melihat semua peraturan.',
                                           ),
-                                          style:
-                                          TextStyle(
-                                            color:
-                                            colorScheme.onSurfaceVariant,
+                                          style: TextStyle(
+                                            color: colorScheme.onSurfaceVariant,
                                             fontSize: 10.5,
                                             height: 1.35,
                                           ),
                                         ),
 
-                                        const SizedBox(
-                                          height: 12,
-                                        ),
+                                        const SizedBox(height: 12),
 
                                         SizedBox(
-                                          width:
-                                          double.infinity,
-                                          child:
-                                          FilledButton.icon(
+                                          width: double.infinity,
+                                          child: FilledButton.icon(
                                             onPressed: () {
                                               _openFullEtiquetteGuide(
                                                 attraction,
-                                                rankedDos:
-                                                rankedDos,
-                                                rankedDonts:
-                                                rankedDonts,
+                                                rankedDos: rankedDos,
+                                                rankedDonts: rankedDonts,
                                               );
                                             },
-                                            icon:
-                                            const Icon(
+                                            icon: const Icon(
                                               Icons.menu_book_outlined,
                                             ),
-                                            label:
-                                            Text(
+                                            label: Text(
                                               _t(
                                                 en: 'View Full Etiquette Guide',
                                                 zh: '查看完整礼仪指南',
                                                 ms: 'Lihat Panduan Etika Penuh',
                                               ),
                                             ),
-                                            style:
-                                            FilledButton.styleFrom(
-                                              backgroundColor:
-                                              const Color(0xFF00A77E),
-                                              foregroundColor:
-                                              Colors.white,
-                                              padding:
-                                              const EdgeInsets.symmetric(
-                                                vertical: 14,
+                                            style: FilledButton.styleFrom(
+                                              backgroundColor: const Color(
+                                                0xFF00A77E,
                                               ),
-                                              shape:
-                                              RoundedRectangleBorder(
+                                              foregroundColor: Colors.white,
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    vertical: 14,
+                                                  ),
+                                              shape: RoundedRectangleBorder(
                                                 borderRadius:
-                                                BorderRadius.circular(
-                                                  16,
-                                                ),
+                                                    BorderRadius.circular(16),
                                               ),
                                             ),
                                           ),
@@ -1592,72 +1192,47 @@ class _CulturalMapViewState
                               ),
                             ),
 
-                            const SizedBox(
-                              height: 18,
-                            ),
+                            const SizedBox(height: 18),
 
                             // ============================================
                             // WHAT YOU CAN DO HERE
                             // ============================================
-
                             Container(
-                              width:
-                              double.infinity,
-                              decoration:
-                              BoxDecoration(
-                                color:
-                                colorScheme.surfaceContainerLow,
-                                borderRadius:
-                                BorderRadius.circular(
-                                  16,
-                                ),
-                                border:
-                                Border.all(
-                                  color:
-                                  colorScheme.outlineVariant,
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                color: colorScheme.surfaceContainerLow,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: colorScheme.outlineVariant,
                                 ),
                               ),
                               child: Column(
                                 children: [
                                   Container(
-                                    width:
-                                    double.infinity,
-                                    padding:
-                                    const EdgeInsets.all(
-                                      14,
-                                    ),
-                                    decoration:
-                                    BoxDecoration(
-                                      color:
-                                      const Color(0xFF00A77E)
-                                          .withValues(alpha: 0.10),
-                                      borderRadius:
-                                      const BorderRadius.vertical(
-                                        top:
-                                        Radius.circular(
-                                          15,
-                                        ),
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.all(14),
+                                    decoration: BoxDecoration(
+                                      color: const Color(
+                                        0xFF00A77E,
+                                      ).withValues(alpha: 0.10),
+                                      borderRadius: const BorderRadius.vertical(
+                                        top: Radius.circular(15),
                                       ),
                                     ),
-                                    child:
-                                    Row(
+                                    child: Row(
                                       crossAxisAlignment:
-                                      CrossAxisAlignment.start,
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Icon(
                                           Icons.check_box,
-                                          color:
-                                          Colors.green,
+                                          color: Colors.green,
                                           size: 20,
                                         ),
-                                        SizedBox(
-                                          width: 8,
-                                        ),
+                                        SizedBox(width: 8),
                                         Expanded(
-                                          child:
-                                          Column(
+                                          child: Column(
                                             crossAxisAlignment:
-                                            CrossAxisAlignment.start,
+                                                CrossAxisAlignment.start,
                                             children: [
                                               Text(
                                                 _t(
@@ -1665,12 +1240,11 @@ class _CulturalMapViewState
                                                   zh: '您可以在这里做什么',
                                                   ms: 'Aktiviti yang Boleh Dilakukan di Sini',
                                                 ),
-                                                style:
-                                                TextStyle(
-                                                  color:
-                                                  const Color(0xFF00A77E),
-                                                  fontWeight:
-                                                  FontWeight.bold,
+                                                style: TextStyle(
+                                                  color: const Color(
+                                                    0xFF00A77E,
+                                                  ),
+                                                  fontWeight: FontWeight.bold,
                                                 ),
                                               ),
                                               Text(
@@ -1679,12 +1253,10 @@ class _CulturalMapViewState
                                                   zh: '适合游客在此文化景点进行的活动',
                                                   ms: 'Aktiviti mesra pelancong di tarikan budaya ini',
                                                 ),
-                                                style:
-                                                TextStyle(
-                                                  color:
-                                                  colorScheme.onSecondaryContainer,
-                                                  fontSize:
-                                                  11,
+                                                style: TextStyle(
+                                                  color: colorScheme
+                                                      .onSecondaryContainer,
+                                                  fontSize: 11,
                                                 ),
                                               ),
                                             ],
@@ -1696,12 +1268,8 @@ class _CulturalMapViewState
 
                                   if (activities.isEmpty)
                                     Padding(
-                                      padding:
-                                      EdgeInsets.all(
-                                        16,
-                                      ),
-                                      child:
-                                      Text(
+                                      padding: EdgeInsets.all(16),
+                                      child: Text(
                                         _t(
                                           en: 'Activity information is not available yet.',
                                           zh: '暂无活动信息。',
@@ -1710,59 +1278,40 @@ class _CulturalMapViewState
                                       ),
                                     )
                                   else
-                                    ...activities.asMap().entries.map(
-                                          (
-                                          entry,
-                                          ) {
-                                        final index =
-                                            entry.key;
+                                    ...activities.asMap().entries.map((entry) {
+                                      final index = entry.key;
 
-                                        final activity =
-                                            entry.value;
+                                      final activity = entry.value;
 
-                                        return _buildActivityItem(
-                                          index:
-                                          index,
-                                          title:
-                                          _localizedText(
-                                            activity,
-                                            enKey: 'title',
-                                            zhKey: 'titleZh',
-                                            msKey: 'titleMs',
-                                          ),
-                                          description:
-                                          _localizedText(
-                                            activity,
-                                            enKey: 'description',
-                                            zhKey: 'descriptionZh',
-                                            msKey: 'descriptionMs',
-                                          ),
-                                        );
-                                      },
-                                    ),
+                                      return _buildActivityItem(
+                                        index: index,
+                                        title: _localizedText(
+                                          activity,
+                                          enKey: 'title',
+                                          zhKey: 'titleZh',
+                                          msKey: 'titleMs',
+                                        ),
+                                        description: _localizedText(
+                                          activity,
+                                          enKey: 'description',
+                                          zhKey: 'descriptionZh',
+                                          msKey: 'descriptionMs',
+                                        ),
+                                      );
+                                    }),
                                 ],
                               ),
                             ),
 
-                            const SizedBox(
-                              height: 18,
-                            ),
+                            const SizedBox(height: 18),
 
                             // ============================================
                             // ABOUT
                             // ============================================
-
                             _buildInfoCard(
-                              icon:
-                              Icons.info_outline,
-                              title:
-                              _t(
-                                en: 'About',
-                                zh: '关于',
-                                ms: 'Tentang',
-                              ),
-                              content:
-                              _localizedText(
+                              icon: Icons.info_outline,
+                              title: _t(en: 'About', zh: '关于', ms: 'Tentang'),
+                              content: _localizedText(
                                 attraction,
                                 enKey: 'description',
                                 zhKey: 'descriptionZh',
@@ -1770,40 +1319,24 @@ class _CulturalMapViewState
                               ),
                             ),
 
-                            const SizedBox(
-                              height: 10,
-                            ),
+                            const SizedBox(height: 10),
 
                             _buildInfoCard(
-                              icon:
-                              Icons.location_on_outlined,
-                              title:
-                              _t(
-                                en: 'Location',
-                                zh: '地点',
-                                ms: 'Lokasi',
-                              ),
-                              content:
-                              _addressText(
-                                attraction,
-                              ),
+                              icon: Icons.location_on_outlined,
+                              title: _t(en: 'Location', zh: '地点', ms: 'Lokasi'),
+                              content: _addressText(attraction),
                             ),
 
-                            const SizedBox(
-                              height: 10,
-                            ),
+                            const SizedBox(height: 10),
 
                             _buildInfoCard(
-                              icon:
-                              Icons.schedule_outlined,
-                              title:
-                              _t(
+                              icon: Icons.schedule_outlined,
+                              title: _t(
                                 en: 'Opening Information',
                                 zh: '开放信息',
                                 ms: 'Maklumat Waktu Operasi',
                               ),
-                              content:
-                              _localizedText(
+                              content: _localizedText(
                                 attraction,
                                 enKey: 'openingInformation',
                                 zhKey: 'openingInformationZh',
@@ -1811,63 +1344,39 @@ class _CulturalMapViewState
                               ),
                             ),
 
-                            const SizedBox(
-                              height: 18,
-                            ),
+                            const SizedBox(height: 18),
 
                             // ============================================
                             // LOGIN MESSAGE
                             // ============================================
-
                             if (!_viewModel.isLoggedIn)
                               Container(
-                                width:
-                                double.infinity,
-                                padding:
-                                const EdgeInsets.all(
-                                  12,
-                                ),
-                                margin:
-                                const EdgeInsets.only(
-                                  bottom: 12,
-                                ),
-                                decoration:
-                                BoxDecoration(
-                                  color:
-                                  colorScheme.surfaceContainerHighest,
-                                  borderRadius:
-                                  BorderRadius.circular(
-                                    12,
-                                  ),
-                                  border:
-                                  Border.all(
-                                    color:
-                                    colorScheme.outlineVariant,
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(12),
+                                margin: const EdgeInsets.only(bottom: 12),
+                                decoration: BoxDecoration(
+                                  color: colorScheme.surfaceContainerHighest,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: colorScheme.outlineVariant,
                                   ),
                                 ),
-                                child:
-                                Row(
+                                child: Row(
                                   children: [
                                     Icon(
                                       Icons.info_outline,
-                                      color:
-                                      colorScheme.onSurfaceVariant,
+                                      color: colorScheme.onSurfaceVariant,
                                     ),
-                                    const SizedBox(
-                                      width: 10,
-                                    ),
+                                    const SizedBox(width: 10),
                                     Expanded(
-                                      child:
-                                      Text(
+                                      child: Text(
                                         _t(
                                           en: 'Sign in to save this attraction to your Favourites.',
                                           zh: '登录后即可将此景点保存到收藏。',
                                           ms: 'Log masuk untuk menyimpan tarikan ini ke Kegemaran anda.',
                                         ),
-                                        style:
-                                        TextStyle(
-                                          color:
-                                          colorScheme.onSurfaceVariant,
+                                        style: TextStyle(
+                                          color: colorScheme.onSurfaceVariant,
                                         ),
                                       ),
                                     ),
@@ -1878,142 +1387,97 @@ class _CulturalMapViewState
                             // ============================================
                             // FAVOURITE
                             // ============================================
-
                             SizedBox(
-                              width:
-                              double.infinity,
-                              child:
-                              OutlinedButton.icon(
-                                onPressed:
-                                _viewModel.isSavingAttraction
+                              width: double.infinity,
+                              child: OutlinedButton.icon(
+                                onPressed: _viewModel.isSavingAttraction
                                     ? null
                                     : () async {
-                                  await _toggleFavourite(
-                                    attraction,
-                                  );
-                                },
-                                icon:
-                                Icon(
+                                        await _toggleFavourite(attraction);
+                                      },
+                                icon: Icon(
                                   isFavourite
                                       ? Icons.favorite
                                       : Icons.favorite_border,
                                 ),
-                                style:
-                                OutlinedButton.styleFrom(
-                                  foregroundColor:
-                                  const Color(0xFFFF5F78),
-                                  side:
-                                  const BorderSide(
-                                    color:
-                                    Color(0xFFFF8FA3),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: const Color(0xFFFF5F78),
+                                  side: const BorderSide(
+                                    color: Color(0xFFFF8FA3),
                                   ),
-                                  padding:
-                                  const EdgeInsets.symmetric(
+                                  padding: const EdgeInsets.symmetric(
                                     vertical: 14,
                                   ),
-                                  shape:
-                                  RoundedRectangleBorder(
-                                    borderRadius:
-                                    BorderRadius.circular(
-                                      16,
-                                    ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
                                   ),
                                 ),
-                                label:
-                                Text(
+                                label: Text(
                                   isFavourite
                                       ? _t(
-                                    en: 'Remove from Favourites',
-                                    zh: '从收藏中移除',
-                                    ms: 'Alih Keluar daripada Kegemaran',
-                                  )
+                                          en: 'Remove from Favourites',
+                                          zh: '从收藏中移除',
+                                          ms: 'Alih Keluar daripada Kegemaran',
+                                        )
                                       : _t(
-                                    en: 'Save to Favourites',
-                                    zh: '保存到收藏',
-                                    ms: 'Simpan ke Kegemaran',
-                                  ),
+                                          en: 'Save to Favourites',
+                                          zh: '保存到收藏',
+                                          ms: 'Simpan ke Kegemaran',
+                                        ),
                                 ),
                               ),
                             ),
 
-                            const SizedBox(
-                              height: 10,
-                            ),
+                            const SizedBox(height: 10),
 
                             // ============================================
                             // DIRECTIONS
                             // ============================================
-
                             SizedBox(
-                              width:
-                              double.infinity,
-                              child:
-                              FilledButton.icon(
-                                onPressed:
-                                latitude == null ||
-                                    longitude == null
+                              width: double.infinity,
+                              child: FilledButton.icon(
+                                onPressed: latitude == null || longitude == null
                                     ? null
                                     : () async {
-                                  try {
-                                    await _googleMapsDataSource
-                                        .openDirections(
-                                      latitude:
-                                      latitude,
-                                      longitude:
-                                      longitude,
-                                    );
-                                  } catch (_) {
-                                    if (!mounted) {
-                                      return;
-                                    }
+                                        try {
+                                          await _googleMapsDataSource
+                                              .openDirections(
+                                                latitude: latitude,
+                                                longitude: longitude,
+                                              );
+                                        } catch (_) {
+                                          if (!mounted) {
+                                            return;
+                                          }
 
-                                    ScaffoldMessenger.of(
-                                      this.context,
-                                    )
-                                      ..hideCurrentSnackBar()
-                                      ..showSnackBar(
-                                        SnackBar(
-                                          content:
-                                          Text(
-                                            _t(
-                                              en: 'Unable to open directions.',
-                                              zh: '无法打开导航。',
-                                              ms: 'Tidak dapat membuka navigasi.',
-                                            ),
-                                          ),
-                                        ),
-                                      );
-                                  }
-                                },
-                                style:
-                                FilledButton.styleFrom(
-                                  backgroundColor:
-                                  const Color(0xFF00A77E),
-                                  foregroundColor:
-                                  Colors.white,
-                                  padding:
-                                  const EdgeInsets.symmetric(
+                                          ScaffoldMessenger.of(this.context)
+                                            ..hideCurrentSnackBar()
+                                            ..showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  _t(
+                                                    en: 'Unable to open directions.',
+                                                    zh: '无法打开导航。',
+                                                    ms: 'Tidak dapat membuka navigasi.',
+                                                  ),
+                                                ),
+                                              ),
+                                            );
+                                        }
+                                      },
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: const Color(0xFF00A77E),
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
                                     vertical: 14,
                                   ),
-                                  shape:
-                                  RoundedRectangleBorder(
-                                    borderRadius:
-                                    BorderRadius.circular(
-                                      16,
-                                    ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
                                   ),
                                 ),
-                                icon:
-                                const Icon(
-                                  Icons.directions,
-                                ),
-                                label:
-                                Text(
-                                  _t(
-                                    en: 'Directions',
-                                    zh: '导航',
-                                    ms: 'Arah',
-                                  ),
+                                icon: const Icon(Icons.directions),
+                                label: Text(
+                                  _t(en: 'Directions', zh: '导航', ms: 'Arah'),
                                 ),
                               ),
                             ),
@@ -2030,8 +1494,7 @@ class _CulturalMapViewState
       },
     );
 
-    _viewModel
-        .clearSelectedAttraction();
+    _viewModel.clearSelectedAttraction();
   }
 
   // ============================================================
@@ -2039,87 +1502,52 @@ class _CulturalMapViewState
   // ============================================================
 
   Widget _buildHeroPlaceholder() {
-    final colorScheme =
-        Theme.of(context).colorScheme;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
-      width:
-      double.infinity,
+      width: double.infinity,
       height: 220,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: Theme.of(context).brightness == Brightness.dark
-              ? const [
-                  Color(0xFF102D45),
-                  Color(0xFF0D5F5A),
-                ]
-              : const [
-                  Color(0xFFDDF4FF),
-                  Color(0xFFE7FBF5),
-                ],
+              ? const [Color(0xFF102D45), Color(0xFF0D5F5A)]
+              : const [Color(0xFFDDF4FF), Color(0xFFE7FBF5)],
         ),
       ),
-      child:
-      Column(
-        mainAxisAlignment:
-        MainAxisAlignment.center,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
             Icons.travel_explore_rounded,
             size: 58,
             color: const Color(0xFF00A77E),
           ),
-          const SizedBox(
-            height: 8,
-          ),
+          const SizedBox(height: 8),
           Text(
-            _t(
-              en: 'Cultural Attraction',
-              zh: '文化景点',
-              ms: 'Tarikan Budaya',
-            ),
-            style:
-            TextStyle(
-              color:
-              colorScheme.onSurfaceVariant,
-            ),
+            _t(en: 'Cultural Attraction', zh: '文化景点', ms: 'Tarikan Budaya'),
+            style: TextStyle(color: colorScheme.onSurfaceVariant),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildMetric(
-      String title,
-      String value,
-      Color valueColor,
-      ) {
-
+  Widget _buildMetric(String title, String value, Color valueColor) {
     return Column(
       children: [
         Text(
           title,
-          style:
-          TextStyle(
-            color: const Color(0xFF00A77E),
-            fontSize: 11,
-          ),
+          style: TextStyle(color: const Color(0xFF00A77E), fontSize: 11),
         ),
-        const SizedBox(
-          height: 5,
-        ),
+        const SizedBox(height: 5),
         Text(
           value,
-          textAlign:
-          TextAlign.center,
-          style:
-          TextStyle(
-            color:
-            valueColor,
-            fontWeight:
-            FontWeight.bold,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: valueColor,
+            fontWeight: FontWeight.bold,
             fontSize: 12,
           ),
         ),
@@ -2127,20 +1555,14 @@ class _CulturalMapViewState
     );
   }
 
-  int _rankValue(
-      Map<String, dynamic> item,
-      ) {
-    final value =
-    item['rank'];
+  int _rankValue(Map<String, dynamic> item) {
+    final value = item['rank'];
 
     if (value is num) {
       return value.toInt();
     }
 
-    return int.tryParse(
-      value?.toString() ?? '',
-    ) ??
-        0;
+    return int.tryParse(value?.toString() ?? '') ?? 0;
   }
 
   Widget _buildRankedRuleItem({
@@ -2148,63 +1570,39 @@ class _CulturalMapViewState
     required String text,
     required Color color,
   }) {
-    final colorScheme =
-        Theme.of(context).colorScheme;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Padding(
-      padding:
-      const EdgeInsets.only(
-        bottom: 11,
-      ),
-      child:
-      Row(
-        crossAxisAlignment:
-        CrossAxisAlignment.start,
+      padding: const EdgeInsets.only(bottom: 11),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             width: 30,
             height: 30,
-            alignment:
-            Alignment.center,
-            decoration:
-            BoxDecoration(
-              color:
-              color.withValues(
-                alpha: 0.11,
-              ),
-              borderRadius:
-              BorderRadius.circular(
-                10,
-              ),
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.11),
+              borderRadius: BorderRadius.circular(10),
             ),
-            child:
-            Text(
+            child: Text(
               '$rank',
-              style:
-              TextStyle(
-                color:
-                color,
+              style: TextStyle(
+                color: color,
                 fontSize: 12,
-                fontWeight:
-                FontWeight.w800,
+                fontWeight: FontWeight.w800,
               ),
             ),
           ),
-          const SizedBox(
-            width: 10,
-          ),
+          const SizedBox(width: 10),
           Expanded(
-            child:
-            Text(
+            child: Text(
               text,
-              style:
-              TextStyle(
-                color:
-                colorScheme.onSurface,
+              style: TextStyle(
+                color: colorScheme.onSurface,
                 height: 1.38,
                 fontSize: 13.2,
-                fontWeight:
-                FontWeight.w500,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ),
@@ -2213,14 +1611,12 @@ class _CulturalMapViewState
     );
   }
 
-
   Widget _buildActivityItem({
     required int index,
     required String title,
     required String description,
   }) {
-    final colorScheme =
-        Theme.of(context).colorScheme;
+    final colorScheme = Theme.of(context).colorScheme;
 
     final icons = <IconData>[
       Icons.account_balance_outlined,
@@ -2229,69 +1625,43 @@ class _CulturalMapViewState
       Icons.history_edu_outlined,
     ];
 
-    final icon =
-    icons[index % icons.length];
+    final icon = icons[index % icons.length];
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(
-        horizontal: 14,
-        vertical: 13,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
       decoration: BoxDecoration(
-        border: Border(
-          top: BorderSide(
-            color: colorScheme.outlineVariant,
-          ),
-        ),
+        border: Border(top: BorderSide(color: colorScheme.outlineVariant)),
       ),
       child: Row(
-        crossAxisAlignment:
-        CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             width: 38,
             height: 38,
             decoration: BoxDecoration(
-              color:
-              const Color(0xFF00A77E)
-                  .withValues(alpha: 0.10),
-              borderRadius:
-              BorderRadius.circular(12),
+              color: const Color(0xFF00A77E).withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(
-              icon,
-              size: 20,
-              color:
-              const Color(0xFF00A77E),
-            ),
+            child: Icon(icon, size: 20, color: const Color(0xFF00A77E)),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
-              crossAxisAlignment:
-              CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleSmall
-                      ?.copyWith(
-                    fontWeight:
-                    FontWeight.w700,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
                 ),
                 if (description.isNotEmpty) ...[
                   const SizedBox(height: 4),
                   Text(
                     description,
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodySmall
-                        ?.copyWith(
-                      color: colorScheme
-                          .onSurfaceVariant,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
                       height: 1.4,
                     ),
                   ),
@@ -2309,68 +1679,44 @@ class _CulturalMapViewState
     required String title,
     required String content,
   }) {
-    final colorScheme =
-        Theme.of(context).colorScheme;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
-        color:
-        colorScheme.surfaceContainerLow,
-        borderRadius:
-        BorderRadius.circular(20),
-        border: Border.all(
-          color:
-          colorScheme.outlineVariant,
-        ),
+        color: colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: colorScheme.outlineVariant),
       ),
       child: Row(
-        crossAxisAlignment:
-        CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             width: 38,
             height: 38,
             decoration: BoxDecoration(
-              color:
-              const Color(0xFF00A77E)
-                  .withValues(alpha: 0.10),
-              borderRadius:
-              BorderRadius.circular(12),
+              color: const Color(0xFF00A77E).withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(
-              icon,
-              size: 20,
-              color:
-              const Color(0xFF00A77E),
-            ),
+            child: Icon(icon, size: 20, color: const Color(0xFF00A77E)),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
-              crossAxisAlignment:
-              CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleSmall
-                      ?.copyWith(
-                    fontWeight:
-                    FontWeight.w700,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   content,
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodySmall
-                      ?.copyWith(
-                    color: colorScheme
-                        .onSurfaceVariant,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
                     height: 1.45,
                   ),
                 ),
@@ -2399,15 +1745,19 @@ class _CulturalMapViewState
             appBar: AppBar(
               backgroundColor: Colors.transparent,
               surfaceTintColor: Colors.transparent,
+              leading: IconButton(
+                tooltip: _t(en: 'Back', zh: '返回', ms: 'Kembali'),
+                onPressed: () {
+                  Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(builder: (_) => const HomeView()),
+                    (route) => false,
+                  );
+                },
+                icon: const Icon(Icons.arrow_back_rounded),
+              ),
               title: Text(
-                _t(
-                  en: 'Explore',
-                  zh: '探索',
-                  ms: 'Teroka',
-                ),
-                style: const TextStyle(
-                  fontWeight: FontWeight.w800,
-                ),
+                _t(en: 'Explore', zh: '探索', ms: 'Teroka'),
+                style: const TextStyle(fontWeight: FontWeight.w800),
               ),
               actions: [
                 IconButton(
@@ -2431,8 +1781,8 @@ class _CulturalMapViewState
                   onPressed: viewModel.isLoading
                       ? null
                       : () async {
-                    await viewModel.refreshAttractions();
-                  },
+                          await viewModel.refreshAttractions();
+                        },
                   icon: const Icon(
                     Icons.refresh_rounded,
                     color: Color(0xFF00A77E),
@@ -2485,8 +1835,7 @@ class _CulturalMapViewState
                   child: Material(
                     color: colorScheme.surface,
                     elevation: 3,
-                    shadowColor:
-                    colorScheme.shadow.withValues(alpha: 0.16),
+                    shadowColor: colorScheme.shadow.withValues(alpha: 0.16),
                     shape: const CircleBorder(),
                     child: IconButton(
                       tooltip: _t(
@@ -2494,16 +1843,13 @@ class _CulturalMapViewState
                         zh: '我的位置',
                         ms: 'Lokasi Saya',
                       ),
-                      onPressed:
-                      viewModel.isLocating ? null : _refreshLocation,
+                      onPressed: viewModel.isLocating ? null : _refreshLocation,
                       icon: viewModel.isLocating
                           ? const SizedBox(
-                        width: 19,
-                        height: 19,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                        ),
-                      )
+                              width: 19,
+                              height: 19,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
                           : const Icon(Icons.my_location_rounded),
                     ),
                   ),
@@ -2527,8 +1873,7 @@ class _CulturalMapViewState
                   Positioned.fill(
                     child: IgnorePointer(
                       child: Container(
-                        color:
-                        colorScheme.scrim.withValues(alpha: 0.08),
+                        color: colorScheme.scrim.withValues(alpha: 0.08),
                         alignment: Alignment.center,
                         child: Card(
                           elevation: 0,
@@ -2551,12 +1896,8 @@ class _CulturalMapViewState
                                     zh: '正在加载文化景点...',
                                     ms: 'Memuatkan tempat budaya...',
                                   ),
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodyMedium
-                                      ?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                                  style: Theme.of(context).textTheme.bodyMedium
+                                      ?.copyWith(fontWeight: FontWeight.w600),
                                 ),
                               ],
                             ),
@@ -2573,22 +1914,16 @@ class _CulturalMapViewState
     );
   }
 
-  Widget _buildMapSearchCard(
-    CulturalMapViewModel viewModel,
-  ) {
-    final colorScheme =
-        Theme.of(context).colorScheme;
-    final isDark =
-        Theme.of(context).brightness == Brightness.dark;
+  Widget _buildMapSearchCard(CulturalMapViewModel viewModel) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(
-              alpha: isDark ? 0.22 : 0.10,
-            ),
+            color: Colors.black.withValues(alpha: isDark ? 0.22 : 0.10),
             blurRadius: 20,
             offset: const Offset(0, 7),
           ),
@@ -2612,13 +1947,8 @@ class _CulturalMapViewState
             zh: '搜索目的地、地点或文化...',
             ms: 'Cari destinasi, tempat atau budaya...',
           ),
-          hintStyle: TextStyle(
-            color: colorScheme.onSurfaceVariant,
-          ),
-          prefixIcon: const Icon(
-            Icons.search_rounded,
-            color: Color(0xFF00A77E),
-          ),
+          hintStyle: TextStyle(color: colorScheme.onSurfaceVariant),
+
           suffixIcon: _searchController.text.isEmpty
               ? const Icon(
                   Icons.travel_explore_rounded,
@@ -2639,25 +1969,18 @@ class _CulturalMapViewState
                   icon: const Icon(Icons.close_rounded),
                 ),
           filled: true,
-          fillColor: isDark
-              ? colorScheme.surfaceContainer
-              : Colors.white,
+          fillColor: isDark ? colorScheme.surfaceContainer : Colors.white,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(24),
             borderSide: BorderSide.none,
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(24),
-            borderSide: BorderSide(
-              color: colorScheme.outlineVariant,
-            ),
+            borderSide: BorderSide(color: colorScheme.outlineVariant),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(24),
-            borderSide: const BorderSide(
-              color: Color(0xFF00A77E),
-              width: 1.5,
-            ),
+            borderSide: const BorderSide(color: Color(0xFF00A77E), width: 1.5),
           ),
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 16,
@@ -2678,9 +2001,7 @@ class _CulturalMapViewState
     return Container(
       decoration: BoxDecoration(
         color: colorScheme.surface,
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(32),
-        ),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
         boxShadow: [
           BoxShadow(
             color: colorScheme.shadow.withValues(alpha: 0.14),
@@ -2729,8 +2050,7 @@ class _CulturalMapViewState
                   width: 38,
                   height: 38,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF00A77E)
-                        .withValues(alpha: 0.12),
+                    color: const Color(0xFF00A77E).withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(13),
                   ),
                   child: Icon(
@@ -2749,21 +2069,19 @@ class _CulturalMapViewState
                       Text(
                         usingDefault
                             ? _t(
-                          en: 'Kuala Lumpur pilot area',
-                          zh: '吉隆坡试点区域',
-                          ms: 'Kawasan perintis Kuala Lumpur',
-                        )
+                                en: 'Kuala Lumpur pilot area',
+                                zh: '吉隆坡试点区域',
+                                ms: 'Kawasan perintis Kuala Lumpur',
+                              )
                             : _t(
-                          en: 'Places near your location',
-                          zh: '您附近的景点',
-                          ms: 'Tempat berhampiran lokasi anda',
-                        ),
+                                en: 'Places near your location',
+                                zh: '您附近的景点',
+                                ms: 'Tempat berhampiran lokasi anda',
+                              ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style:
-                        Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
-                        ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w800),
                       ),
                       const SizedBox(height: 2),
                       Text(
@@ -2772,8 +2090,7 @@ class _CulturalMapViewState
                           zh: '找到 ${viewModel.resultCount} 个文化景点',
                           ms: '${viewModel.resultCount} tarikan budaya ditemui',
                         ),
-                        style:
-                        Theme.of(context).textTheme.bodySmall?.copyWith(
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: colorScheme.onSurfaceVariant,
                         ),
                       ),
@@ -2782,17 +2099,8 @@ class _CulturalMapViewState
                 ),
                 TextButton.icon(
                   onPressed: viewModel.isLocating ? null : _refreshLocation,
-                  icon: const Icon(
-                    Icons.my_location_rounded,
-                    size: 17,
-                  ),
-                  label: Text(
-                    _t(
-                      en: 'Update',
-                      zh: '更新位置',
-                      ms: 'Kemas Kini',
-                    ),
-                  ),
+                  icon: const Icon(Icons.my_location_rounded, size: 17),
+                  label: Text(_t(en: 'Update', zh: '更新位置', ms: 'Kemas Kini')),
                 ),
               ],
             ),
@@ -2807,9 +2115,7 @@ class _CulturalMapViewState
               decoration: BoxDecoration(
                 color: colorScheme.surfaceContainerLow,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: colorScheme.outlineVariant,
-                ),
+                border: Border.all(color: colorScheme.outlineVariant),
               ),
               child: Row(
                 children: [
@@ -2823,19 +2129,16 @@ class _CulturalMapViewState
                     child: Text(
                       viewModel.hasActiveFilter
                           ? _t(
-                        en: 'Filters are active',
-                        zh: '筛选条件已启用',
-                        ms: 'Penapis sedang digunakan',
-                      )
+                              en: 'Filters are active',
+                              zh: '筛选条件已启用',
+                              ms: 'Penapis sedang digunakan',
+                            )
                           : _t(
-                        en: 'Filter by cultural category',
-                        zh: '按文化类别筛选',
-                        ms: 'Tapis mengikut kategori budaya',
-                      ),
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodyMedium
-                          ?.copyWith(
+                              en: 'Filter by cultural category',
+                              zh: '按文化类别筛选',
+                              ms: 'Tapis mengikut kategori budaya',
+                            ),
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -2847,13 +2150,7 @@ class _CulturalMapViewState
                         viewModel.clearFilters();
                         setState(() {});
                       },
-                      child: Text(
-                        _t(
-                          en: 'Clear',
-                          zh: '清除',
-                          ms: 'Kosongkan',
-                        ),
-                      ),
+                      child: Text(_t(en: 'Clear', zh: '清除', ms: 'Kosongkan')),
                     ),
                 ],
               ),
@@ -2868,18 +2165,13 @@ class _CulturalMapViewState
               padding: const EdgeInsets.symmetric(horizontal: 18),
               scrollDirection: Axis.horizontal,
               itemCount: viewModel.availableCategories.length,
-              separatorBuilder: (context, index) =>
-              const SizedBox(width: 8),
+              separatorBuilder: (context, index) => const SizedBox(width: 8),
               itemBuilder: (context, index) {
-                final category =
-                viewModel.availableCategories[index];
-                final selected =
-                viewModel.isCategorySelected(category);
+                final category = viewModel.availableCategories[index];
+                final selected = viewModel.isCategorySelected(category);
 
                 return FilterChip(
-                  label: Text(
-                    _categoryText(category),
-                  ),
+                  label: Text(_categoryText(category)),
                   selected: selected,
                   onSelected: (_) {
                     viewModel.toggleCategory(category);
@@ -2912,13 +2204,8 @@ class _CulturalMapViewState
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    _t(
-                      en: 'Cultural places',
-                      zh: '文化景点',
-                      ms: 'Tempat budaya',
-                    ),
-                    style:
-                    Theme.of(context).textTheme.titleMedium?.copyWith(
+                    _t(en: 'Cultural places', zh: '文化景点', ms: 'Tempat budaya'),
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w800,
                     ),
                   ),
@@ -2949,12 +2236,9 @@ class _CulturalMapViewState
             )
           else
             ...viewModel.visibleAttractions.map(
-                  (attraction) => Padding(
+              (attraction) => Padding(
                 padding: const EdgeInsets.fromLTRB(18, 0, 18, 11),
-                child: _buildAttractionCard(
-                  viewModel,
-                  attraction,
-                ),
+                child: _buildAttractionCard(viewModel, attraction),
               ),
             ),
 
@@ -2969,20 +2253,17 @@ class _CulturalMapViewState
   // ============================================================
 
   Widget _buildAttractionCard(
-      CulturalMapViewModel viewModel,
-      Map<String, dynamic> attraction,
-      ) {
+    CulturalMapViewModel viewModel,
+    Map<String, dynamic> attraction,
+  ) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    final attractionId =
-        attraction['id']?.toString().trim() ?? '';
+    final attractionId = attraction['id']?.toString().trim() ?? '';
 
     final isFavourite =
-        attractionId.isNotEmpty &&
-            viewModel.isFavourite(attractionId);
+        attractionId.isNotEmpty && viewModel.isFavourite(attractionId);
 
-    final category =
-    viewModel.attractionCategory(attraction);
+    final category = viewModel.attractionCategory(attraction);
 
     return Material(
       color: colorScheme.surfaceContainerLow,
@@ -2992,15 +2273,11 @@ class _CulturalMapViewState
         onTap: () async {
           viewModel.selectAttraction(attraction);
 
-          final latitude =
-          viewModel.attractionLatitude(attraction);
+          final latitude = viewModel.attractionLatitude(attraction);
 
-          final longitude =
-          viewModel.attractionLongitude(attraction);
+          final longitude = viewModel.attractionLongitude(attraction);
 
-          if (latitude != null &&
-              longitude != null &&
-              _mapController != null) {
+          if (latitude != null && longitude != null && _mapController != null) {
             await _googleMapsDataSource.moveCamera(
               controller: _mapController!,
               latitude: latitude,
@@ -3019,9 +2296,7 @@ class _CulturalMapViewState
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: colorScheme.outlineVariant,
-            ),
+            border: Border.all(color: colorScheme.outlineVariant),
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -3048,10 +2323,7 @@ class _CulturalMapViewState
                       _nameText(attraction),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleMedium
-                          ?.copyWith(
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w800,
                         height: 1.15,
                       ),
@@ -3061,12 +2333,8 @@ class _CulturalMapViewState
                       _categoryText(category),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodySmall
-                          ?.copyWith(
-                        color:
-                        colorScheme.onSurfaceVariant,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -3080,21 +2348,14 @@ class _CulturalMapViewState
                         const SizedBox(width: 4),
                         Flexible(
                           child: Text(
-                            _distanceText(
-                              attraction,
-                            ),
+                            _distanceText(attraction),
                             maxLines: 1,
-                            overflow:
-                            TextOverflow.ellipsis,
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodySmall
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.bodySmall
                                 ?.copyWith(
-                              color: colorScheme
-                                  .onSurfaceVariant,
-                              fontWeight:
-                              FontWeight.w600,
-                            ),
+                                  color: colorScheme.onSurfaceVariant,
+                                  fontWeight: FontWeight.w600,
+                                ),
                           ),
                         ),
                       ],
@@ -3108,27 +2369,22 @@ class _CulturalMapViewState
                   IconButton(
                     tooltip: isFavourite
                         ? _t(
-                      en: 'Remove from Favourites',
-                      zh: '从收藏中移除',
-                      ms: 'Alih Keluar daripada Kegemaran',
-                    )
+                            en: 'Remove from Favourites',
+                            zh: '从收藏中移除',
+                            ms: 'Alih Keluar daripada Kegemaran',
+                          )
                         : _t(
-                      en: 'Save to Favourites',
-                      zh: '保存到收藏',
-                      ms: 'Simpan ke Kegemaran',
-                    ),
+                            en: 'Save to Favourites',
+                            zh: '保存到收藏',
+                            ms: 'Simpan ke Kegemaran',
+                          ),
                     padding: EdgeInsets.zero,
-                    constraints:
-                    const BoxConstraints(
+                    constraints: const BoxConstraints(
                       minWidth: 36,
                       minHeight: 36,
                     ),
-                    visualDensity:
-                    VisualDensity.compact,
-                    onPressed: () =>
-                        _toggleFavourite(
-                          attraction,
-                        ),
+                    visualDensity: VisualDensity.compact,
+                    onPressed: () => _toggleFavourite(attraction),
                     icon: Icon(
                       isFavourite
                           ? Icons.favorite_rounded
@@ -3141,8 +2397,7 @@ class _CulturalMapViewState
                   ),
                   Icon(
                     Icons.chevron_right_rounded,
-                    color:
-                    colorScheme.onSurfaceVariant,
+                    color: colorScheme.onSurfaceVariant,
                     size: 20,
                   ),
                 ],
@@ -3154,18 +2409,14 @@ class _CulturalMapViewState
     );
   }
 
-  IconData _iconForAttractionCategory(
-      String category,
-      ) {
+  IconData _iconForAttractionCategory(String category) {
     final value = category.toLowerCase();
 
-    if (value.contains('islam') ||
-        value.contains('mosque')) {
+    if (value.contains('islam') || value.contains('mosque')) {
       return Icons.mosque_outlined;
     }
 
-    if (value.contains('indian') ||
-        value.contains('hindu')) {
+    if (value.contains('indian') || value.contains('hindu')) {
       return Icons.temple_hindu_outlined;
     }
 
@@ -3190,23 +2441,16 @@ class _CulturalMapViewState
   // EMPTY
   // ============================================================
 
-  Widget _buildEmptyState(
-      CulturalMapViewModel viewModel,
-      ) {
+  Widget _buildEmptyState(CulturalMapViewModel viewModel) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(
-        horizontal: 20,
-        vertical: 28,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: colorScheme.outlineVariant,
-        ),
+        border: Border.all(color: colorScheme.outlineVariant),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -3224,31 +2468,25 @@ class _CulturalMapViewState
               ms: 'Tiada tarikan budaya yang sepadan',
             ),
             textAlign: TextAlign.center,
-            style: Theme.of(context)
-                .textTheme
-                .titleSmall
-                ?.copyWith(
-              fontWeight: FontWeight.w800,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 5),
           Text(
             viewModel.hasActiveFilter
                 ? _t(
-              en: 'Try changing or clearing your filters.',
-              zh: '请尝试更改或清除筛选条件。',
-              ms: 'Cuba ubah atau kosongkan penapis anda.',
-            )
+                    en: 'Try changing or clearing your filters.',
+                    zh: '请尝试更改或清除筛选条件。',
+                    ms: 'Cuba ubah atau kosongkan penapis anda.',
+                  )
                 : _t(
-              en: 'No supported attraction is available in this area yet.',
-              zh: '此区域目前没有受支持的文化景点。',
-              ms: 'Belum ada tarikan yang disokong di kawasan ini.',
-            ),
+                    en: 'No supported attraction is available in this area yet.',
+                    zh: '此区域目前没有受支持的文化景点。',
+                    ms: 'Belum ada tarikan yang disokong di kawasan ini.',
+                  ),
             textAlign: TextAlign.center,
-            style: Theme.of(context)
-                .textTheme
-                .bodySmall
-                ?.copyWith(
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: colorScheme.onSurfaceVariant,
             ),
           ),
@@ -3261,9 +2499,7 @@ class _CulturalMapViewState
   // ERROR
   // ============================================================
 
-  Widget _buildErrorState(
-      CulturalMapViewModel viewModel,
-      ) {
+  Widget _buildErrorState(CulturalMapViewModel viewModel) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
@@ -3283,9 +2519,7 @@ class _CulturalMapViewState
           ),
           const SizedBox(height: 10),
           Text(
-            _errorText(
-              viewModel.errorMessage,
-            ),
+            _errorText(viewModel.errorMessage),
             textAlign: TextAlign.center,
             style: TextStyle(
               color: colorScheme.onErrorContainer,
@@ -3298,13 +2532,7 @@ class _CulturalMapViewState
               await viewModel.refreshAttractions();
             },
             icon: const Icon(Icons.refresh_rounded),
-            label: Text(
-              _t(
-                en: 'Try Again',
-                zh: '重试',
-                ms: 'Cuba Lagi',
-              ),
-            ),
+            label: Text(_t(en: 'Try Again', zh: '重试', ms: 'Cuba Lagi')),
           ),
         ],
       ),
@@ -3316,15 +2544,13 @@ class _CulturalMapViewState
 // FULL ETIQUETTE GUIDE PAGE
 // ============================================================
 
-class _FullEtiquetteGuidePage
-    extends StatelessWidget {
+class _FullEtiquetteGuidePage extends StatelessWidget {
   final String name;
   final String category;
   final List<Map<String, dynamic>> dos;
   final List<Map<String, dynamic>> donts;
 
-  final AppSettingsController _settings =
-      AppSettingsController.instance;
+  final AppSettingsController _settings = AppSettingsController.instance;
 
   _FullEtiquetteGuidePage({
     required this.name,
@@ -3333,76 +2559,40 @@ class _FullEtiquetteGuidePage
     required this.donts,
   });
 
-  String _t({
-    required String en,
-    required String zh,
-    required String ms,
-  }) {
-    return _settings.text(
-      en: en,
-      zh: zh,
-      ms: ms,
-    );
+  String _t({required String en, required String zh, required String ms}) {
+    return _settings.text(en: en, zh: zh, ms: ms);
   }
 
   @override
-  Widget build(
-    BuildContext context,
-  ) {
-    final colorScheme =
-        Theme.of(context).colorScheme;
-    final isDark =
-        Theme.of(context).brightness == Brightness.dark;
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor:
-          Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
         foregroundColor: colorScheme.onSurface,
         title: Text(
-          _t(
-            en: 'Etiquette Guide',
-            zh: '礼仪指南',
-            ms: 'Panduan Etika',
-          ),
-          style: const TextStyle(
-            fontWeight: FontWeight.w900,
-          ),
+          _t(en: 'Etiquette Guide', zh: '礼仪指南', ms: 'Panduan Etika'),
+          style: const TextStyle(fontWeight: FontWeight.w900),
         ),
       ),
       body: ListView(
-        padding:
-            const EdgeInsets.fromLTRB(
-          18,
-          8,
-          18,
-          28,
-        ),
+        padding: const EdgeInsets.fromLTRB(18, 8, 18, 28),
         children: [
           Container(
-            constraints:
-                const BoxConstraints(
-              minHeight: 190,
-            ),
-            padding:
-                const EdgeInsets.all(20),
+            constraints: const BoxConstraints(minHeight: 190),
+            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              borderRadius:
-                  BorderRadius.circular(28),
+              borderRadius: BorderRadius.circular(28),
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: isDark
-                    ? const [
-                        Color(0xFF102D45),
-                        Color(0xFF0D5F5A),
-                      ]
-                    : const [
-                        Color(0xFFDDF4FF),
-                        Color(0xFFE7FBF5),
-                      ],
+                    ? const [Color(0xFF102D45), Color(0xFF0D5F5A)]
+                    : const [Color(0xFFDDF4FF), Color(0xFFE7FBF5)],
               ),
             ),
             child: Stack(
@@ -3413,102 +2603,64 @@ class _FullEtiquetteGuidePage
                   child: Icon(
                     Icons.menu_book_rounded,
                     size: 125,
-                    color:
-                        const Color(0xFF00A77E)
-                            .withValues(
-                      alpha:
-                          isDark ? 0.17 : 0.10,
-                    ),
+                    color: const Color(
+                      0xFF00A77E,
+                    ).withValues(alpha: isDark ? 0.17 : 0.10),
                   ),
                 ),
                 Column(
-                  mainAxisSize:
-                      MainAxisSize.min,
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
-                      padding:
-                          const EdgeInsets.symmetric(
+                      padding: const EdgeInsets.symmetric(
                         horizontal: 10,
                         vertical: 6,
                       ),
-                      decoration:
-                          BoxDecoration(
-                        color:
-                            const Color(
-                          0xFF00A77E,
-                        ).withValues(
-                          alpha: 0.12,
-                        ),
-                        borderRadius:
-                            BorderRadius.circular(
-                          14,
-                        ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF00A77E).withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(14),
                       ),
                       child: Text(
                         category,
-                        style:
-                            const TextStyle(
-                          color:
-                              Color(
-                            0xFF00A77E,
-                          ),
+                        style: const TextStyle(
+                          color: Color(0xFF00A77E),
                           fontSize: 11,
-                          fontWeight:
-                              FontWeight.w800,
+                          fontWeight: FontWeight.w800,
                         ),
                       ),
                     ),
-                    const SizedBox(
-                      height: 26,
-                    ),
+                    const SizedBox(height: 26),
                     SizedBox(
                       width: 270,
                       child: Text(
                         name,
-                        style:
-                            TextStyle(
+                        style: TextStyle(
                           color: isDark
                               ? Colors.white
-                              : const Color(
-                                  0xFF123B61,
-                                ),
+                              : const Color(0xFF123B61),
                           fontSize: 23,
                           height: 1.15,
-                          fontWeight:
-                              FontWeight.w900,
+                          fontWeight: FontWeight.w900,
                         ),
                       ),
                     ),
-                    const SizedBox(
-                      height: 8,
-                    ),
+                    const SizedBox(height: 8),
                     SizedBox(
                       width: 275,
                       child: Text(
                         _t(
-                          en:
-                              'Ranked specifically for this attraction. Use the guide before entering.',
-                          zh:
-                              '此排名专门针对这个景点。进入前请先查看礼仪指南。',
-                          ms:
-                              'Kedudukan ini khusus untuk tarikan ini. Rujuk panduan sebelum masuk.',
+                          en: 'Ranked specifically for this attraction. Use the guide before entering.',
+                          zh: '此排名专门针对这个景点。进入前请先查看礼仪指南。',
+                          ms: 'Kedudukan ini khusus untuk tarikan ini. Rujuk panduan sebelum masuk.',
                         ),
-                        style:
-                            TextStyle(
+                        style: TextStyle(
                           color: isDark
-                              ? Colors.white
-                                  .withValues(
-                                  alpha: 0.76,
-                                )
-                              : const Color(
-                                  0xFF4A6872,
-                                ),
+                              ? Colors.white.withValues(alpha: 0.76)
+                              : const Color(0xFF4A6872),
                           fontSize: 12.5,
                           height: 1.4,
-                          fontWeight:
-                              FontWeight.w600,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
@@ -3519,65 +2671,39 @@ class _FullEtiquetteGuidePage
           ),
           const SizedBox(height: 18),
           _RankedGuideSection(
-            title: _t(
-              en: '✅ DO',
-              zh: '✅ 应该做',
-              ms: '✅ BOLEH',
-            ),
-            titleColor:
-                const Color(0xFF18A57A),
+            title: _t(en: '✅ DO', zh: '✅ 应该做', ms: '✅ BOLEH'),
+            titleColor: const Color(0xFF18A57A),
             items: dos,
           ),
           const SizedBox(height: 14),
           _RankedGuideSection(
-            title: _t(
-              en: "❌ DON'T",
-              zh: '❌ 不应该做',
-              ms: '❌ JANGAN',
-            ),
-            titleColor:
-                const Color(0xFFFF5F78),
+            title: _t(en: "❌ DON'T", zh: '❌ 不应该做', ms: '❌ JANGAN'),
+            titleColor: const Color(0xFFFF5F78),
             items: donts,
           ),
           const SizedBox(height: 18),
           Container(
-            padding:
-                const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color:
-                  colorScheme.surfaceContainerLow,
-              borderRadius:
-                  BorderRadius.circular(22),
-              border: Border.all(
-                color:
-                    colorScheme.outlineVariant,
-              ),
+              color: colorScheme.surfaceContainerLow,
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: colorScheme.outlineVariant),
             ),
             child: Row(
               children: [
-                const Icon(
-                  Icons.favorite_rounded,
-                  color: Color(0xFFFF5F78),
-                ),
+                const Icon(Icons.favorite_rounded, color: Color(0xFFFF5F78)),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     _t(
-                      en:
-                          'Respect the Culture, Keep Malaysia Beautiful.',
-                      zh:
-                          '尊重文化，让马来西亚更美丽。',
-                      ms:
-                          'Hormati Budaya, Kekalkan Keindahan Malaysia.',
+                      en: 'Respect the Culture, Keep Malaysia Beautiful.',
+                      zh: '尊重文化，让马来西亚更美丽。',
+                      ms: 'Hormati Budaya, Kekalkan Keindahan Malaysia.',
                     ),
-                    style:
-                        TextStyle(
-                      color:
-                          colorScheme.onSurface,
-                      fontWeight:
-                          FontWeight.w800,
-                      fontStyle:
-                          FontStyle.italic,
+                    style: TextStyle(
+                      color: colorScheme.onSurface,
+                      fontWeight: FontWeight.w800,
+                      fontStyle: FontStyle.italic,
                     ),
                   ),
                 ),
@@ -3588,18 +2714,14 @@ class _FullEtiquetteGuidePage
       ),
     );
   }
-
-
 }
 
-class _RankedGuideSection
-    extends StatelessWidget {
+class _RankedGuideSection extends StatelessWidget {
   final String title;
   final Color titleColor;
   final List<Map<String, dynamic>> items;
 
-  final AppSettingsController _settings =
-      AppSettingsController.instance;
+  final AppSettingsController _settings = AppSettingsController.instance;
 
   _RankedGuideSection({
     required this.title,
@@ -3607,91 +2729,53 @@ class _RankedGuideSection
     required this.items,
   });
 
-  String _ruleText(
-      Map<String, dynamic> item,
-      ) {
-    final english =
-    (item['ruleName'] ?? 'Etiquette rule')
-        .toString()
-        .trim();
-    final chinese =
-    (item['ruleNameZh'] ?? '').toString().trim();
-    final malay =
-    (item['ruleNameMs'] ?? '').toString().trim();
+  String _ruleText(Map<String, dynamic> item) {
+    final english = (item['ruleName'] ?? 'Etiquette rule').toString().trim();
+    final chinese = (item['ruleNameZh'] ?? '').toString().trim();
+    final malay = (item['ruleNameMs'] ?? '').toString().trim();
 
     switch (_settings.language) {
       case AppLanguage.chinese:
-        return chinese.isNotEmpty
-            ? chinese
-            : english;
+        return chinese.isNotEmpty ? chinese : english;
       case AppLanguage.malay:
-        return malay.isNotEmpty
-            ? malay
-            : english;
+        return malay.isNotEmpty ? malay : english;
       case AppLanguage.english:
         return english;
     }
   }
 
-  int _intValue(
-      dynamic value,
-      ) {
+  int _intValue(dynamic value) {
     if (value is num) {
       return value.toInt();
     }
 
-    return int.tryParse(
-      value?.toString() ?? '',
-    ) ??
-        0;
+    return int.tryParse(value?.toString() ?? '') ?? 0;
   }
 
   @override
-  Widget build(
-      BuildContext context,
-      ) {
-    final colorScheme =
-        Theme.of(context).colorScheme;
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
-      padding:
-      const EdgeInsets.all(
-        16,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: colorScheme.outlineVariant),
       ),
-      decoration:
-      BoxDecoration(
-        color:
-        colorScheme.surfaceContainerLow,
-        borderRadius:
-        BorderRadius.circular(
-          22,
-        ),
-        border:
-        Border.all(
-          color:
-          colorScheme.outlineVariant,
-        ),
-      ),
-      child:
-      Column(
-        crossAxisAlignment:
-        CrossAxisAlignment.start,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
-            style:
-            TextStyle(
-              color:
-              titleColor,
+            style: TextStyle(
+              color: titleColor,
               fontSize: 17,
-              fontWeight:
-              FontWeight.bold,
+              fontWeight: FontWeight.bold,
             ),
           ),
 
-          const SizedBox(
-            height: 12,
-          ),
+          const SizedBox(height: 12),
 
           if (items.isEmpty)
             Text(
@@ -3702,86 +2786,54 @@ class _RankedGuideSection
               ),
             )
           else
-            ...items.map(
-                  (item) {
-                final rank =
-                _intValue(
-                  item['rank'],
-                );
+            ...items.map((item) {
+              final rank = _intValue(item['rank']);
 
-                final ruleName =
-                _ruleText(
-                  item,
-                );
+              final ruleName = _ruleText(item);
 
-                return Padding(
-                  padding:
-                  const EdgeInsets.only(
-                    bottom: 12,
-                  ),
-                  child:
-                  Row(
-                    crossAxisAlignment:
-                    CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        width: 30,
-                        height: 30,
-                        alignment:
-                        Alignment.center,
-                        decoration:
-                        BoxDecoration(
-                          color:
-                          titleColor.withValues(
-                            alpha: 0.12,
-                          ),
-                          borderRadius:
-                          BorderRadius.circular(
-                            9,
-                          ),
-                        ),
-                        child:
-                        Text(
-                          '$rank',
-                          style:
-                          TextStyle(
-                            color:
-                            titleColor,
-                            fontSize: 12,
-                            fontWeight:
-                            FontWeight.w900,
-                          ),
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 30,
+                      height: 30,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: titleColor.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(9),
+                      ),
+                      child: Text(
+                        '$rank',
+                        style: TextStyle(
+                          color: titleColor,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w900,
                         ),
                       ),
+                    ),
 
-                      const SizedBox(
-                        width: 10,
-                      ),
+                    const SizedBox(width: 10),
 
-                      Expanded(
-                        child:
-                        Column(
-                          crossAxisAlignment:
-                          CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              ruleName,
-                              style:
-                              const TextStyle(
-                                height: 1.35,
-                                fontWeight:
-                                FontWeight.w500,
-                              ),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            ruleName,
+                            style: const TextStyle(
+                              height: 1.35,
+                              fontWeight: FontWeight.w500,
                             ),
-
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                );
-              },
-            ),
+                    ),
+                  ],
+                ),
+              );
+            }),
         ],
       ),
     );

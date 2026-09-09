@@ -20,31 +20,21 @@ class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController confirmPasswordController =
-  TextEditingController();
+      TextEditingController();
 
   final FirebaseAuthenticationService authService =
-  FirebaseAuthenticationService();
+      FirebaseAuthenticationService();
   final UserRoleService roleService = UserRoleService();
 
-  final AppSettingsController _settings =
-      AppSettingsController.instance;
+  final AppSettingsController _settings = AppSettingsController.instance;
 
   bool loading = false;
   bool obscurePassword = true;
   bool obscureConfirmPassword = true;
   bool acceptedGuidelines = false;
 
-
-  String _t({
-    required String en,
-    required String zh,
-    required String ms,
-  }) {
-    return _settings.text(
-      en: en,
-      zh: zh,
-      ms: ms,
-    );
+  String _t({required String en, required String zh, required String ms}) {
+    return _settings.text(en: en, zh: zh, ms: ms);
   }
 
   void _onSettingsChanged() {
@@ -92,9 +82,7 @@ class _RegisterPageState extends State<RegisterPage> {
       );
     }
 
-    final emailPattern = RegExp(
-      r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
-    );
+    final emailPattern = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
 
     if (!emailPattern.hasMatch(email)) {
       return _t(
@@ -229,7 +217,31 @@ class _RegisterPageState extends State<RegisterPage> {
         uid: user.uid,
         email: email,
         role: 'user',
-      );
+      ); // Verify email ownership before allowing this account to be used.
+      try {
+        await authService.sendEmailVerification();
+        debugPrint('Verification email requested for $email');
+      } catch (e) {
+        debugPrint('Verification email send failed: $e');
+        await authService.logout();
+
+        if (!mounted) return;
+
+        _showMessage(
+          _t(
+            en: 'Account created, but the verification email could not be sent. Please use Resend Verification Email on the login page.',
+            zh: '账户已创建，但验证邮件发送失败。请在登录页面使用“重新发送验证邮件”。',
+            ms: 'Akaun telah dicipta, tetapi e-mel pengesahan tidak dapat dihantar. Sila gunakan Hantar Semula E-mel Pengesahan pada halaman log masuk.',
+          ),
+        );
+
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const LoginPage()),
+          (route) => false,
+        );
+        return;
+      }
 
       // Firebase signs the new account in automatically.
       // Log out so the user enters through the normal user-login flow.
@@ -239,28 +251,96 @@ class _RegisterPageState extends State<RegisterPage> {
 
       _showMessage(
         _t(
-          en: 'Account created successfully. Please sign in.',
-          zh: '账户创建成功。请登录。',
-          ms: 'Akaun berjaya dicipta. Sila log masuk.',
+          en: 'Account created. A verification email was sent to $email. Verify your email before signing in.',
+          zh: '账户已创建。验证邮件已发送至 $email。请先验证邮箱，再登录。',
+          ms: 'Akaun telah dicipta. E-mel pengesahan telah dihantar ke $email. Sahkan e-mel anda sebelum log masuk.',
         ),
       );
 
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(
-          builder: (_) => const LoginPage(),
-        ),
-            (route) => false,
+        MaterialPageRoute(builder: (_) => const LoginPage()),
+        (route) => false,
       );
     } catch (e) {
-      _showMessage(
-        e.toString().replaceFirst('Exception: ', ''),
-      );
+      final message = e.toString().replaceFirst('Exception: ', '').trim();
+      final normalized = message.toLowerCase();
+
+      if (normalized.contains('email_already_registered') ||
+          normalized.contains('email-already-in-use') ||
+          normalized.contains('already in use')) {
+        await _showEmailAlreadyRegisteredDialog(email);
+      } else {
+        _showMessage(message);
+      }
     } finally {
       if (mounted) {
         setState(() => loading = false);
       }
     }
+  }
+
+  Future<void> _showEmailAlreadyRegisteredDialog(String email) async {
+    if (!mounted) return;
+
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        final colorScheme = Theme.of(dialogContext).colorScheme;
+
+        return AlertDialog(
+          backgroundColor: colorScheme.surface,
+          icon: const Icon(
+            Icons.mark_email_read_outlined,
+            color: Color(0xFF00A77E),
+            size: 36,
+          ),
+          title: Text(
+            _t(
+              en: 'Email already registered',
+              zh: '此邮箱已注册',
+              ms: 'E-mel telah didaftarkan',
+            ),
+          ),
+          content: Text(
+            _t(
+              en: 'An account already exists for $email. Please sign in instead.',
+              zh: '$email 已经注册过账户。请直接登录。',
+              ms: 'Akaun untuk $email sudah wujud. Sila log masuk.',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+              },
+              child: Text(_t(en: 'Cancel', zh: '取消', ms: 'Batal')),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => LoginPage(initialEmail: email),
+                  ),
+                  (route) => false,
+                );
+              },
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFF00A77E),
+                foregroundColor: Colors.white,
+              ),
+              child: Text(
+                _t(en: 'Login Now', zh: '立即登录', ms: 'Log Masuk Sekarang'),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void _showMessage(String message) {
@@ -269,10 +349,7 @@ class _RegisterPageState extends State<RegisterPage> {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
-        SnackBar(
-          content: Text(message),
-          behavior: SnackBarBehavior.floating,
-        ),
+        SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
       );
   }
 
@@ -287,19 +364,10 @@ class _RegisterPageState extends State<RegisterPage> {
         surfaceTintColor: Colors.transparent,
         foregroundColor: colorScheme.onSurface,
         title: Text(
-          _t(
-            en: 'Create Account',
-            zh: '创建账户',
-            ms: 'Cipta Akaun',
-          ),
-          style: const TextStyle(
-            fontWeight: FontWeight.w800,
-          ),
+          _t(en: 'Create Account', zh: '创建账户', ms: 'Cipta Akaun'),
+          style: const TextStyle(fontWeight: FontWeight.w800),
         ),
-        actions: [
-          _buildLanguageMenu(),
-          const SizedBox(width: 8),
-        ],
+        actions: [_buildLanguageMenu(), const SizedBox(width: 8)],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -339,32 +407,16 @@ class _RegisterPageState extends State<RegisterPage> {
   Widget _buildLanguageMenu() {
     return PopupMenuButton<AppLanguage>(
       initialValue: _settings.language,
-      tooltip: _t(
-        en: 'Change language',
-        zh: '更改语言',
-        ms: 'Tukar bahasa',
-      ),
+      tooltip: _t(en: 'Change language', zh: '更改语言', ms: 'Tukar bahasa'),
       onSelected: (language) {
         _settings.setLanguage(language);
       },
       itemBuilder: (context) => const [
-        PopupMenuItem(
-          value: AppLanguage.english,
-          child: Text('English'),
-        ),
-        PopupMenuItem(
-          value: AppLanguage.chinese,
-          child: Text('中文'),
-        ),
-        PopupMenuItem(
-          value: AppLanguage.malay,
-          child: Text('Bahasa Melayu'),
-        ),
+        PopupMenuItem(value: AppLanguage.english, child: Text('English')),
+        PopupMenuItem(value: AppLanguage.chinese, child: Text('中文')),
+        PopupMenuItem(value: AppLanguage.malay, child: Text('Bahasa Melayu')),
       ],
-      icon: const Icon(
-        Icons.language_rounded,
-        color: Color(0xFF00A77E),
-      ),
+      icon: const Icon(Icons.language_rounded, color: Color(0xFF00A77E)),
     );
   }
 
@@ -380,14 +432,8 @@ class _RegisterPageState extends State<RegisterPage> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: isDark
-              ? const [
-                  Color(0xFF102D45),
-                  Color(0xFF0D5F5A),
-                ]
-              : const [
-                  Color(0xFFDDF4FF),
-                  Color(0xFFE7FBF5),
-                ],
+              ? const [Color(0xFF102D45), Color(0xFF0D5F5A)]
+              : const [Color(0xFFDDF4FF), Color(0xFFE7FBF5)],
         ),
       ),
       child: Stack(
@@ -398,9 +444,9 @@ class _RegisterPageState extends State<RegisterPage> {
             child: Icon(
               Icons.map_rounded,
               size: 115,
-              color: const Color(0xFF00A77E).withValues(
-                alpha: isDark ? 0.18 : 0.13,
-              ),
+              color: const Color(
+                0xFF00A77E,
+              ).withValues(alpha: isDark ? 0.18 : 0.13),
             ),
           ),
           Positioned(
@@ -428,9 +474,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   ms: 'Mengembara dengan hormat',
                 ),
                 style: TextStyle(
-                  color: isDark
-                      ? Colors.white
-                      : const Color(0xFF123B61),
+                  color: isDark ? Colors.white : const Color(0xFF123B61),
                   fontWeight: FontWeight.w900,
                   fontSize: 22,
                 ),
@@ -470,14 +514,10 @@ class _RegisterPageState extends State<RegisterPage> {
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(
-          color: colorScheme.outlineVariant,
-        ),
+        border: Border.all(color: colorScheme.outlineVariant),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(
-              alpha: isDark ? 0.18 : 0.06,
-            ),
+            color: Colors.black.withValues(alpha: isDark ? 0.18 : 0.06),
             blurRadius: 22,
             offset: const Offset(0, 8),
           ),
@@ -492,11 +532,7 @@ class _RegisterPageState extends State<RegisterPage> {
             textInputAction: TextInputAction.next,
             validator: _validateName,
             decoration: _inputDecoration(
-              label: _t(
-                en: 'Full name',
-                zh: '姓名',
-                ms: 'Nama penuh',
-              ),
+              label: _t(en: 'Full name', zh: '姓名', ms: 'Nama penuh'),
               icon: Icons.person_outline_rounded,
             ),
           ),
@@ -508,11 +544,7 @@ class _RegisterPageState extends State<RegisterPage> {
             autocorrect: false,
             validator: _validateEmail,
             decoration: _inputDecoration(
-              label: _t(
-                en: 'Email address',
-                zh: '电子邮箱',
-                ms: 'Alamat e-mel',
-              ),
+              label: _t(en: 'Email address', zh: '电子邮箱', ms: 'Alamat e-mel'),
               icon: Icons.mail_outline_rounded,
               helperText: _t(
                 en: 'Example: name@email.com',
@@ -535,11 +567,7 @@ class _RegisterPageState extends State<RegisterPage> {
               }
             },
             decoration: _inputDecoration(
-              label: _t(
-                en: 'Password',
-                zh: '密码',
-                ms: 'Kata laluan',
-              ),
+              label: _t(en: 'Password', zh: '密码', ms: 'Kata laluan'),
               icon: Icons.lock_outline_rounded,
               helperText: _t(
                 en: '8+ characters • uppercase • lowercase • number • special character',
@@ -617,9 +645,9 @@ class _RegisterPageState extends State<RegisterPage> {
           const SizedBox(height: 7),
           Container(
             decoration: BoxDecoration(
-              color: const Color(0xFF00A77E).withValues(
-                alpha: isDark ? 0.08 : 0.06,
-              ),
+              color: const Color(
+                0xFF00A77E,
+              ).withValues(alpha: isDark ? 0.08 : 0.06),
               borderRadius: BorderRadius.circular(18),
             ),
             child: CheckboxListTile(
@@ -656,10 +684,7 @@ class _RegisterPageState extends State<RegisterPage> {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(17),
                 gradient: const LinearGradient(
-                  colors: [
-                    Color(0xFF00A77E),
-                    Color(0xFF3CC8AE),
-                  ],
+                  colors: [Color(0xFF00A77E), Color(0xFF3CC8AE)],
                 ),
               ),
               child: FilledButton(
@@ -703,10 +728,7 @@ class _RegisterPageState extends State<RegisterPage> {
               ms: 'Akaun pentadbir tidak boleh didaftarkan di sini.',
             ),
             textAlign: TextAlign.center,
-            style: TextStyle(
-              color: colorScheme.onSurfaceVariant,
-              fontSize: 12,
-            ),
+            style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 12),
           ),
         ],
       ),
@@ -732,33 +754,21 @@ class _RegisterPageState extends State<RegisterPage> {
       fillColor: colorScheme.surfaceContainerHighest,
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(
-          color: colorScheme.outlineVariant,
-        ),
+        borderSide: BorderSide(color: colorScheme.outlineVariant),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(
-          color: colorScheme.primary,
-          width: 1.7,
-        ),
+        borderSide: BorderSide(color: colorScheme.primary, width: 1.7),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(
-          color: colorScheme.error,
-        ),
+        borderSide: BorderSide(color: colorScheme.error),
       ),
       focusedErrorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(
-          color: colorScheme.error,
-          width: 1.7,
-        ),
+        borderSide: BorderSide(color: colorScheme.error, width: 1.7),
       ),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
     );
   }
 }
